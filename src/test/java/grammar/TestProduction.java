@@ -33,11 +33,25 @@ public class TestProduction {
     }
 
     @Test
-    void testFromString() {
+    void testFromString1() {
         assertThat(ContextFreeProduction.fromString("A -> a")).isEqualTo(new ContextFreeProduction(
                 "A",
                 List.of(List.of("a"))
         ));
+    }
+
+    @Test
+    void testFromString2() {
+        assertThat(ContextFreeProduction.fromString("A -> a | a B | C D")).isEqualTo(
+                new ContextFreeProduction(
+                        "A",
+                        List.of(
+                                List.of("a"),
+                                List.of("a", "B"),
+                                List.of("C", "D")
+                        )
+                )
+        );
     }
 
 }
