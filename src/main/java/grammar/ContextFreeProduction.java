@@ -26,7 +26,7 @@ public class ContextFreeProduction implements Iterable<List<Symbol>> {
      * @throws IllegalArgumentException
      */
     public ContextFreeProduction(Symbol lhs, @NotNull List<@NotNull List<@NotNull Symbol>> rhs) throws IllegalArgumentException{
-        if (!lhs.isTerminal())
+        if (!lhs.isNotTerminal())
             throw new IllegalArgumentException("The lhs of a Context-Free production rule must have a non-Terminal symbol.");
         this.lhs = lhs;
         this.rhs = rhs;
@@ -59,5 +59,21 @@ public class ContextFreeProduction implements Iterable<List<Symbol>> {
     @Override
     public @NotNull Iterator<List<Symbol>> iterator() {
         return rhs.iterator();
+    }
+
+    private @NotNull String stringOfRHS(int i) {
+        StringBuilder sb = new StringBuilder();
+        for (Symbol s : rhs.get(i))
+            sb.append(s);
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder().append(lhs).append(" -> ");
+        int i;
+        for (i = 0; i < rhs.size()-1; i++)
+            sb.append(stringOfRHS(i)).append(" | ");
+        return sb.append(stringOfRHS(i)).toString();
     }
 }

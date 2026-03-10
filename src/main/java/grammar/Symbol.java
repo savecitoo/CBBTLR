@@ -32,4 +32,8 @@ public abstract class Symbol {
      */
     public abstract boolean isNotTerminal();
 
+    @Override
+    public String toString() {
+        return symbol;
+    }
 }
