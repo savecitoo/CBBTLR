@@ -71,12 +71,12 @@ public class ContextFreeProduction implements Iterable<List<String>> {
     public static @NotNull ContextFreeProduction fromString(@NotNull String production) {
         String[] prod = production.trim().split(" -> ");
         String lhs = prod[0].trim();
-
-        // using a linked list because i have only to append the new part of the rhs
-        // I'm not going to access by index to the list.
+        if (lhs.contains(" "))
+            throw new IllegalArgumentException("The left-hand side must have only one symbol and must not contain spaces.");
+        // using a linked list because we have just to append the new part of the rhs
         List<List<String>> rhs = new LinkedList<>();
 
-        String[] rhs_s = prod[1].trim().split("|");
+        String[] rhs_s = prod[1].trim().split("\\|");
 
         for (String s : rhs_s) {
             rhs.add(Arrays.asList(s.trim().split(" ")));
@@ -103,5 +103,14 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         for (i = 0; i < rhs.size()-1; i++)
             sb.append(stringOfRHS(i)).append(" | ");
         return sb.append(stringOfRHS(i)).toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (o instanceof ContextFreeProduction CFprod) {
+            return lhs.equals(CFprod.lhs) && rhs.equals(CFprod.rhs);
+        }
+        return false;
     }
 }
