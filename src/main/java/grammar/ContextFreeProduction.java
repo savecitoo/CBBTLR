@@ -2,8 +2,7 @@ package grammar;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * This class represents a production rule, for example:
@@ -11,23 +10,36 @@ import java.util.List;
  *  A -> a | Bc | AAcc
  *  </pre>
  */
-public class ContextFreeProduction implements Iterable<List<Symbol>> {
+public class ContextFreeProduction implements Iterable<List<String>> {
 
     /** This field represents the left-hand side of the production. */
-   private final Symbol lhs;
+   private final String lhs;
 
     /** This field represents the right-hand side of the production. */
-   private final @NotNull List<@NotNull List <@NotNull Symbol>> rhs;
+   private final @NotNull List<@NotNull List <@NotNull String>> rhs;
 
     /**
-     *
-     * @param lhs
-     * @param rhs
-     * @throws IllegalArgumentException
+     * This is a constructor for a Context-Free production.
+     * @param lhs a non-terminal symbol.
+     * @param rhs the possible productions of the lhs.
+     * @throws IllegalArgumentException if the strings that represent the symbols are blank or the production rule is empty.
      */
-    public ContextFreeProduction(Symbol lhs, @NotNull List<@NotNull List<@NotNull Symbol>> rhs) throws IllegalArgumentException{
-        if (!lhs.isNotTerminal())
-            throw new IllegalArgumentException("The lhs of a Context-Free production rule must have a non-Terminal symbol.");
+    public ContextFreeProduction(String lhs, @NotNull List<@NotNull List<@NotNull String>> rhs) throws IllegalArgumentException{
+        if (lhs.isBlank())
+            throw new IllegalArgumentException("The string passed must not be blank.");
+        if (rhs.isEmpty())
+            throw new IllegalArgumentException("The right-hand side must not be void.");
+        for (List<String> prod : rhs) {
+            if (prod.isEmpty()) {
+                throw new IllegalArgumentException("The production rule cannot be empty.");
+            } else {
+                for (String s : prod){
+                    if (s.isBlank())
+                        throw new IllegalArgumentException("The string passed must not be blank.");
+                }
+
+            }
+        }
         this.lhs = lhs;
         this.rhs = rhs;
     }
@@ -42,28 +54,44 @@ public class ContextFreeProduction implements Iterable<List<Symbol>> {
      * This method returns the left-hand side of the production rule.
      * @return the left hand side.
      */
-    public @NotNull Symbol getLHS() {return lhs;}
+    public @NotNull String getLHS() { return lhs;}
 
     /**
      * This method returns the right-hand side production at the specified index.
      * @param i the index of the desired right-hand side production.
-     * @return the right hand side production in the i-th position.
+     * @return the right-hand side production in the i-th position.
      * @throws IllegalArgumentException if i is less than zero or greater equal to rhsSize().
      */
-    public @NotNull List<Symbol> getRHS(int i) throws IllegalArgumentException {
-        if (i<0 || i >= rhs.size())
+    public @NotNull List<String> getRHS(int i) throws IllegalArgumentException {
+        if (i < 0 || i >= rhs.size())
             throw new IllegalArgumentException("The index must go from 0 to rhsSize() - 1.");
         return rhs.get(i);
     }
 
+    public static @NotNull ContextFreeProduction fromString(@NotNull String production) {
+        String[] prod = production.trim().split(" -> ");
+        String lhs = prod[0].trim();
+
+        // using a linked list because i have only to append the new part of the rhs
+        // I'm not going to access by index to the list.
+        List<List<String>> rhs = new LinkedList<>();
+
+        String[] rhs_s = prod[1].trim().split("|");
+
+        for (String s : rhs_s) {
+            rhs.add(Arrays.asList(s.trim().split(" ")));
+        }
+        return new ContextFreeProduction(lhs, rhs);
+    }
+
     @Override
-    public @NotNull Iterator<List<Symbol>> iterator() {
+    public @NotNull Iterator<List<String>> iterator() {
         return rhs.iterator();
     }
 
     private @NotNull String stringOfRHS(int i) {
         StringBuilder sb = new StringBuilder();
-        for (Symbol s : rhs.get(i))
+        for (String s : rhs.get(i))
             sb.append(s);
         return sb.toString();
     }

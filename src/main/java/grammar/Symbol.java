@@ -36,4 +36,9 @@ public abstract class Symbol {
     public String toString() {
         return symbol;
     }
+
+    @Override
+    public int hashCode() {
+        return symbol.hashCode();
+    }
 }
