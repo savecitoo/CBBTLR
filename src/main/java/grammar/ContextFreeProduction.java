@@ -70,8 +70,23 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         return rhs.get(i);
     }
 
+    /**
+     * This method returns if the symbol given in input is contained in the right-hand side of the production.
+     * @param symbol the symbol we want to see if it is in the right-hand side of the production.
+     * @return true if the symbol is in the right-hand side of the production, false otherwise.
+     */
+    public boolean contains(@NotNull String symbol) {
+        for (List<String> prods : rhs)
+            for (String symb : prods)
+                if (symbol.equals(symb))
+                    return true;
+        return false;
+    }
+
     public static @NotNull ContextFreeProduction fromString(@NotNull String production) {
         String[] prod = production.trim().split(" -> ");
+        if (prod.length < 2)
+            throw new IllegalArgumentException("The productions must be separeted by -> and must to be not blank");
         String lhs = prod[0].trim();
         if (lhs.contains(" "))
             throw new IllegalArgumentException("The left-hand side must have only one symbol and must not contain spaces.");

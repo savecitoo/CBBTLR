@@ -1,6 +1,8 @@
 package grammar;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.List;
 
@@ -53,5 +55,18 @@ public class TestProduction {
                 )
         );
     }
+
+
+    @ParameterizedTest
+    @CsvSource({
+            "A -> a | a B | C D, a, true",
+            "A -> a | a B | C D, d, false",
+            "A -> a , d, false",
+            "A -> d , d, true"
+    })
+    void testContains(String prod, String symb, boolean res) {
+        assertThat(ContextFreeProduction.fromString(prod).contains(symb)).isEqualTo(res);
+    }
+
 
 }
