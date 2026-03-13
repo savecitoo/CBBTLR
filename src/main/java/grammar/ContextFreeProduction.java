@@ -18,6 +18,8 @@ public class ContextFreeProduction implements Iterable<List<String>> {
     /** This field represents the right-hand side of the production. */
    private final @NotNull List<@NotNull List <@NotNull String>> rhs;
 
+   //TODO scrivere un metodo contains che dice se nel rhs c'è o meno un simbolo
+
     /**
      * This is a constructor for a Context-Free production.
      * @param lhs a non-terminal symbol.

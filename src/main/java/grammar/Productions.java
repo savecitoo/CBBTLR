@@ -19,7 +19,9 @@ public record Productions(@NotNull Map<@NotNull String, @NotNull ContextFreeProd
     /**
      * This method given a grammar specified only by its production rules, returns a Productions class that contains
      * all the production of the grammar.<br>
-     * The grammar must be specified with a production rule divided in different rows.
+     * The grammar must be specified with a production rule divided in different rows.<br>
+     * If a non-Terminal symbol has more than one possible production it will be divided by the ASCII symbol "|".
+     *
      * @param grammar the grammar.
      * @return the productions specified by the grammar.
      * @throws IllegalArgumentException if the grammar is blank or if a non-terminal symbol appear in more than one left-hand side.
@@ -43,7 +45,7 @@ public record Productions(@NotNull Map<@NotNull String, @NotNull ContextFreeProd
 
     @Override
     public @NotNull Iterator<ContextFreeProduction> iterator() {
-        return new Iterator<ContextFreeProduction>() {
+        return new Iterator<>() {
 
             private final Iterator<Map.Entry< String, ContextFreeProduction>> it =
                     productions.entrySet().iterator();
