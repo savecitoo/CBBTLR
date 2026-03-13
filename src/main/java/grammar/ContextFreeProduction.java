@@ -83,6 +83,18 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         return false;
     }
 
+    /**
+     * This method returns all the symbols that appear in {@code this} Production.
+     * @return the set of symbols that appear in the production.
+     */
+    public @NotNull Set<String> symbols() {
+        Set<String> symbols = new HashSet<>();
+        symbols.add(lhs);
+        for (List<String> l : rhs)
+            symbols.addAll(l);
+        return symbols;
+    }
+
     public static @NotNull ContextFreeProduction fromString(@NotNull String production) {
         String[] prod = production.trim().split(" -> ");
         if (prod.length < 2)
@@ -130,4 +142,5 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         }
         return false;
     }
+
 }

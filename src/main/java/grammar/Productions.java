@@ -10,17 +10,30 @@ import java.util.*;
  * Using the constructor doesn't guarantee that the key correspond to the left-hand side of the production
  * @param productions this field represents the productions where the keys are the left-hand side of a production.
  */
-public record Productions(@NotNull Map<@NotNull String, @NotNull ContextFreeProduction> productions) implements Iterable<ContextFreeProduction> {
+public record Productions(@NotNull List<@NotNull ContextFreeProduction> productions) implements Iterable<ContextFreeProduction> {
 
     public Productions {
-        productions = Map.copyOf(productions);
+        productions = List.copyOf(productions);
+    }
+
+    /**
+     * This method returns all the symbols that appear in {@code this} Productions.
+     * @return the set of symbols that appear in the productions.
+     */
+    public @NotNull Set<@NotNull String> symbols() {
+        Set<String> symbols = new HashSet<>();
+        for (ContextFreeProduction cfp : productions)
+            symbols.addAll(cfp.symbols());
+        return symbols;
     }
 
     /**
      * This method given a grammar specified only by its production rules, returns a Productions class that contains
      * all the production of the grammar.<br>
      * The grammar must be specified with a production rule divided in different rows.<br>
-     * If a non-Terminal symbol has more than one possible production it will be divided by the ASCII symbol "|".
+     * If a non-Terminal symbol has more than one possible production it will be divided by the ASCII symbol "|".<br>
+     * If you use this method to build the {@code Productions} then the order of the productions will be the same as they appear
+     * in the string.
      *
      * @param grammar the grammar.
      * @return the productions specified by the grammar.
@@ -30,14 +43,15 @@ public record Productions(@NotNull Map<@NotNull String, @NotNull ContextFreeProd
 
         if (grammar.isBlank())
             throw new IllegalArgumentException("The gramar must not be blank.");
-        Map<String, ContextFreeProduction> productions = new HashMap<>();
+        List<ContextFreeProduction> productions = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
         Scanner s = new Scanner(new StringReader(grammar));
         while (s.hasNext()) {
             ContextFreeProduction prod = ContextFreeProduction.fromString(s.nextLine());
-            if (productions.containsKey(prod.getLHS()))
+            if (!seen.add(prod.getLHS()))
                 throw new IllegalArgumentException
                         ("The left-hand side of the productions must appear in only one line as starting symbol for the production rule");
-            productions.put(prod.getLHS(), prod);
+            productions.add(prod);
         }
         s.close();
         return new Productions(productions);
@@ -45,20 +59,16 @@ public record Productions(@NotNull Map<@NotNull String, @NotNull ContextFreeProd
 
     @Override
     public @NotNull Iterator<ContextFreeProduction> iterator() {
-        return new Iterator<>() {
+       return productions.iterator();
+    }
 
-            private final Iterator<Map.Entry< String, ContextFreeProduction>> it =
-                    productions.entrySet().iterator();
-
-            @Override
-            public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override
-            public ContextFreeProduction next() {
-                return it.next().getValue();
-            }
-        };
+    @Override
+    public @NotNull String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < productions.size()-1; i++) {
+            sb.append(productions.get(i)).append("\n");
+        }
+        sb.append(productions.getLast());
+        return sb.toString();
     }
 }

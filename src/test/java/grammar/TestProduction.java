@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,6 +68,21 @@ public class TestProduction {
     void testContains(String prod, String symb, boolean res) {
         assertThat(ContextFreeProduction.fromString(prod).contains(symb)).isEqualTo(res);
     }
+
+    @Test
+    void testSymbolsBase() {
+        assertThat(
+            ContextFreeProduction.fromString("A -> d | C").symbols()
+        ).isEqualTo(Set.of("A" , "d", "C"));
+    }
+
+    @Test
+    void testSymbols() {
+        assertThat(
+                ContextFreeProduction.fromString("A -> a | a B | C D").symbols()
+        ).isEqualTo(Set.of("a" , "B", "D", "A", "C"));
+    }
+
 
 
 }
