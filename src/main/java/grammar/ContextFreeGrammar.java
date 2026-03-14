@@ -10,6 +10,8 @@ import java.util.Set;
  */
 public class ContextFreeGrammar {
 
+    // TODO: scrivere metodi che trovano simboli non produttivi, non raggiungibili e poi il semplificatore della grammatica.
+
     /** This field contains the non-Terminal symbols of the grammar. */
     public final @NotNull Set<@NotNull String> N;
 
@@ -74,6 +76,32 @@ public class ContextFreeGrammar {
                 N, T, productions, productions.productions().getFirst().getLHS()
         );
 
+    }
+
+
+    /**
+     * This method returns a set containing all the non-productive Symbols in {@code this} grammar.
+     * @return a set containing all the non-productive symbols in {@code this} grammar.
+     */
+    public @NotNull Set<@NotNull String> nonProductive() {
+        return Set.of();
+    }
+
+    /**
+     * This method returns a set containing all the non-reachable Symbols in {@code this} grammar.
+     * @return a set containing all the non-reachable symbols in {@code this} grammar
+     */
+    public @NotNull Set<@NotNull String> nonReachable() {
+        return Set.of();
+    }
+
+    /**
+     * This method returns a new Grammar derived from {@code this} grammar
+     * such that all the non-productive and non-reachable symbols are removed.
+     * @return a grammar without non-productive and non-reachable symbols.
+     */
+    public @NotNull ContextFreeGrammar simplifyGrammar() {
+        return null;
     }
 
     @Override
