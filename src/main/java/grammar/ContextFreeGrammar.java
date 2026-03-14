@@ -11,7 +11,7 @@ import java.util.Set;
  */
 public class ContextFreeGrammar {
 
-    // TODO: scrivere metodi che trovano simboli non produttivi, non raggiungibili e poi il semplificatore della grammatica.
+    // TODO: scrivere metodi semplificatore della grammatica.
 
     /** This field contains the non-Terminal symbols of the grammar. */
     public final @NotNull Set<@NotNull String> N;
@@ -136,12 +136,33 @@ public class ContextFreeGrammar {
         );
     }
 
+    private @NotNull Set<@NotNull String> reachable(@NotNull Set<@NotNull String> reach) {
+        Set<String> reachable;
+        if (reach.isEmpty()) { // if reach is empty we start from the starting symbol
+            reachable = new HashSet<>();
+            reachable.add(S);
+        } else {
+            reachable = new HashSet<>(reach);
+        }
+
+        for (ContextFreeProduction cfp : this.P) {
+            // we iterate over the productions if the lhs of cfp is in reach then all
+            // the symbols in the rhs can be reached.
+            if (reachable.contains(cfp.getLHS()))
+                reachable.addAll(cfp.symbols());    // since the lhs is already in reachable we
+                                                    // can add all the symbols in the production to it
+        }
+        return reachable;
+    }
+
     /**
      * This method returns a set containing all the non-reachable Symbols in {@code this} grammar.
      * @return a set containing all the non-reachable symbols in {@code this} grammar
      */
-    public @NotNull Set<@NotNull String> nonReachable() {
-        return Set.of();
+    public @NotNull Set<@NotNull String> reachable() {
+        return closure(
+                this::reachable
+        );
     }
 
     /**

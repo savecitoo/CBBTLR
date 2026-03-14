@@ -39,4 +39,32 @@ public class ContextFreeGrammarTest {
         assertThat(g.productive()).isEqualTo(symbols);
     }
 
+    @Test
+    void testReachable1() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> A B | D E\nA -> a\nB -> b C\nC -> c\n D -> d F\n E -> e\n F -> f D"
+        );
+        Set<String> symbols = new HashSet<>(g.N);
+        symbols.addAll(g.T);
+        assertThat(g.reachable()).isEqualTo(symbols);
+    }
+
+
+
+    @Test
+    void testReachable2() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> A B | D \nA -> a\nB -> b C\nC -> c\n D -> d F\n E -> e\n F -> f D"
+        );
+        assertThat(g.reachable()).isEqualTo(Set.of("A", "B", "C", "D", "F", "S", "a", "b", "c", "d", "f"));
+    }
+
+    @Test
+    void testReachable3() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> A B | E \nA -> a\nB -> b C\nC -> c\n D -> d F\n E -> e\n F -> f D"
+        );
+        assertThat(g.reachable()).isEqualTo(Set.of("A", "B", "C", "E", "S", "a", "b", "c","e"));
+    }
+
 }
