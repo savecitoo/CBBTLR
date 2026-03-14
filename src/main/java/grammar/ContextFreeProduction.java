@@ -95,8 +95,8 @@ public class ContextFreeProduction implements Iterable<List<String>> {
 
     public static @NotNull ContextFreeProduction fromString(@NotNull String production) {
         String[] prod = production.trim().split(" -> ");
-        if (prod.length < 2)
-            throw new IllegalArgumentException("The productions must be separeted by -> and must to be not blank");
+        if (prod.length != 2)
+            throw new IllegalArgumentException("The productions must be separeted by just one  \"->\" and must to be not blank");
         String lhs = prod[0].trim();
         if (lhs.contains(" "))
             throw new IllegalArgumentException("The left-hand side must have only one symbol and must not contain spaces.");
