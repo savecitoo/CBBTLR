@@ -3,6 +3,7 @@ package grammar;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -78,13 +79,61 @@ public class ContextFreeGrammar {
 
     }
 
+    /**
+     * This method implement a closure.<br>
+     * This method create the maximum set that can be built iterating over the find method.
+     * @param f this parameter is a function that let us search for items with that property.
+     * @return the maximum set of items with the property searched.
+     * @param <T> the paramenter of the function and the findMethod.
+     */
+    private @NotNull <T> Set<@NotNull T> closure(FindMethod<T> f) {
+        Set<T> current = f.find(new HashSet<>());
+
+        Set<T> past = new HashSet<>();
+
+        while (!current.equals(past)) {
+            past = Set.copyOf(current);
+            current = f.find(current);
+        }
+        return current;
+    }
+
 
     /**
-     * This method returns a set containing all the non-productive Symbols in {@code this} grammar.
-     * @return a set containing all the non-productive symbols in {@code this} grammar.
+     * This method returns a set of the symbols containing the set in input and the symbols that can product the symbols in the input.<br>
+     * If the input is void the set will be initialized with the terminal symbols.
+     * @param prod a set of symbols.
+     * @return a set of symbols containing the input and the symbols that can product the symbols in input.
      */
-    public @NotNull Set<@NotNull String> nonProductive() {
-        return Set.of();
+    private @NotNull Set<@NotNull String> productive(@NotNull Set<@NotNull String> prod) {
+        Set<String> productive;
+        if (prod.isEmpty())
+            productive = new HashSet<>(this.T); // if it is the first step we start from terminals
+        else
+            productive = new HashSet<>(prod);
+
+        for (ContextFreeProduction cfp : this.P) {
+            // if cfp.lhs is in productive we can skip
+            if (productive.contains(cfp.getLHS()))
+                continue;
+            // else we search if a production rule is entirely contained in productive.
+            for (List<String> rhs : cfp) {
+                if (prod.containsAll(rhs)) {
+                    productive.add(cfp.getLHS());
+                }
+            }
+        }
+        return productive;
+    }
+
+    /**
+     * This method returns a set containing all the productive Symbols in {@code this} grammar.
+     * @return a set containing all the productive symbols in {@code this} grammar.
+     */
+    public @NotNull Set<@NotNull String> productive() {
+        return closure(
+                this::productive
+        );
     }
 
     /**
