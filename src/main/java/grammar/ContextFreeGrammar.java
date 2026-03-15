@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import utils.Finder;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -167,12 +168,54 @@ public class ContextFreeGrammar {
     }
 
     /**
+     * This metod returns a new grammar starting from the first one that erase every symbol in the input. <br>
+     * The resulting grammar won't have any symbol of the set and won't have any production rule that contains
+     * the specified symbols.
+     * @param symbols the set of symbol to be removed.
+     * @return the resulting grammar.
+     */
+    public @NotNull ContextFreeGrammar restrictTo(@NotNull Set<@NotNull String> symbols) {
+        Set<String> N = new HashSet<>(this.N);
+        N.removeAll(symbols);
+        Set<String> T = new HashSet<>(this.T);
+        T.removeAll(symbols);
+        List<ContextFreeProduction> P = new LinkedList<>();
+        for (ContextFreeProduction p : this.P) {
+            if (!symbols.contains(p.getLHS())){ // if it is contained we skip and don't add the production.
+                List<List<String>> production = new LinkedList<>();
+
+                // searching in the production rule for production that can be mantained.
+
+                for (List<String> prod : p) { // if a production contains a symbol that we have to skip we don't take it.
+                    boolean ok = true;
+                    for (String s : prod) {
+                        if (symbols.contains(s)) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (ok) { // if the production doesn't have any symbol in the input set then we can add the production.
+                        production.add(prod);
+                    }
+                }
+
+                if (!production.isEmpty()) // we could have an empty production so we skip the add of that productiong
+                    P.add(new ContextFreeProduction(p.getLHS(), production));
+
+            }
+        }
+        return new ContextFreeGrammar(N, T, new Productions(P), this.S);
+    }
+
+    /**
      * This method returns a new Grammar derived from {@code this} grammar
      * such that all the non-productive and non-reachable symbols are removed.
      * @return a grammar without non-productive and non-reachable symbols.
      */
     public @NotNull ContextFreeGrammar simplifyGrammar() {
-        return null;
+        // First we have to restrict the grammar to the productive symbols and later on to the reachable symbols.
+        ContextFreeGrammar g = restrictTo(productive());
+        return g.restrictTo(g.reachable());
     }
 
     @Override

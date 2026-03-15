@@ -1,5 +1,6 @@
 package grammar;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -67,4 +68,27 @@ public class ContextFreeGrammarTest {
         assertThat(g.reachable()).isEqualTo(Set.of("A", "B", "C", "E", "S", "a", "b", "c","e"));
     }
 
+    @Test
+    void testRestrictToGrammarSame() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> A B | E \nA -> a\nB -> b C\nC -> c\n D -> d F\n E -> e\n F -> f D"
+        );
+        assertThat(g.restrictTo(new HashSet<>())).isEqualTo(g);
+        assertThat(g.restrictTo(Set.of("h", "I", "n"))).isEqualTo(g);
+    }
+
+    @Test
+    void testRestrictToGrammar() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> A B | E \nA -> a\nB -> b C\nC -> c\n D -> d F\n E -> e\n F -> f D"
+        );
+        assertThat(g.restrictTo(Set.of("A", "c"))).isEqualTo(
+                new ContextFreeGrammar(
+                        Set.of("S", "B", "E", "C", "D", "F"),
+                        Set.of("a", "b", "e", "f", "d"),
+                        Productions.fromString("S -> E \nB -> b C\n D -> d F\n E -> e\n F -> f D"),
+                        "S"
+                )
+        );
+    }
 }
