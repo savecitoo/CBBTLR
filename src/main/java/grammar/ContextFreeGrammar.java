@@ -1,6 +1,7 @@
 package grammar;
 
 import org.jetbrains.annotations.NotNull;
+import utils.Finder;
 
 import java.util.HashSet;
 import java.util.List;
@@ -86,7 +87,7 @@ public class ContextFreeGrammar {
      * @return the maximum set of items with the property searched.
      * @param <T> the paramenter of the function and the findMethod.
      */
-    private @NotNull <T> Set<@NotNull T> closure(FindMethod<T> f) {
+    private @NotNull <T> Set<@NotNull T> closure(Finder<T> f) {
         Set<T> current = f.find(new HashSet<>());
 
         Set<T> past = new HashSet<>();
