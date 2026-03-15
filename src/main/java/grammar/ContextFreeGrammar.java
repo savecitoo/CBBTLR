@@ -168,39 +168,48 @@ public class ContextFreeGrammar {
     }
 
     /**
-     * This metod returns a new grammar starting from the first one that erase every symbol in the input. <br>
-     * The resulting grammar won't have any symbol of the set and won't have any production rule that contains
-     * the specified symbols.
+     * This metod returns a new grammar starting from the first one that keeps just the symbols in input. <br>
+     * The resulting grammar has just the specified symbols, if any of the symbols are not in the Grammar they will be ignored.
      * @param symbols the set of symbol to be removed.
      * @return the resulting grammar.
      */
     public @NotNull ContextFreeGrammar restrictTo(@NotNull Set<@NotNull String> symbols) {
-        Set<String> N = new HashSet<>(this.N);
-        N.removeAll(symbols);
-        Set<String> T = new HashSet<>(this.T);
-        T.removeAll(symbols);
+
+        Set<String> N = new HashSet<>();
+        for (String s : symbols)
+            if (this.N.contains(s))
+                N.add(s);
+
+        Set<String> T = new HashSet<>();
+        for (String s : symbols)
+            if (this.T.contains(s))
+                T.add(s);
+
         List<ContextFreeProduction> P = new LinkedList<>();
+
         for (ContextFreeProduction p : this.P) {
-            if (!symbols.contains(p.getLHS())){ // if it is contained we skip and don't add the production.
-                List<List<String>> production = new LinkedList<>();
+            if (symbols.contains(p.getLHS())) {
 
-                // searching in the production rule for production that can be mantained.
+                // we search for production rules that have only symbols in symbols
+                List<List<String>> rules = new LinkedList<>();
 
-                for (List<String> prod : p) { // if a production contains a symbol that we have to skip we don't take it.
+
+
+                for (List<String> rule : p) {
                     boolean ok = true;
-                    for (String s : prod) {
-                        if (symbols.contains(s)) {
-                            ok = false;
+                    for (String s : rule) {
+                        if (!symbols.contains(s)) {
+                            ok = false ;
                             break;
                         }
                     }
-                    if (ok) { // if the production doesn't have any symbol in the input set then we can add the production.
-                        production.add(prod);
-                    }
+
+                    if (ok) // if all are in symbols we can add it.
+                        rules.add(rule);
                 }
 
-                if (!production.isEmpty()) // we could have an empty production so we skip the add of that productiong
-                    P.add(new ContextFreeProduction(p.getLHS(), production));
+                if (!rules.isEmpty()) // if there is at least one rule we add it.
+                    P.add(new ContextFreeProduction(p.getLHS(), rules));
 
             }
         }
