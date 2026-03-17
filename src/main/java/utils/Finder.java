@@ -11,7 +11,7 @@ import java.util.Set;
 public interface Finder <T> {
 
     // This interface was written to let use emulate the first-order citizen property of the functions
-    // in other programming languages so you can deal in an easier way with the
+    // in other programming languages so you can deal in an easier way with the closure of a function.
 
 
 
