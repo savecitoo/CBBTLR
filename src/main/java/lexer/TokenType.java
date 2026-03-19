@@ -8,16 +8,36 @@ import java.util.regex.PatternSyntaxException;
 
 public class TokenType {
 
+    /**
+     * This field represent the token identifier.
+     */
     public final @NotNull String identifier;
 
+    /**
+     * This field is the regular expression of the TokenType.
+     */
     public final @NotNull String regex;
 
+    /**
+     * This is the patter built from the regex.
+     */
     public final @NotNull Pattern pattern;
 
+    /**
+     * If this token must be skipped in the tokenization process.
+     */
     public final boolean skip;
 
+    /**
+     * This is a constructor for a Token Type.
+     * @param identifier the identifier of the Token Type.
+     * @param regex the regular expression recognized by the Token Type.
+     * @param skip if the TokenType is a skip token.
+     * @throws IllegalArgumentException if the identifier or the regular expression is blank, or if the regex
+     * is not correct.
+     */
     public TokenType(@NotNull String identifier, @NotNull String regex, boolean skip) throws IllegalArgumentException {
-        if (identifier.isBlank())
+        if (identifier.isBlank() && !skip)
             throw new IllegalArgumentException("The identifier cannot be blank");
         if (regex.isBlank())
             throw new IllegalArgumentException("The regex cannot be blank");
@@ -72,6 +92,17 @@ public class TokenType {
     @Override
     public int hashCode() {
         return Objects.hash(skip, identifier, regex);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder().append("identifier: ").append(identifier).append(" ");
+        if (skip) {
+            sb.append("skip");
+        } else {
+            sb.append("regex: ").append(regex);
+        }
+        return sb.toString();
     }
 }
 

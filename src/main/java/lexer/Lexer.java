@@ -12,6 +12,9 @@ public class Lexer {
     /** This field keeps saved all the tokens that the lexer recognize. */
     private final @NotNull Set<@NotNull TokenType> tokens;
 
+    /**
+     * This field contains the token's priority.
+     */
     private final @NotNull TokenRegister reg = new TokenRegister();
 
     /**
