@@ -37,7 +37,7 @@ public class TokenType {
      * is not correct.
      */
     public TokenType(@NotNull String identifier, @NotNull String regex, boolean skip) throws IllegalArgumentException {
-        if (identifier.isBlank() && !skip)
+        if (identifier.isBlank())
             throw new IllegalArgumentException("The identifier cannot be blank");
         if (regex.isBlank())
             throw new IllegalArgumentException("The regex cannot be blank");
@@ -54,7 +54,7 @@ public class TokenType {
     /**
      * This method starting from a string returns an instance of the corresponding TokenType.<br>
      * To be recognized you have to write the string in following way: identifer : regex<br>
-     * If the TokenType must be skipped write it instead of the regex.
+     * If the TokenType must be skipped write it after the regex.
      * @param line the line that describes the TokenType.
      * @return the corresponding TokenType.
      * @throws IllegalArgumentException if the string is not well-formed.
@@ -62,21 +62,23 @@ public class TokenType {
     public static @NotNull TokenType fromString(@NotNull String line) throws IllegalArgumentException {
         String[] tt = line.trim().split(":");
 
+        // in case of reassemble we put the max equal to the correct point if ":" appears in the regular expression.
+        int max;
+        if (tt[tt.length-1].trim().equals("skip"))
+            max = tt.length-1;
+        else
+            max = tt.length;
+
         // if the regex has : as a part we reassemble it.
         if (tt.length > 2){
             StringBuilder sb = new StringBuilder();
-            for (int i = 1; i < tt.length; i++){
-                sb.append(tt[i]);
+            for (int i = 1; i < max; i++){
+                sb.append(tt[i]).append(":");
             }
             tt[1] = sb.toString();
         }
 
-        String regex = tt[1].trim();
-
-        if (regex.equals("skip"))
-            return new TokenType(tt[0].trim(),regex, true);
-        else
-            return new TokenType(tt[0].trim(), regex, false);
+        return new TokenType(tt[0].trim(), tt[1].trim(), tt[tt.length-1].trim().equals("skip"));
     }
 
     @Override

@@ -47,7 +47,8 @@ public class Lexer {
      * This method starting from a string returns the lexer specified by the string. <br>
      * Every token has to be specified with the following scheme, after a token you have to put
      * a new line to add another one:<br>
-     * TokenType : regex<br>
+     * TokenType : regex (skip)?<br>
+     * The addition of skip is necessary if the lexer has to skip the regular expression recognized by the Token.<br>
      * If some token can recognize the same word it will be assigned to the first one written in the string.
      * @param lexer the string that describes the lexer.
      * @return the lexer represented by the string.
