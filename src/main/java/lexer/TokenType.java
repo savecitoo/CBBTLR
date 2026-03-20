@@ -3,6 +3,7 @@ package lexer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -53,32 +54,25 @@ public class TokenType {
 
     /**
      * This method starting from a string returns an instance of the corresponding TokenType.<br>
-     * To be recognized you have to write the string in following way: identifer : regex<br>
+     * To be recognized you have to write the string in following way:<br>
+     *      [a-zA-Z0-9_]+ : (.+?)(?:+(skip))?
      * If the TokenType must be skipped write it after the regex.
      * @param line the line that describes the TokenType.
      * @return the corresponding TokenType.
      * @throws IllegalArgumentException if the string is not well-formed.
      */
     public static @NotNull TokenType fromString(@NotNull String line) throws IllegalArgumentException {
-        String[] tt = line.trim().split(":");
 
-        // in case of reassemble we put the max equal to the correct point if ":" appears in the regular expression.
-        int max;
-        if (tt[tt.length-1].trim().equals("skip"))
-            max = tt.length-1;
-        else
-            max = tt.length;
-
-        // if the regex has : as a part we reassemble it.
-        if (tt.length > 2){
-            StringBuilder sb = new StringBuilder();
-            for (int i = 1; i < max; i++){
-                sb.append(tt[i]).append(":");
-            }
-            tt[1] = sb.toString();
+        // (.+?) is a lazy group and not a greedy one, so the skip is not captured by this group.
+        Matcher matcher = Pattern.compile("\\s*([a-zA-Z0-9_]+)\\s*:\\s*(.+?)(?:\\s+(skip))?\\s*").matcher(line);
+        if (matcher.matches()){
+            return new TokenType(
+                    matcher.group(1),
+                    matcher.group(2),
+                    matcher.group(3) != null
+            );
         }
-
-        return new TokenType(tt[0].trim(), tt[1].trim(), tt[tt.length-1].trim().equals("skip"));
+        throw new IllegalArgumentException("The line specified for the token is not well formed.");
     }
 
     @Override
@@ -86,7 +80,7 @@ public class TokenType {
         if (this == o)
             return true;
         if (o instanceof TokenType t){
-            return t.skip== skip && t.identifier.equals(identifier) && t.regex.equals(regex);
+            return t.skip == skip && t.identifier.equals(identifier) && t.regex.equals(regex);
         }
         return false;
     }
@@ -99,12 +93,11 @@ public class TokenType {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder().append("identifier: ").append(identifier).append(" ");
+        sb.append(regex);
         if (skip) {
-            sb.append("skip");
-        } else {
-            sb.append("regex: ").append(regex);
+            sb.append(" skip");
         }
         return sb.toString();
     }
-}
 
+}

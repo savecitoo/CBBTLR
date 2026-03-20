@@ -68,4 +68,13 @@ public class Lexer {
         return new Lexer(tokens);
     }
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o instanceof Lexer lexer) {
+            return reg.equals(lexer.reg) && tokens.equals(lexer.tokens);
+        }
+        return false;
+    }
 }
