@@ -12,6 +12,9 @@ public class Lexer {
     /** This field keeps saved all the tokens that the lexer recognize. */
     private final @NotNull Set<@NotNull TokenType> tokens;
 
+    /** This field keeps saved all the tokens the lexer has to skip. */
+    private final @NotNull Set<@NotNull TokenType> skip;
+
     /**
      * This field contains the token's priority.
      */
@@ -25,12 +28,19 @@ public class Lexer {
      */
     public Lexer(@NotNull List<@NotNull TokenType> tokens) {
         Set<String> seen = new HashSet<>();
+        Set<TokenType> tok = new HashSet<>();
+        Set<TokenType> skip = new HashSet<>();
         for (TokenType tt : tokens) {
             if (!seen.add(tt.identifier))
                 throw new IllegalArgumentException("The identifier " + tt.identifier + " appears more than once");
+            if (!tt.skip)
+                tok.add(tt);
+            else
+                skip.add(tt);
             reg.add(tt);
         }
-        this.tokens = Set.copyOf(tokens);
+        this.tokens = tok;
+        this.skip = skip;
     }
 
     /**
@@ -73,7 +83,7 @@ public class Lexer {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o instanceof Lexer lexer) {
-            return reg.equals(lexer.reg) && tokens.equals(lexer.tokens);
+            return reg.equals(lexer.reg) && tokens.equals(lexer.tokens) && skip.equals(lexer.skip);
         }
         return false;
     }
