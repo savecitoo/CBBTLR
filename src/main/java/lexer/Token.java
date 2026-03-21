@@ -8,5 +8,4 @@ import org.jetbrains.annotations.NotNull;
  * @param value the token lexeme.
  */
 public record Token(@NotNull TokenType type, @NotNull String value) {
-
 }
