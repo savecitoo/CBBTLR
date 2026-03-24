@@ -44,17 +44,24 @@ public class Lexer {
     public @NotNull List<@NotNull Token> tokenize(@NotNull String tokenized) throws NoSuchElementException {
         List<Token> tokenList = new LinkedList<>();
 
-        for (int i = 0; i < tokenized.length(); ) {
+        // we construct the matchers body outside the main part of the algorithm so we build it just one time.
+        Map<TokenType, Matcher> matchers = new HashMap<>();
+        for (TokenType tt : tokens) {
+            matchers.put(tt, tt.pattern.matcher(tokenized));
+        }
 
+        for (int i = 0; i < tokenized.length(); ) {
             TokenType bestType = null;
             int bestLength = 0;
 
+            // we search for a token that matches from the start of the string to a point of it.
             for (TokenType tt : tokens) {
-                Matcher m = tt.pattern.matcher(tokenized);
-                m.region(i, tokenized.length());
+                Matcher matcher = matchers.get(tt);
+                matcher.region(i, tokenized.length());
 
-                if (m.lookingAt()) {
-                    int len = m.end() - i;
+
+                if (matcher.lookingAt()) { // we found a substring that matches the regex
+                    int len = matcher.end() - i;
 
                     if (len > bestLength ||
                             (len == bestLength && (bestType == null || reg.priority(tt) < reg.priority(bestType)))) {
@@ -63,15 +70,12 @@ public class Lexer {
                     }
                 }
             }
-
-            if (bestType == null) {
+            if (bestType == null) { // from start to the end of the string no tokentype matched the input
                 throw new NoSuchElementException();
             }
 
-            String lexeme = tokenized.substring(i, i + bestLength);
-
-            if (!bestType.skip) {
-                tokenList.add(new Token(bestType, lexeme));
+            if (!bestType.skip) { // if the best token type is not a skip tokentype we add to the list
+                tokenList.add(new Token(bestType, tokenized.substring(i, i + bestLength)));
             }
 
             i += bestLength;
