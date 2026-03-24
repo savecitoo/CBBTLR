@@ -1,7 +1,6 @@
 package lexer;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -13,7 +12,7 @@ public class TokenRegister {
     /**
      * This field saves the priorities between tokens.
      */
-    private final Map<String, Integer> register = new HashMap<>();
+    private final @NotNull Map<@NotNull String, @NotNull Integer> register = new HashMap<>();
 
     /**
      * This is a constructor for a TokenRegister.

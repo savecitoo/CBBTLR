@@ -1,6 +1,7 @@
 package lexer;
 
 import org.jetbrains.annotations.NotNull;
+import utils.SymbolTable;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -13,24 +14,31 @@ public class Lexer {
     /** This field keeps saved all the tokens that the lexer recognize. */
     private final @NotNull Set<@NotNull TokenType> tokens;
 
-    /**
-     * This field contains the token's priority.
-     */
+    // We use a symbol table to speed up the comparison between token identifiers,
+    // this is useful
+    /** This field is the SymbolTable that the lexer uses. */
+    private final @NotNull SymbolTable<@NotNull String> table;
+
+    /** This field contains the token's priority. */
     private final @NotNull TokenRegister reg = new TokenRegister();
 
     /**
      * This is a constructor for a Lexer starting from a set of TokenType.<br>
      * The order of the tokens will be their priority in case of two TokenTypes recognizes the same string.
      * @param tokens the list of tokens that the Lexer will recognize.
+     * @param table the SymbolTable used by the lexer.
      * @throws IllegalArgumentException if the same token appears more than once.
      */
-    public Lexer(@NotNull List<@NotNull TokenType> tokens) {
+    public Lexer(@NotNull List<@NotNull TokenType> tokens, @NotNull SymbolTable<@NotNull String> table) {
         Set<String> seen = new HashSet<>();
         for (TokenType tt : tokens) {
             if (!seen.add(tt.identifier))
                 throw new IllegalArgumentException("The identifier " + tt.identifier + " appears more than once");
             reg.add(tt);
+            if (!table.contains(tt.identifier))
+                table.add(tt.identifier);
         }
+        this.table = table;
         this.tokens = Set.copyOf(tokens);
 
     }
@@ -70,12 +78,12 @@ public class Lexer {
                     }
                 }
             }
-            if (bestType == null) { // from start to the end of the string no tokentype matched the input
+            if (bestType == null) { // from start to the end of the string no token type matched the input
                 throw new NoSuchElementException();
             }
 
-            if (!bestType.skip) { // if the best token type is not a skip tokentype we add to the list
-                tokenList.add(new Token(bestType, tokenized.substring(i, i + bestLength)));
+            if (!bestType.skip) { // if the best token type is not a skip token type we add to the list
+                tokenList.add(new Token(table.getId(bestType.identifier), tokenized.substring(i, i + bestLength)));
             }
 
             i += bestLength;
@@ -91,10 +99,12 @@ public class Lexer {
      * The addition of skip is necessary if the lexer has to skip the regular expression recognized by the Token.<br>
      * If some token can recognize the same word it will be assigned to the first one written in the string.
      * @param lexer the string that describes the lexer.
+     * @param table the symbol table the lexer will use to encode the identifiers.
      * @return the lexer represented by the string.
      * @throws IllegalArgumentException if the string is not well-formed or if an identifier appears more than once.
      */
-    public static @NotNull Lexer fromString(@NotNull String lexer) throws IllegalArgumentException {
+    public static @NotNull Lexer fromString(@NotNull String lexer, @NotNull SymbolTable<@NotNull String> table)
+            throws IllegalArgumentException {
         List<TokenType> tokens = new LinkedList<>();
         Set<String> identifiers = new HashSet<>();
         Scanner s = new Scanner(lexer);
@@ -105,14 +115,14 @@ public class Lexer {
             tokens.add(t);
         }
         s.close();
-        return new Lexer(tokens);
+        return new Lexer(tokens, table);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o instanceof Lexer lexer) {
-            return reg.equals(lexer.reg) && tokens.equals(lexer.tokens);
+            return reg.equals(lexer.reg) && tokens.equals(lexer.tokens) && table.equals(lexer.table);
         }
         return false;
     }

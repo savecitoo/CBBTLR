@@ -54,7 +54,7 @@ public class SymbolTable<T>  {
      * @return true if the symbol is new in the table, false otherwise.
      */
     public boolean add(@NotNull T symbol) {
-        if (table_o_id.containsKey(symbol)) {
+        if (!table_o_id.containsKey(symbol)) {
             table_o_id.put(symbol, table_id_o.size());
             table_id_o.put(table_id_o.size(), symbol);
             return true;
@@ -86,4 +86,11 @@ public class SymbolTable<T>  {
         return table_id_o.get(id);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (o instanceof SymbolTable<?> table)
+            return table_id_o.equals(table.table_id_o);
+        return false;
+    }
 }
