@@ -32,11 +32,11 @@ public class Lexer {
     public Lexer(@NotNull List<@NotNull TokenType> tokens, @NotNull SymbolTable<@NotNull String> table) {
         Set<String> seen = new HashSet<>();
         for (TokenType tt : tokens) {
-            if (!seen.add(tt.identifier))
-                throw new IllegalArgumentException("The identifier " + tt.identifier + " appears more than once");
+            if (!seen.add(tt.identifier()))
+                throw new IllegalArgumentException("The identifier " + tt.identifier() + " appears more than once");
             reg.add(tt);
-            if (!table.contains(tt.identifier))
-                table.add(tt.identifier);
+            if (!table.contains(tt.identifier()))
+                table.add(tt.identifier());
         }
         this.table = table;
         this.tokens = Set.copyOf(tokens);
@@ -55,7 +55,7 @@ public class Lexer {
         // we construct the matchers body outside the main part of the algorithm so we build it just one time.
         Map<TokenType, Matcher> matchers = new HashMap<>();
         for (TokenType tt : tokens) {
-            matchers.put(tt, tt.pattern.matcher(tokenized));
+            matchers.put(tt, tt.getPattern().matcher(tokenized));
         }
 
         for (int i = 0; i < tokenized.length(); ) {
@@ -82,8 +82,8 @@ public class Lexer {
                 throw new NoSuchElementException();
             }
 
-            if (!bestType.skip) { // if the best token type is not a skip token type we add to the list
-                tokenList.add(new Token(table.getId(bestType.identifier), tokenized.substring(i, i + bestLength)));
+            if (!bestType.skip()) { // if the best token type is not a skip token type we add to the list
+                tokenList.add(new Token(table.getId(bestType.identifier()), tokenized.substring(i, i + bestLength)));
             }
 
             i += bestLength;
@@ -110,8 +110,8 @@ public class Lexer {
         Scanner s = new Scanner(lexer);
         while (s.hasNext()){
             TokenType t = TokenType.fromString(s.nextLine());
-            if (!identifiers.add(t.identifier))
-                throw new IllegalArgumentException("This identifier " + t.identifier + "appears twice in the string.");
+            if (!identifiers.add(t.identifier()))
+                throw new IllegalArgumentException("This identifier " + t.identifier() + "appears twice in the string.");
             tokens.add(t);
         }
         s.close();
