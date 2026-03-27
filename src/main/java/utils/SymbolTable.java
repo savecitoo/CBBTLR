@@ -70,7 +70,7 @@ public class SymbolTable<T>  {
      */
     public int getId(@NotNull T symbol) throws NoSuchElementException {
         if (!table_o_id.containsKey(symbol))
-            throw new NoSuchElementException("The symbol is not in the map");
+            throw new NoSuchElementException("The symbol is not in the table");
         return table_o_id.get(symbol);
     }
 
