@@ -2,14 +2,20 @@ package utils;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
  * This class represent a table where each object of type T putted in has an identifier. <br>
+ * If the class is meant to be serializable then the type T should implemens the interface Serializable.
  */
-public class SymbolTable<T>  {
+public class SymbolTable<T> implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * This field represent a function that goes from objects of type T to the corresponding the identifier.
