@@ -5,6 +5,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import utils.SymbolTable;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -218,6 +222,28 @@ public class LexerTest {
                                 new Token(0, "3")
                         )
                 );
+    }
+
+    @Test
+    void testSerializable() throws Exception {
+        Lexer lexer = Lexer.fromString(
+                "NUMBER : \\d+\nPLUS : \\+\nWS : [ \\t\\n]+ skip\n",
+                new SymbolTable<>()
+        );
+
+        // serialize
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bos);
+        out.writeObject(lexer);
+        out.close();
+
+        byte[] data = bos.toByteArray();
+
+        // deserialize
+        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(data));
+        Lexer copy = (Lexer) in.readObject();
+        in.close();
+        assertThat(lexer).isEqualTo(copy);
     }
 
 }

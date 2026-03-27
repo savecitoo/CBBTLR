@@ -3,13 +3,19 @@ package lexer;
 import org.jetbrains.annotations.NotNull;
 import utils.SymbolTable;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.*;
 import java.util.regex.Matcher;
 
 /**
  * This class implements a Lexer.
  */
-public class Lexer {
+public class Lexer implements Serializable {
+
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /** This field keeps saved all the tokens that the lexer recognize. */
     private final @NotNull Set<@NotNull TokenType> tokens;
