@@ -231,7 +231,6 @@ public class LexerTest {
                 new SymbolTable<>()
         );
 
-        // serialize
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(bos);
         out.writeObject(lexer);
@@ -239,10 +238,10 @@ public class LexerTest {
 
         byte[] data = bos.toByteArray();
 
-        // deserialize
         ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(data));
         Lexer copy = (Lexer) in.readObject();
         in.close();
+
         assertThat(lexer).isEqualTo(copy);
     }
 

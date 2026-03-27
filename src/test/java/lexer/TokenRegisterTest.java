@@ -7,6 +7,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class TokenRegisterTest {
 
     @Test
@@ -17,8 +19,6 @@ public class TokenRegisterTest {
                         .split("\n"))
             reg.add(TokenType.fromString(s));
 
-
-        // serialize
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(bos);
         out.writeObject(reg);
@@ -26,13 +26,11 @@ public class TokenRegisterTest {
 
         byte[] data = bos.toByteArray();
 
-        // deserialize
         ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(data));
         TokenRegister copy = (TokenRegister) in.readObject();
         in.close();
 
-        // TEST
-        System.out.println(reg.equals(copy));
+        assertThat(reg).isEqualTo(copy);
     }
 
 }

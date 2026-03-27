@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 
 public class TokenTypeTest {
 
@@ -35,7 +36,6 @@ public class TokenTypeTest {
     void SerializeTest() throws Exception {
         TokenType tt = TokenType.fromString("Das : a+, Das, a+, false");
 
-        // serialize
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(bos);
         out.writeObject(tt);
@@ -43,13 +43,10 @@ public class TokenTypeTest {
 
         byte[] data = bos.toByteArray();
 
-        // deserialize
         ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(data));
         TokenType copy = (TokenType) in.readObject();
         in.close();
-
-        // TEST
-        System.out.println(tt.equals(copy));
+        assertThat(tt).isEqualTo(copy);
 
     }
 
