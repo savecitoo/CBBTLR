@@ -2,12 +2,18 @@ package lexer;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * This class keeps trace of the priority of the tokens.
  */
-public class TokenRegister {
+public class TokenRegister implements Serializable {
+
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * This field saves the priorities between tokens.
