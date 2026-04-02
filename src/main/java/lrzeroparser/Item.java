@@ -1,5 +1,6 @@
 package lrzeroparser;
 
+import grammar.ContextFreeProduction;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -62,6 +63,17 @@ public record Item(@NotNull String lhs,
         return new Item(
           lhs, rhs, dot_position+1
         );
+    }
+
+    /**
+     * This method builds an LR(0) item from a Production.
+     * @param production the production rule of the item.
+     * @param rhs_index the index of the right-hand side of the production rule.
+     * @param dot_position the position of the dot in the item.
+     * @return the corresponding item starting from given production and the position of the dot.
+     */
+    public static Item fromProduction(@NotNull ContextFreeProduction production, int rhs_index, int dot_position) {
+        return new Item(production.getLHS(), production.getRHS(rhs_index), dot_position);
     }
 
 }
