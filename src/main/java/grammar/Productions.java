@@ -8,16 +8,25 @@ import java.util.*;
 /**
  * This class models all the production that a grammar has. <br>
  * Using the constructor doesn't guarantee that the key correspond to the left-hand side of the production
- * @param productions this field represents the productions where the keys are the left-hand side of a production.
  */
-public record Productions(@NotNull List<@NotNull ContextFreeProduction> productions) implements Iterable<ContextFreeProduction> {
+public class Productions implements Iterable<ContextFreeProduction> {
 
-    public Productions {
+    private final @NotNull List<@NotNull ContextFreeProduction> productions;
+
+    private final @NotNull Map<@NotNull String, @NotNull ContextFreeProduction> lhs_prods;
+
+    public Productions(@NotNull List<@NotNull ContextFreeProduction> productions) {
         productions = List.copyOf(productions);
+        this.productions = productions;
+        Map<String, ContextFreeProduction> lhs_prods = new HashMap<>();
+        for (ContextFreeProduction p : productions)
+            lhs_prods.put(p.getLHS(), p);
+        this.lhs_prods = lhs_prods;
     }
 
     /**
      * This method returns all the symbols that appear in {@code this} Productions.
+     *
      * @return the set of symbols that appear in the productions.
      */
     public @NotNull Set<@NotNull String> symbols() {
@@ -25,6 +34,12 @@ public record Productions(@NotNull List<@NotNull ContextFreeProduction> producti
         for (ContextFreeProduction cfp : productions)
             symbols.addAll(cfp.symbols());
         return symbols;
+    }
+
+    public @NotNull ContextFreeProduction fromLHS(@NotNull String lhs) throws IllegalArgumentException {
+        if (!lhs_prods.containsKey(lhs))
+            throw new IllegalArgumentException("No left-hand side match the input");
+        return lhs_prods.get(lhs);
     }
 
     /**
@@ -59,16 +74,30 @@ public record Productions(@NotNull List<@NotNull ContextFreeProduction> producti
 
     @Override
     public @NotNull Iterator<ContextFreeProduction> iterator() {
-       return productions.iterator();
+        return productions.iterator();
     }
 
     @Override
     public @NotNull String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < productions.size()-1; i++) {
+        for (int i = 0; i < productions.size() - 1; i++) {
             sb.append(productions.get(i)).append("\n");
         }
         sb.append(productions.getLast());
         return sb.toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+       if (o == this) return true;
+       if (o instanceof Productions prods) // do not check lhs_prod because is built from productions.
+           return prods.productions.equals(this.productions);
+       return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(productions);
+    }
+
 }

@@ -45,8 +45,8 @@ public class ContextFreeProduction implements Iterable<List<String>> {
     }
 
     /**
-     * This method returns the number of production of the right-hand side.
-     * @return the size of the rhs.
+     * This method returns the number of possibles right-hand sides.
+     * @return the number of possibles right-hand side.
      */
     public int rhsSize() { return rhs.size(); }
 
