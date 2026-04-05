@@ -3,15 +3,12 @@ package grammar;
 import org.jetbrains.annotations.NotNull;
 import utils.Finder;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class represents a Context Free Grammar for a Formal Language.
  */
-public class ContextFreeGrammar {
+public class ContextFreeGrammar implements Iterable<String> {
 
     // TODO: scrivere metodi semplificatore della grammatica.
 
@@ -76,7 +73,7 @@ public class ContextFreeGrammar {
         Set<String> T = productions.symbols();
         T.removeAll(N);
         return new ContextFreeGrammar(
-                N, T, productions, productions.productions().getFirst().getLHS()
+                N, T, productions, productions.getStarting().getLHS()
         );
 
     }
@@ -242,5 +239,12 @@ public class ContextFreeGrammar {
             return g.N.equals(N) && g.T.equals(T) && g.P.equals(P) && g.S.equals(S);
         }
         return false;
+    }
+
+    @Override
+    public @NotNull Iterator<String> iterator() {
+        Set<String> symbols = new HashSet<>(N);
+        symbols.addAll(T);
+        return symbols.iterator();
     }
 }

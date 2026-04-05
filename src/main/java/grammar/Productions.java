@@ -72,6 +72,14 @@ public class Productions implements Iterable<ContextFreeProduction> {
         return new Productions(productions);
     }
 
+    /**
+     * This method returns the production of the starting symbol.
+     * @return the production of the starting symbol.
+     */
+    public @NotNull ContextFreeProduction getStarting() {
+        return productions.getFirst();
+    }
+
     @Override
     public @NotNull Iterator<ContextFreeProduction> iterator() {
         return productions.iterator();

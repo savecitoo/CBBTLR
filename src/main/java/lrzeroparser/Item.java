@@ -26,7 +26,7 @@ public record Item(@NotNull String lhs,
      * @param dot_position the position of the dot in the item.
      */
     public Item(@NotNull String lhs, @NotNull List<@NotNull String> rhs, int dot_position) {
-        if (dot_position < 0 || dot_position > rhs().size())
+        if (dot_position < 0 || dot_position > rhs.size())
             throw new IllegalArgumentException("The position of the dot must be between 0 and rhs.size()");
         this.rhs = List.copyOf(rhs);
         this.lhs = lhs;
@@ -74,6 +74,27 @@ public record Item(@NotNull String lhs,
      */
     public static Item fromProduction(@NotNull ContextFreeProduction production, int rhs_index, int dot_position) {
         return new Item(production.getLHS(), production.getRHS(rhs_index), dot_position);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(lhs).append(" -> ");
+
+        for (int i = 0; i < rhs.size(); i++) {
+            if (i == dot_position) {
+                sb.append("· ");
+            }
+            sb.append(rhs.get(i)).append(" ");
+        }
+
+        // caso: punto alla fine
+        if (dot_position == rhs.size()) {
+            sb.append("·");
+        }
+
+        return sb.toString().trim();
     }
 
 }
