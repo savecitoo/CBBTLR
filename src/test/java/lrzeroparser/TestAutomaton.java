@@ -10,7 +10,7 @@ public class TestAutomaton {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Automaton automaton = Automaton.fromGrammar(g);
+        Parser.Automaton automaton = Parser.Automaton.fromGrammar(g);
         System.out.println(automaton);
     }
 

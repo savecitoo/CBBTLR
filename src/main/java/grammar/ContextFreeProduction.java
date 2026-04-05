@@ -18,13 +18,16 @@ public class ContextFreeProduction implements Iterable<List<String>> {
     /** This field represents the right-hand side of the production. */
    private final @NotNull List<@NotNull List <@NotNull String>> rhs;
 
+   private final int prod_id;
+
     /**
      * This is a constructor for a Context-Free production.
      * @param lhs a non-terminal symbol.
      * @param rhs the possible productions of the lhs.
+     * @param prod_id the id of the production.
      * @throws IllegalArgumentException if the strings that represent the symbols are blank or the production rule is empty.
      */
-    public ContextFreeProduction(String lhs, @NotNull List<@NotNull List<@NotNull String>> rhs) throws IllegalArgumentException{
+    public ContextFreeProduction(String lhs, @NotNull List<@NotNull List<@NotNull String>> rhs, int prod_id) throws IllegalArgumentException{
         if (lhs.isBlank())
             throw new IllegalArgumentException("The string passed must not be blank.");
         if (rhs.isEmpty())
@@ -42,6 +45,15 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         }
         this.lhs = lhs;
         this.rhs = rhs;
+        this.prod_id = prod_id;
+    }
+
+    public int getProd_id(@NotNull List<@NotNull String> production) throws NoSuchElementException {
+        for (int i = 0; i < rhsSize(); i++) {
+            if (rhs.get(i).equals(production))
+                return prod_id+i;
+        }
+        throw new NoSuchElementException("The is no production equal to the one in input");
     }
 
     /**
@@ -93,7 +105,7 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         return symbols;
     }
 
-    public static @NotNull ContextFreeProduction fromString(@NotNull String production) {
+    public static @NotNull ContextFreeProduction fromString(@NotNull String production, int prod_id) {
         String[] prod = production.trim().split(" -> ");
         if (prod.length != 2)
             throw new IllegalArgumentException("The productions must be separeted by just one  \"->\" and must to be not blank");
@@ -108,7 +120,7 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         for (String s : rhs_s) {
             rhs.add(Arrays.asList(s.trim().split(" ")));
         }
-        return new ContextFreeProduction(lhs, rhs);
+        return new ContextFreeProduction(lhs, rhs, prod_id);
     }
 
     @Override
@@ -141,4 +153,7 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         return false;
     }
 
+    public boolean hasProdId(int prodId) {
+        return prodId >= prod_id && prodId <= prod_id+rhsSize()-1;
+    }
 }

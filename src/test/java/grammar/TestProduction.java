@@ -16,7 +16,8 @@ public class TestProduction {
         String prod = "A -> a";
         ContextFreeProduction CFprod = new ContextFreeProduction(
                 "A",
-                List.of(List.of("a"))
+                List.of(List.of("a")),
+                0
         );
         assertThat(CFprod.toString()).isEqualTo(prod);
     }
@@ -30,29 +31,29 @@ public class TestProduction {
                         List.of("a"),
                         List.of("a", "B"),
                         List.of("C", "D")
-                        )
+                        ),0
         );
         assertThat(CFprod.toString()).isEqualTo(prod);
     }
 
     @Test
     void testFromString1() {
-        assertThat(ContextFreeProduction.fromString("A -> a")).isEqualTo(new ContextFreeProduction(
+        assertThat(ContextFreeProduction.fromString("A -> a", 0)).isEqualTo(new ContextFreeProduction(
                 "A",
-                List.of(List.of("a"))
+                List.of(List.of("a")),0
         ));
     }
 
     @Test
     void testFromString2() {
-        assertThat(ContextFreeProduction.fromString("A -> a | a B | C D")).isEqualTo(
+        assertThat(ContextFreeProduction.fromString("A -> a | a B | C D", 0)).isEqualTo(
                 new ContextFreeProduction(
                         "A",
                         List.of(
                                 List.of("a"),
                                 List.of("a", "B"),
                                 List.of("C", "D")
-                        )
+                        ),0
                 )
         );
     }
@@ -66,20 +67,20 @@ public class TestProduction {
             "A -> d , d, true"
     })
     void testContains(String prod, String symb, boolean res) {
-        assertThat(ContextFreeProduction.fromString(prod).contains(symb)).isEqualTo(res);
+        assertThat(ContextFreeProduction.fromString(prod,0).contains(symb)).isEqualTo(res);
     }
 
     @Test
     void testSymbolsBase() {
         assertThat(
-            ContextFreeProduction.fromString("A -> d | C").symbols()
+            ContextFreeProduction.fromString("A -> d | C", 0).symbols()
         ).isEqualTo(Set.of("A" , "d", "C"));
     }
 
     @Test
     void testSymbols() {
         assertThat(
-                ContextFreeProduction.fromString("A -> a | a B | C D").symbols()
+                ContextFreeProduction.fromString("A -> a | a B | C D", 0).symbols()
         ).isEqualTo(Set.of("a" , "B", "D", "A", "C"));
     }
 

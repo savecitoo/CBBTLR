@@ -35,6 +35,13 @@ public class Automaton {
         this.states_encoding = statesEncoding;
     }
 
+    /**
+     * This method given a grammar and a starting set of items turn back the closure of these items.
+     * @param grammar the grammar.
+     * @param start the starting items.
+     * @param cache_item a cache that helps to use always the same items, instead of building new ones.
+     * @return the closure of the starting set
+     */
     private static @NotNull Set<@NotNull Item> closure(@NotNull ContextFreeGrammar grammar,
                                                 @NotNull Set<Item> start,
                                                 @NotNull Map<@NotNull Item, @NotNull Item> cache_item) {

@@ -14,7 +14,8 @@ import java.util.List;
  */
 public record Item(@NotNull String lhs,
                    @NotNull List<@NotNull String> rhs,
-                   int dot_position) {
+                   int dot_position,
+                   int production_id) {
 
     /**
      * This is a constructor for an LR(0) item.<br>
@@ -25,12 +26,13 @@ public record Item(@NotNull String lhs,
      * @param rhs the right-hand side of the itemized production rule.
      * @param dot_position the position of the dot in the item.
      */
-    public Item(@NotNull String lhs, @NotNull List<@NotNull String> rhs, int dot_position) {
+    public Item(@NotNull String lhs, @NotNull List<@NotNull String> rhs, int dot_position, int production_id) {
         if (dot_position < 0 || dot_position > rhs.size())
             throw new IllegalArgumentException("The position of the dot must be between 0 and rhs.size()");
         this.rhs = List.copyOf(rhs);
         this.lhs = lhs;
         this.dot_position = dot_position;
+        this.production_id = production_id;
     }
 
     /**
@@ -61,7 +63,7 @@ public record Item(@NotNull String lhs,
         if (isComplete())
             throw new IllegalArgumentException("The dot cannot be advanced since it's already at the end of it");
         return new Item(
-          lhs, rhs, dot_position+1
+          lhs, rhs, dot_position+1, production_id
         );
     }
 
@@ -73,7 +75,8 @@ public record Item(@NotNull String lhs,
      * @return the corresponding item starting from given production and the position of the dot.
      */
     public static Item fromProduction(@NotNull ContextFreeProduction production, int rhs_index, int dot_position) {
-        return new Item(production.getLHS(), production.getRHS(rhs_index), dot_position);
+        return new Item(production.getLHS(), production.getRHS(rhs_index),
+                dot_position, production.getProd_id(production.getRHS(rhs_index)));
     }
 
     @Override

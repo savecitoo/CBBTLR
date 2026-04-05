@@ -184,6 +184,8 @@ public class ContextFreeGrammar implements Iterable<String> {
 
         List<ContextFreeProduction> P = new LinkedList<>();
 
+        int i = 0;
+
         for (ContextFreeProduction p : this.P) {
             if (symbols.contains(p.getLHS())) {
 
@@ -205,8 +207,10 @@ public class ContextFreeGrammar implements Iterable<String> {
                         rules.add(rule);
                 }
 
-                if (!rules.isEmpty()) // if there is at least one rule we add it.
-                    P.add(new ContextFreeProduction(p.getLHS(), rules));
+                if (!rules.isEmpty()) { // if there is at least one rule we add it.
+                    P.add(new ContextFreeProduction(p.getLHS(), rules, i));
+                    i += rules.size();
+                }
 
             }
         }

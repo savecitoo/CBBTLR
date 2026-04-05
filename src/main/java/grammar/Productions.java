@@ -36,6 +36,19 @@ public class Productions implements Iterable<ContextFreeProduction> {
         return symbols;
     }
 
+    /**
+     * This method returns the production with the given id.
+     * @param prod_id the id of the production.
+     * @return the production corresponding to the given id.
+     * @throws NoSuchElementException if no production has the id.
+     */
+    public @NotNull ContextFreeProduction fromProdId(int prod_id) throws NoSuchElementException {
+        for (ContextFreeProduction p : productions) {
+            if (p.hasProdId(prod_id)) return p;
+        }
+        throw new NoSuchElementException("No production has that id.");
+    }
+
     public @NotNull ContextFreeProduction fromLHS(@NotNull String lhs) throws IllegalArgumentException {
         if (!lhs_prods.containsKey(lhs))
             throw new IllegalArgumentException("No left-hand side match the input");
@@ -61,12 +74,14 @@ public class Productions implements Iterable<ContextFreeProduction> {
         List<ContextFreeProduction> productions = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         Scanner s = new Scanner(new StringReader(grammar));
+        int i = 0;
         while (s.hasNext()) {
-            ContextFreeProduction prod = ContextFreeProduction.fromString(s.nextLine());
+            ContextFreeProduction prod = ContextFreeProduction.fromString(s.nextLine(), i);
             if (!seen.add(prod.getLHS()))
                 throw new IllegalArgumentException
                         ("The left-hand side of the productions must appear in only one line as starting symbol for the production rule");
             productions.add(prod);
+            i += prod.rhsSize();
         }
         s.close();
         return new Productions(productions);
