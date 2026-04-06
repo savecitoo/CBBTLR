@@ -3,6 +3,7 @@ package lrzeroparser;
 import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
 import org.jetbrains.annotations.NotNull;
+import utils.ParseTree;
 
 import java.util.*;
 
@@ -94,44 +95,62 @@ public class Parser {
      * @return true if it is in the language of the grammar, false otherwise.
      */
     public boolean isRecognized(List<String> input) {
+        try {
+            parse(input);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+
+    /**
+     * This method parse list of string in input returning the corresponding parsing tree.
+     * @param input the input we want to parse.
+     * @return the corresponding parsing tree.
+     * @throws IllegalArgumentException if the word is not recognized.
+     */
+    public ParseTree parse(List<String> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
         input.add("$");
         Stack<Integer> states = new Stack<>();
-        Stack<String> symbols = new Stack<>();
+        Stack<ParseTree> symbols = new Stack<>();
         states.push(0);
         int i = 0;
-        String next = input.get(0);
+        String next = input.getFirst();
         while (true) {
             Integer s = states.peek();
 
             if (i < input.size())
                 next = input.get(i);
             if (!ACTION.get(s).containsKey(next))
-                return false;
+                throw new IllegalArgumentException("The word is not recognized");
             int[] action = ACTION.get(s).get(next);
             switch (action[0]) {
                 case 0: // shift
                     states.push(
                             action[1]
                     );
-                    symbols.push(next);
+                    symbols.push(new ParseTree(next, true));
                     i++;
                     break;
                 case 1: // reduce
                     ContextFreeProduction production = grammar.P.fromProdId(action[1]);
                     int prod_size = production.fromProdId(action[1]).size();
+                    List<ParseTree> children = new ArrayList<>();
                     for (int j = 0; j < prod_size; j++) {
                         states.pop();
-                        symbols.pop();
+                        children.add(symbols.pop());
                     }
                     s = states.peek();
                     states.push(GOTO.get(s).get(production.getLHS()));
-                    symbols.push(production.getLHS());
+                    symbols.push(new ParseTree(production.getLHS(), children.reversed()));
                     break;
                 case 2: // accept
-                    return true;
+                    symbols.pop();
+                    return symbols.peek();
                 default: // error
-                    return false;
+                    throw new IllegalArgumentException("The word is not recognized");
             }
         }
     }

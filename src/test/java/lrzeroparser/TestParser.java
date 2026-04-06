@@ -4,6 +4,7 @@ import grammar.ContextFreeGrammar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import utils.ParseTree;
 
 import java.util.Arrays;
 import java.util.List;
@@ -88,6 +89,90 @@ public class TestParser {
         );
         Parser parser = new Parser(g);
         assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+    }
+
+    @Test
+    void testParseBase() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> E $\n" +
+                        "E -> E - T | T\n" +
+                        "T -> n | ( E )"
+        );
+        Parser p = new Parser(g);
+        ParseTree tree = new ParseTree(
+                "E",
+                List.of( new ParseTree("T",
+                        List.of(
+                        new ParseTree("(", true),
+                        new ParseTree("E", List.of(
+                                new ParseTree("T", List.of(new ParseTree("n", true)))
+                        )
+
+                        ),
+                        new ParseTree(")", true)
+                )))
+        );
+        List<String> tokens = Arrays.asList("( n )".split(" "));
+        assertThat(p.parse(tokens)).isEqualTo(tree);
+    }
+
+    @Test
+    void testParseComplex() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> E $\n" +
+                        "E -> E - T | T\n" +
+                        "T -> n | ( E )"
+        );
+        Parser p = new Parser(g);
+
+        ParseTree tree = new ParseTree("E", List.of(
+                new ParseTree("E", List.of(
+                        new ParseTree("T", List.of(
+                                new ParseTree("n", true)
+                        ))
+                )),
+                new ParseTree("-", true),
+                new ParseTree("T", List.of(
+                        new ParseTree("(", true),
+                        new ParseTree("E", List.of(
+                                new ParseTree("E", List.of(
+                                        new ParseTree("T", List.of(
+                                                new ParseTree("n", true)
+                                        ))
+                                )),
+                                new ParseTree("-", true),
+                                new ParseTree("T", List.of(
+                                        new ParseTree("n", true)
+                                ))
+                        )),
+                        new ParseTree(")", true)
+                ))
+        ));
+
+        List<String> tokens = Arrays.asList("n - ( n - n )".split(" "));
+        assertThat(p.parse(tokens)).isEqualTo(tree);
+    }
+
+    @Test
+    void testParseUnrecognizedThrows() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> E $\n" +
+                        "E -> E - T | T\n" +
+                        "T -> n | ( E )"
+        );
+        Parser p = new Parser(g);
+
+        // parentesi non chiusa
+        assertThatThrownBy(() -> p.parse(Arrays.asList("( n".split(" "))))
+                .isInstanceOf(RuntimeException.class);
+
+        // operatore senza operando destro
+        assertThatThrownBy(() -> p.parse(Arrays.asList("n -".split(" "))))
+                .isInstanceOf(RuntimeException.class);
+
+        // token sconosciuto
+        assertThatThrownBy(() -> p.parse(Arrays.asList("n + n".split(" "))))
+                .isInstanceOf(RuntimeException.class);
     }
 
 }
