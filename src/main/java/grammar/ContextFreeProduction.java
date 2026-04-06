@@ -48,6 +48,10 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         this.prod_id = prod_id;
     }
 
+    public int getStartingProd_id() {
+        return prod_id;
+    }
+
     public int getProd_id(@NotNull List<@NotNull String> production) throws NoSuchElementException {
         for (int i = 0; i < rhsSize(); i++) {
             if (rhs.get(i).equals(production))
@@ -91,6 +95,17 @@ public class ContextFreeProduction implements Iterable<List<String>> {
                 if (symbol.equals(symb))
                     return true;
         return false;
+    }
+
+
+    public boolean hasProdId(int prodId) {
+        return prodId >= prod_id && prodId <= prod_id+rhsSize()-1;
+    }
+
+    public List<String> fromProdId(int prod_id) throws IllegalArgumentException {
+        if (!hasProdId(prod_id))
+            throw new IllegalArgumentException("There is no production with that id");
+        return rhs.get(prod_id - this.prod_id);
     }
 
     /**
@@ -153,7 +168,4 @@ public class ContextFreeProduction implements Iterable<List<String>> {
         return false;
     }
 
-    public boolean hasProdId(int prodId) {
-        return prodId >= prod_id && prodId <= prod_id+rhsSize()-1;
-    }
 }
