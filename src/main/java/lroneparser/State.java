@@ -1,4 +1,4 @@
-package lrzeroparser;
+package lroneparser;
 
 import org.jetbrains.annotations.NotNull;
 

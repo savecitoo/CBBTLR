@@ -167,7 +167,7 @@ public class ContextFreeGrammar implements Iterable<String> {
     /**
      * This metod returns a new grammar starting from the first one that keeps just the symbols in input. <br>
      * The resulting grammar has just the specified symbols, if any of the symbols are not in the Grammar they will be ignored.
-     * @param symbols the set of symbol to be removed.
+     * @param symbol the terminal or non-terminal symbol to compute FIRST for
      * @return the resulting grammar.
      */
     public @NotNull ContextFreeGrammar restrictTo(@NotNull Set<@NotNull String> symbols) {
@@ -215,6 +215,49 @@ public class ContextFreeGrammar implements Iterable<String> {
             }
         }
         return new ContextFreeGrammar(N, T, new Productions(P), this.S);
+    }
+
+    /**
+     * Computes the FIRST set of the given symbol.
+     *
+     * <p>FIRST(X) is the set of terminals that can appear as the first symbol
+     * of some string derived from X. This implementation does not support
+     * nullable symbols (ε-productions).
+     *
+     * @param symbol the terminal or non-terminal symbol to compute FIRST for.
+     * @param seen this set is to avoid problems with left-recursion, so it will always end.
+     * @return an unmodifiable set of terminal symbols in FIRST(symbol).
+     */
+    private @NotNull Set<@NotNull String> first(@NotNull String symbol, @NotNull Set<@NotNull String> seen) {
+        if (T.contains(symbol)) {
+            return Set.of(symbol);
+        }
+        if (seen.contains(symbol)) {
+            return Set.of();
+        }
+        seen.add(symbol);
+        Set<String> result = new HashSet<>();
+        for (List<String> prod : P.fromLHS(symbol)) {
+            result.addAll(first(prod.getFirst(), seen));
+        }
+        return result;
+    }
+
+    /**
+     * Computes the FIRST set of this symbol (or sequence of symbols).
+     *
+     * <p>FIRST(&alpha;) is the set of terminals that can appear as the first
+     * symbol of some string derived from &alpha;. If &alpha; can derive the
+     * empty string, the set also includes {@code "ε"}.
+     * @param symbol the set of terminals that might appear after the symbol in input.
+     * @return an unmodifiable set of symbols in FIRST.
+     * @throws IllegalArgumentException if the symbol is not in the grammar.
+     */
+    public @NotNull Set<@NotNull String> first(@NotNull String symbol) throws IllegalArgumentException {
+        if (!T.contains(symbol) && !N.contains(symbol)) {
+            throw new IllegalArgumentException("The symbol is not in the grammar");
+        }
+        return first(symbol, new HashSet<>());
     }
 
     /**

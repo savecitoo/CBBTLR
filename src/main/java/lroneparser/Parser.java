@@ -1,4 +1,4 @@
-package lrzeroparser;
+package lroneparser;
 
 import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
@@ -8,7 +8,7 @@ import utils.ParseTree;
 import java.util.*;
 
 /**
- * This class implements an LR(0) Parser.
+ * This class implements an LR(1) Parser.
  */
 public class Parser {
 
@@ -30,7 +30,7 @@ public class Parser {
     // probably we have to keep trace of the states where we reduce with the encoding.
 
     /**
-     * This is a constructor for an LR(0) Parser.
+     * This is a constructor for an LR(1) Parser.
      * @param grammar the grammar to be parsed.
      */
     public Parser(@NotNull ContextFreeGrammar grammar) throws IllegalArgumentException {
@@ -157,7 +157,7 @@ public class Parser {
 
 
     /**
-     * This class represents an LR(0) automaton.
+     * This class represents an LR(1) automaton.
      */
     public static class Automaton implements Iterable<State> {
 
@@ -168,7 +168,7 @@ public class Parser {
         private final @NotNull Set<@NotNull State> states;
 
         /**
-         * This is a constructor for an LR(0) automaton.
+         * This is a constructor for an LR(1) automaton.
          * @param transitions the transitions of the automata.
          * @param states the states of the automata.
          * @throws IllegalArgumentException if state or transitions are empty.
@@ -204,12 +204,22 @@ public class Parser {
                         String A = item.afterDot();
                         if (grammar.N.contains(A)) {
                             ContextFreeProduction production = grammar.P.fromLHS(A);
-                            for (int i = 0; i < production.rhsSize(); i++) {
-                                Item new_item = Item.fromProduction(production, i, 0);
-                                new_item = cache_item.computeIfAbsent(new_item, k -> k);
-                                if (!closure.contains(new_item))
-                                    toAdd.add(new_item);
-                            }
+
+                                Set<String> lookaheads;
+                                if (item.hasFirstOfBeta()) { // we add the father lookahead iff the
+                                                            // item has no first of beta
+                                    lookaheads = grammar.first(item.firstOfBeta());
+                                } else {
+                                    lookaheads = Set.of(item.look_ahead());
+                                }
+                                for (int i = 0; i < production.rhsSize(); i++) {
+                                    for (String first : lookaheads) {
+                                        Item new_item = Item.fromProduction(production, first, i, 0);
+                                        new_item = cache_item.computeIfAbsent(new_item, k -> k);
+                                        if (!closure.contains(new_item))
+                                            toAdd.add(new_item);
+                                    }
+                                }
                         }
                     }
                 }
@@ -222,9 +232,9 @@ public class Parser {
         }
 
         /**
-         * This method build an LR(0) automaton from a grammar.
+         * This method build an LR(1) automaton from a grammar.
          * @param grammar the grammar that has to be transformed in an automaton.
-         * @return the corresponding LR(0) automaton.
+         * @return the corresponding LR(1) automaton.
          */
         public static @NotNull Automaton fromGrammar(@NotNull ContextFreeGrammar grammar) {
             if (grammar.P.fromLHS(grammar.S).rhsSize() != 1)
@@ -242,7 +252,7 @@ public class Parser {
             Set<State> seen = new HashSet<>();
 
             // the start of the building
-            Item curr = Item.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
+            Item curr = Item.getStartingItem(grammar);
             cache_item.put(curr, curr);
             State s = new State(closure(grammar, Set.of(curr), cache_item));
             queue.add(s);
@@ -252,9 +262,9 @@ public class Parser {
                 s = queue.remove();
                 for (String symb : grammar) { // search for all symbols
 
-                    Set<Item> v = new HashSet<>(); // cration of the new state for the symbol v
+                    Set<Item> v = new HashSet<>(); // ceration of the new state for the symbol v
                     for (Item it : s) { //search for every item in the current state which one is going to be in the new
-                        // state
+                                        // state
                         if (!it.isComplete() && it.afterDot().equals(symb)) {
                             v.add(it.advanceDot());
                         }
@@ -296,13 +306,21 @@ public class Parser {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-
-            sb.append("LR(0) Automaton\n");
+            //System.out.println(states.size());
+            sb.append("LR(1) Automaton\n");
             sb.append("====================\n\n");
+
+            List<State> ordered = new ArrayList<>(states);
+            ordered.sort(new Comparator<State>() {
+                @Override
+                public int compare(State o1, State o2) {
+                   return states_encoding.get(o1).compareTo(states_encoding.get(o2));
+                }
+            });
 
             // Stati
             sb.append("States:\n");
-            for (State s : states) {
+            for (State s : ordered) {
                 int id = states_encoding.getOrDefault(s, -1);
                 sb.append("I").append(id).append(":\n");
 
