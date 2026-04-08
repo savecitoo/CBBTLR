@@ -24,7 +24,7 @@ public class TestParser {
             "( ( n ) ), true",
             "( n - ( n ) ), true",
             "( n - ( n ) ) - n, true",
-            "( n - n, false",                // parentesi non chiusa
+            "( n - n , false",                // parentesi non chiusa
             "n -, false",                    // operatore senza operando
             "- n, false",                    // inizio non valido
             "n n, false",                    // due terminali consecutivi
@@ -38,9 +38,9 @@ public class TestParser {
             "( n - ( n ) ) - ( n ), true",
             "( ( n - n ) - ( n ) ), true"
     })
-    void testRecognizer(String input, boolean result) {
+    void testRecognizerLR0(String input, boolean result) {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E\n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -83,7 +83,7 @@ public class TestParser {
     void testLR0Parser(String input, boolean result) {
         List<String> tokens = Arrays.asList(input.split(" "));
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> A $\n" +
+                "S -> A\n" +
                 "A -> a A | b B\n" +
                 "B -> c B | d\n"
         );
@@ -94,7 +94,7 @@ public class TestParser {
     @Test
     void testParseBase() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E \n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -119,7 +119,7 @@ public class TestParser {
     @Test
     void testParseComplex() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E \n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -156,7 +156,7 @@ public class TestParser {
     @Test
     void testParseUnrecognizedThrows() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E\n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -173,6 +173,45 @@ public class TestParser {
         // token sconosciuto
         assertThatThrownBy(() -> p.parse(Arrays.asList("n + n".split(" "))))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // ✅ validi
+            "n, true",
+            "n - n, true",
+            "n - n - n, true",
+            "( n ), true",
+            "( n - n ), true",
+            "( ( n ) ), true",
+            "( n - ( n ) ), true",
+            "( n - ( n ) ) - n, true",
+            "( ( n - n ) - ( n ) ), true",
+
+            // ❌ non validi
+            "( n - n, false",                // parentesi non chiusa
+            "n -, false",                    // operatore senza operando
+            "- n, false",                    // inizio non valido
+            "n n, false",                    // due terminali consecutivi
+            "( ), false",                    // parentesi vuote
+            "( n ) n, false",                // simboli consecutivi non validi
+            "n - ( ), false",                // parentesi vuote
+            "( n - ( n ) ) - n (, false",    // parentesi extra
+            "( n - ( n ) ) ) - n, false",    // parentesi sbilanciate
+            "f e, false",                    // simboli non nel linguaggio
+            "n - ( n - ), false"             // espressione incompleta
+    })
+    void testGrammarLR1(String input, boolean result) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S -> E\n" +
+                        "E -> E - T | T\n" +
+                        "T -> n | ( E )"
+        );
+        List<String> tokens = Arrays.asList(input.split(" "));
+        Parser parser = new Parser(g);
+        assertThat(parser.isRecognized(tokens))
+                .isEqualTo(result);
+
     }
 
 }
