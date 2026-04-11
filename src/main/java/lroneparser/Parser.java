@@ -12,6 +12,182 @@ import java.util.*;
  */
 public class Parser {
 
+    /*
+        In the table if the array is encoded in the following way:
+        - The first element is the code of the operation:
+            0 is the shift.
+            1 is the reduce.
+            2 is the acceptance.
+        - The second element is the state where we have to go.
+     */
+
+    private final @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull String, @NotNull Integer>> GOTO;
+
+    private final @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull String, int[]>> ACTION;
+
+    private final @NotNull ContextFreeGrammar grammar;
+
+    // probably we have to keep trace of the states where we reduce with the encoding.
+
+    /**
+     * This is a constructor for an LR(1) Parser.
+     * @param grammar the grammar to be parsed.
+     */
+    public Parser(@NotNull ContextFreeGrammar grammar) throws IllegalArgumentException {
+        Automaton automaton = Automaton.fromGrammar(grammar);
+
+        // Construction of the GOTO table.
+
+        Map<Integer, Map<String, Integer>> GOTO = new HashMap<>();
+
+        Map<Integer, Map<String, int[]>> ACTION = new HashMap<>();
+
+        for (State state : automaton.states) { // we iterate over each state on the automaton
+
+            // SHIFT
+            if (automaton.transitions.containsKey(state)) {
+                Map<String, State> transitions = automaton.transitions.get(state);
+                for (String symbol : transitions.keySet()) {
+
+                    State next = transitions.get(symbol);
+                    int from = automaton.states_encoding.get(state);
+                    int to = automaton.states_encoding.get(next);
+
+                    if (grammar.N.contains(symbol)) { // NON terminal → GOTO
+                        GOTO.computeIfAbsent(from, k -> new HashMap<>()).put(symbol, to);
+                    } else if (grammar.T.contains(symbol)) {
+                        ACTION.computeIfAbsent(from, k -> new HashMap<>()).put(symbol, new int[]{0, to});
+                    }
+                }
+            }
+
+
+            // REDUCE
+            for (Item it : state) {
+                if (it.isComplete()) {
+
+                    String look_ahead = it.look_ahead();
+                    Map<String, int[]> row =
+                            ACTION.computeIfAbsent(automaton.states_encoding.get(state), k -> new HashMap<>());
+
+                    if (row.containsKey(look_ahead))
+                        throw new IllegalArgumentException("A conflict has been raised");
+
+                    row.put(look_ahead, new int[]{1, it.production_id()});
+
+                    // Special case for acceptance
+                    if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id() &&
+                            it.look_ahead().equals("#")) {
+                        row = ACTION.get(automaton.states_encoding.get(state));
+                        row.put("#", new int[]{2});
+                    }
+                }
+            }
+        }
+        this.GOTO = GOTO;
+
+        this.ACTION = ACTION;
+
+        this.grammar = grammar;
+    }
+
+    /**
+     * This method returns if the input is correct for the given grammar.
+     * @param input the word to be recognized.
+     * @return true if it is in the language of the grammar, false otherwise.
+     */
+    public boolean isRecognized(List<String> input) {
+        try {
+            parse(input);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+
+    /**
+     * This method parse list of string in input returning the corresponding parsing tree.
+     * @param input the input we want to parse.
+     * @return the corresponding parsing tree.
+     * @throws IllegalArgumentException if the word is not recognized.
+     */
+    public ParseTree parse(List<String> input) throws IllegalArgumentException {
+        input = new ArrayList<>(input);
+        Stack<Integer> states = new Stack<>();
+        Stack<ParseTree> symbols = new Stack<>();
+        states.push(0);
+        int i = 0;
+        String next = "";
+        while (true) {
+            Integer s = states.peek();
+
+            next = (i < input.size()) ? input.get(i) : "#";
+
+            if (!ACTION.get(s).containsKey(next))
+                throw new IllegalArgumentException("The word is not recognized");
+            int[] action = ACTION.get(s).get(next);
+            switch (action[0]) {
+                case 0: // shift
+                    states.push(
+                            action[1]
+                    );
+                    if (!next.equals("#"))
+                        symbols.push(new ParseTree(next, true));
+                    i++;
+                    break;
+                case 1: // reduce
+                    ContextFreeProduction production = grammar.P.fromProdId(action[1]);
+                    int prod_size = production.fromProdId(action[1]).size();
+                    List<ParseTree> children = new LinkedList<>();
+                    for (int j = 0; j < prod_size; j++) {
+                        states.pop();
+                        children.addFirst(symbols.pop());
+                    }
+                    s = states.peek();
+
+                    states.push(GOTO.get(s).get(production.getLHS()));
+                    symbols.push(new ParseTree(production.getLHS(), children));
+                    break;
+                case 2: // accept
+                    return symbols.peek();
+                default: // error
+                    throw new IllegalArgumentException("The word is not recognized");
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("GOTO TABLE:\n");
+        for (Map.Entry<Integer, Map<String, Integer>> entry : GOTO.entrySet()) {
+            Integer state = entry.getKey();
+            sb.append("State ").append(state).append(":\n");
+
+            for (Map.Entry<String, Integer> inner : entry.getValue().entrySet()) {
+                sb.append("  ").append(inner.getKey())
+                        .append(" -> ").append(inner.getValue())
+                        .append("\n");
+            }
+        }
+
+        sb.append("\nACTION TABLE:\n");
+        for (Map.Entry<Integer, Map<String, int[]>> entry : ACTION.entrySet()) {
+            Integer state = entry.getKey();
+            sb.append("State ").append(state).append(":\n");
+
+            for (Map.Entry<String, int[]> inner : entry.getValue().entrySet()) {
+                sb.append("  ").append(inner.getKey())
+                        .append(" -> ").append(Arrays.toString(inner.getValue()))
+                        .append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
     /**
      * This class represents an LR(1) automaton.
      */

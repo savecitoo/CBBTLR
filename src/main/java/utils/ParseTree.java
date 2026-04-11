@@ -34,7 +34,7 @@ public class ParseTree implements Iterable<ParseTree> {
     public ParseTree(@NotNull String symbol, @NotNull List<@NotNull ParseTree> children) {
         this.symbol = symbol;
         this.isTerminal = children.isEmpty();
-        this.children = children;
+        this.children = new ArrayList<>(children);
     }
 
     @Override
