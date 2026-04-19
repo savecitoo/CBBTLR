@@ -62,7 +62,7 @@ public class Parser {
             }
 
             // REDUCE
-            for (Item it : state) {
+            for (CoreItem it : state) {
                 if (it.isComplete()) {
                     for (String symbol : grammar.T) {
                         Map<String, int[]> row =
@@ -192,20 +192,20 @@ public class Parser {
          * @param cache_item a cache that helps to use always the same items, instead of building new ones.
          * @return the closure of the starting set
          */
-        private static @NotNull Set<@NotNull Item> closure(@NotNull ContextFreeGrammar grammar,
-                                                           @NotNull Set<Item> start,
-                                                           @NotNull Map<@NotNull Item, @NotNull Item> cache_item) {
-            Set<Item> closure = new HashSet<>(start);
+        private static @NotNull Set<@NotNull CoreItem> closure(@NotNull ContextFreeGrammar grammar,
+                                                               @NotNull Set<CoreItem> start,
+                                                               @NotNull Map<@NotNull CoreItem, @NotNull CoreItem> cache_item) {
+            Set<CoreItem> closure = new HashSet<>(start);
             boolean changed = true;
             do {
-                Set<Item> toAdd = new HashSet<>();
-                for (Item item : closure) {
+                Set<CoreItem> toAdd = new HashSet<>();
+                for (CoreItem item : closure) {
                     if (!item.isComplete()) {
                         String A = item.afterDot();
                         if (grammar.N.contains(A)) {
                             ContextFreeProduction production = grammar.P.fromLHS(A);
                             for (int i = 0; i < production.rhsSize(); i++) {
-                                Item new_item = Item.fromProduction(production, i, 0);
+                                CoreItem new_item = CoreItem.fromProduction(production, i, 0);
                                 new_item = cache_item.computeIfAbsent(new_item, k -> k);
                                 if (!closure.contains(new_item))
                                     toAdd.add(new_item);
@@ -237,14 +237,14 @@ public class Parser {
             Map<State, Integer> state_encoding = new HashMap<>();
 
             // useful for avoiding loops and add memory efficiency
-            Map<Item, Item> cache_item = new HashMap<>();
+            Map<CoreItem, CoreItem> cache_item = new HashMap<>();
             Queue<State> queue = new ArrayDeque<>();
             Set<State> seen = new HashSet<>();
 
             // the start of the building
-            Item curr = Item.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
+            CoreItem curr = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
             cache_item.put(curr, curr);
-            State s = new State(closure(grammar, Set.of(curr), cache_item));
+            State s = State.fromCore(closure(grammar, Set.of(curr), cache_item));
             queue.add(s);
             seen.add(s);
 
@@ -252,8 +252,8 @@ public class Parser {
                 s = queue.remove();
                 for (String symb : grammar) { // search for all symbols
 
-                    Set<Item> v = new HashSet<>(); // cration of the new state for the symbol v
-                    for (Item it : s) { //search for every item in the current state which one is going to be in the new
+                    Set<CoreItem> v = new HashSet<>(); // creation of the new state for the symbol v
+                    for (CoreItem it : s) { //search for every item in the current state which one is going to be in the new
                         // state
                         if (!it.isComplete() && it.afterDot().equals(symb)) {
                             v.add(it.advanceDot());
@@ -261,7 +261,7 @@ public class Parser {
                     }
 
                     if (!v.isEmpty()) { // if v is not empty we do the closure and eventually create the new state
-                        State new_state = new State(closure(grammar, v, cache_item));
+                        State new_state = State.fromCore(closure(grammar, v, cache_item));
                         if (seen.add(new_state)) {
 
                             // the new state is added to the queue to be expanded after
@@ -306,7 +306,7 @@ public class Parser {
                 int id = states_encoding.getOrDefault(s, -1);
                 sb.append("I").append(id).append(":\n");
 
-                for (Item it : s) {
+                for (CoreItem it : s) {
                     sb.append("  ").append(it).append("\n");
                 }
                 sb.append("\n");
