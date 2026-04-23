@@ -1,4 +1,4 @@
-package lrzeroparser;
+package lalrparser;
 
 import grammar.ContextFreeProduction;
 import org.jetbrains.annotations.NotNull;
@@ -64,6 +64,34 @@ public record CoreItem(@NotNull String lhs,
         return new CoreItem(
           lhs, rhs, dot_position+1, production_id
         );
+    }
+
+    /**
+     * Returns whether this item has a non-empty β, i.e. whether there exists
+     * a symbol after the one following the dot.
+     *
+     * <p>Formally, returns {@code true} if and only if the item is of the form
+     * [A → α • B β, a] where β is non-empty.
+     *
+     * @return {@code true} if β is non-empty, {@code false} otherwise
+     */
+    public boolean hasFirstOfBeta() {
+        return (dot_position + 1) < rhs.size();
+    }
+
+    /**
+     * Returns the first symbol of β in an item of the form [A → α • B β, a],
+     * i.e. the symbol immediately after the symbol following the dot.
+     *
+     * @return the first symbol of β
+     * @throws IllegalArgumentException if β is empty, i.e. the dot is on one
+     *                                  of the last two positions of the production
+     */
+    public @NotNull String firstOfBeta() throws IllegalArgumentException {
+        if (!hasFirstOfBeta())
+            throw new IllegalArgumentException(
+                    "You can't have the symbol after beta because the dot is before one of the last two symbols");
+        return rhs.get(dot_position + 1);
     }
 
     /**

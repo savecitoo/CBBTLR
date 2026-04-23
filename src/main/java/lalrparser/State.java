@@ -1,4 +1,4 @@
-package lrzeroparser;
+package lalrparser;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +16,7 @@ public record State(@NotNull Set<@NotNull CoreItem> cores, @NotNull Map<@NotNull
 
     public State(@NotNull Set<@NotNull CoreItem> cores, @NotNull Map<@NotNull CoreItem, @NotNull ItemLALR> items) {
         this.cores = Set.copyOf(cores);
-        this.items = Map.copyOf(items);
+        this.items = new HashMap<>(items);
     }
 
     /**
@@ -31,6 +31,22 @@ public record State(@NotNull Set<@NotNull CoreItem> cores, @NotNull Map<@NotNull
         return new State(cores, items);
     }
 
+    @Override
+    public @NotNull String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("{\n");
+
+        cores.stream()
+                .map(CoreItem::toString)
+                .sorted()
+                .forEach(ci -> sb.append("  ").append(ci).append("\n"));
+
+        sb.append("}");
+
+        return sb.toString();
+    }
+    
     @Override
     public @NotNull Iterator<CoreItem> iterator() {
         return cores.iterator();

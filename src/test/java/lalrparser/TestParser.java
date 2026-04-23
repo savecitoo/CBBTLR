@@ -1,4 +1,4 @@
-package lrzeroparser;
+package lalrparser;
 
 import grammar.ContextFreeGrammar;
 import org.junit.jupiter.api.Test;

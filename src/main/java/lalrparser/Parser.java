@@ -1,4 +1,4 @@
-package lrzeroparser;
+package lalrparser;
 
 import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
@@ -185,6 +185,7 @@ public class Parser {
             this.states_encoding = statesEncoding;
         }
 
+
         /**
          * This method given a grammar and a starting set of items turn back the closure of these items.
          * @param grammar the grammar.
@@ -222,9 +223,9 @@ public class Parser {
         }
 
         /**
-         * This method build an LR(0) automaton from a grammar.
+         * This method build an LALR(1) automaton from a grammar.
          * @param grammar the grammar that has to be transformed in an automaton.
-         * @return the corresponding LR(0) automaton.
+         * @return the corresponding LALR(1) automaton.
          */
         public static @NotNull Automaton fromGrammar(@NotNull ContextFreeGrammar grammar) {
             if (grammar.P.fromLHS(grammar.S).rhsSize() != 1)
@@ -236,18 +237,64 @@ public class Parser {
             Set<State> states = new HashSet<>();
             Map<State, Integer> state_encoding = new HashMap<>();
 
+            // First part: LR(0) automaton building.
+
+            State first = automatonBuilding(grammar, transition, states, state_encoding);
+
+            Map<StateItem, Set<StateItem>> propagate  = new HashMap<>();  // (stato, item) → (stato, item)
+
+
+            // second part of the algorithm: we construct the channels and the lookaheads
+
+            CoreItem start = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
+            first.items().get(start).addLookahead("#");
+
+            channelBuilding(grammar, states, propagate, transition);
+
+            // third part of the algorithm: we propagate the lookaheads.
+
+//            printPropagationGraph(propagate, state_encoding);
+
+
+
+            lookaheadsPropagation(propagate);
+
+
+            printPropagationGraph(propagate, state_encoding);
+
+            return new Automaton(
+                    transition,
+                    state_encoding,
+                    states
+            );
+        }
+
+        /**
+         * This method build the LR(0) automaton data-structures starting from a grammar.
+         * @param grammar the grammar that we use to construct the LR(0) automaton.
+         * @param transition the edges of the automaton.
+         * @param states the states of the automaton.
+         * @param state_encoding the encoding of the states of the automaton.
+         * @return the starting state of the automaton.
+         */
+        private static @NotNull State automatonBuilding(@NotNull ContextFreeGrammar grammar, Map<State, Map<String, State>> transition, Set<State> states, Map<State, Integer> state_encoding) {
             // useful for avoiding loops and add memory efficiency
             Map<CoreItem, CoreItem> cache_item = new HashMap<>();
+            Map<State, State> cache_state = new HashMap<>();
             Queue<State> queue = new ArrayDeque<>();
             Set<State> seen = new HashSet<>();
 
             // the start of the building
             CoreItem curr = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
             cache_item.put(curr, curr);
+
             State s = State.fromCore(closure(grammar, Set.of(curr), cache_item));
+            cache_state.put(s, s);
+            State first = s;
             queue.add(s);
             seen.add(s);
 
+            // first part of the algorithm: in this step the LR(0) automaton is built.
             while (!queue.isEmpty()) {
                 s = queue.remove();
                 for (String symb : grammar) { // search for all symbols
@@ -263,9 +310,13 @@ public class Parser {
                     if (!v.isEmpty()) { // if v is not empty we do the closure and eventually create the new state
                         State new_state = State.fromCore(closure(grammar, v, cache_item));
                         if (seen.add(new_state)) {
-
                             // the new state is added to the queue to be expanded after
                             queue.add(new_state);
+                            cache_state.put(new_state,new_state);
+                        } else {
+                            // since every state creates its personal LALR(1) item we have to use always
+                            // the same state also in the arrow map, otherwise the propagation will be erroneous.
+                            new_state = cache_state.get(new_state);
                         }
 
                         // creation of the transition in the automaton.
@@ -281,11 +332,96 @@ public class Parser {
                 states.add(s);
                 state_encoding.put(s, state_encoding.size());
             }
-            return new Automaton(
-                    transition,
-                    state_encoding,
-                    states
-            );
+            return first;
+        }
+
+        /**
+         * This method starting from the automaton builds the channels to upgrade the automaton to an LALR(1) automaton. <br>
+         * The informations will be saved in the field @code{propagate} and @code{lookaheads}.
+         * @param grammar the grammar of the LALR(1) is currently being built.
+         * @param states the states of the LR(0) automaton.
+         * @param propagate a map where will be saved the propagations of the automata.
+         * @param transition the transitions of the automata.
+         */
+        private static void channelBuilding(@NotNull ContextFreeGrammar grammar,
+                                            @NotNull Set<@NotNull State> states,
+                                            @NotNull Map<@NotNull StateItem, @NotNull Set<@NotNull StateItem>> propagate,
+                                            @NotNull Map<@NotNull State, @NotNull Map< @NotNull String, @NotNull State>> transition) {
+            for (State state : states) {
+                for (CoreItem item : state) {
+                    if (!item.isComplete()) { // check that the item has something after the dot.
+
+                        String B = item.afterDot();
+                        // This part id for spontaneous lookahead.
+
+                        if (grammar.N.contains(B)) {
+                            for (CoreItem item1 : state) {
+                                if (item1.lhs().equals(B)) {
+                                    if (item.hasFirstOfBeta()) {
+                                        // lookahead spontaneo
+                                        Set<String> lookahead_spont = grammar.first(item.firstOfBeta());
+                                        state.items().get(item1).addAllLookaheads(lookahead_spont);
+                                    }
+                                    // propaga SEMPRE, indipendentemente da hasFirstOfBeta()
+                                    propagate.computeIfAbsent(
+                                            new StateItem(state, state.items().get(item)),
+                                            k -> new HashSet<>()
+                                    ).add(new StateItem(state, state.items().get(item1)));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // now we construct the lookaheads for the goto table.
+
+                for (CoreItem item : state) {
+                    if (!item.isComplete()) {
+                        State destination = transition.get(state).get(item.afterDot());
+                        Set<StateItem> propagations = propagate.computeIfAbsent(
+                                new StateItem(state, state.items().get(item)),
+                                k -> new HashSet<>()
+                        );
+                        propagations.add(new StateItem(destination, destination.items().get(item.advanceDot())));
+                    }
+                }
+            }
+        }
+
+
+        /**
+         * This method given the propagations and the lookaheads for each item propagates the lookaheads.
+         * @param propagate the propagation for each LALR(1) item.
+         */
+        private static void lookaheadsPropagation(Map<StateItem, Set<StateItem>> propagate) {
+            boolean changes = true;
+            while (changes) {
+                changes = false;
+                for (Map.Entry<StateItem, Set<StateItem>> entry : propagate.entrySet()) {
+                    StateItem src = entry.getKey();
+                    Set<StateItem> destinations = entry.getValue();
+                    for (StateItem dst : destinations) {
+                        if (dst.item().addAllLookaheads(src.item().getLookaheads())) {
+                            changes = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void printPropagationGraph(Map<StateItem, Set<StateItem>> propagate, Map<State, Integer> states_encoding) {
+            System.out.println("Propagation Graph");
+            System.out.println("=================");
+            for (Map.Entry<StateItem, Set<StateItem>> entry : propagate.entrySet()) {
+                StateItem src = entry.getKey();
+                for (StateItem dst : entry.getValue()) {
+                    System.out.println(
+                            "I" + states_encoding.get(src.state()) + ": " + src.item() +
+                                    " --> " +
+                                    "I" + states_encoding.get(dst.state()) + ": " + dst.item()
+                    );
+                }
+            }
         }
 
         @Override
@@ -297,7 +433,7 @@ public class Parser {
         public String toString() {
             StringBuilder sb = new StringBuilder();
 
-            sb.append("LR(0) Automaton\n");
+            sb.append("LALR(1) Automaton\n");
             sb.append("====================\n\n");
 
             // Stati
@@ -307,7 +443,7 @@ public class Parser {
                 sb.append("I").append(id).append(":\n");
 
                 for (CoreItem it : s) {
-                    sb.append("  ").append(it).append("\n");
+                    sb.append("  ").append(s.items().get(it)).append("\n");
                 }
                 sb.append("\n");
             }
