@@ -40,7 +40,7 @@ public class TestParser {
     })
     void testRecognizer(String input, boolean result) {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E    \n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -83,9 +83,9 @@ public class TestParser {
     void testLR0Parser(String input, boolean result) {
         List<String> tokens = Arrays.asList(input.split(" "));
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> A $\n" +
-                "A -> a A | b B\n" +
-                "B -> c B | d\n"
+                "S -> A    \n" +
+                        "A -> a A | b B\n" +
+                        "B -> c B | d\n"
         );
         Parser parser = new Parser(g);
         assertThat(parser.isRecognized(tokens)).isEqualTo(result);
@@ -94,7 +94,7 @@ public class TestParser {
     @Test
     void testParseBase() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E   \n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -103,14 +103,14 @@ public class TestParser {
                 "E",
                 List.of( new ParseTree("T",
                         List.of(
-                        new ParseTree("(", true),
-                        new ParseTree("E", List.of(
-                                new ParseTree("T", List.of(new ParseTree("n", true)))
-                        )
+                                new ParseTree("(", true),
+                                new ParseTree("E", List.of(
+                                        new ParseTree("T", List.of(new ParseTree("n", true)))
+                                )
 
-                        ),
-                        new ParseTree(")", true)
-                )))
+                                ),
+                                new ParseTree(")", true)
+                        )))
         );
         List<String> tokens = Arrays.asList("( n )".split(" "));
         assertThat(p.parse(tokens)).isEqualTo(tree);
@@ -119,7 +119,7 @@ public class TestParser {
     @Test
     void testParseComplex() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E   \n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
@@ -156,7 +156,7 @@ public class TestParser {
     @Test
     void testParseUnrecognizedThrows() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E $\n" +
+                "S -> E   \n" +
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );

@@ -62,22 +62,20 @@ public class Parser {
             }
 
             // REDUCE
+            int stateId = automaton.states_encoding.get(state);
             for (CoreItem it : state) {
                 if (it.isComplete()) {
-                    for (String symbol : grammar.T) {
-                        Map<String, int[]> row =
-                                ACTION.computeIfAbsent(automaton.states_encoding.get(state), k -> new HashMap<>());
-
+                    Set<String> lookaheads = state.items().get(it).getLookaheads();
+                    Map<String, int[]> row = ACTION.computeIfAbsent(stateId, k -> new HashMap<>());
+                    for (String symbol : lookaheads) {
                         if (row.containsKey(symbol)) {
                             throw new IllegalArgumentException("Conflict");
                         }
-                        row.put(symbol, new int[]{1, it.production_id()});
-                    }
-
-                    // Special case for acceptance
-                    if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id()) {
-                        Map<String, int[]> row = ACTION.get(automaton.states_encoding.get(state));
-                        row.put("$", new int[]{2});
+                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id() && symbol.equals("#")) {
+                            row.put("#", new int[]{2});
+                        } else {
+                            row.put(symbol, new int[]{1, it.production_id()});
+                        }
                     }
                 }
             }
@@ -103,6 +101,85 @@ public class Parser {
         }
     }
 
+    public void printTables() {
+        // Raccoglie tutti i simboli terminali e non terminali
+        Set<String> terminals = new TreeSet<>();
+        Set<String> nonTerminals = new TreeSet<>();
+
+        for (Map<String, int[]> row : ACTION.values())
+            terminals.addAll(row.keySet());
+        for (Map<String, Integer> row : GOTO.values())
+            nonTerminals.addAll(row.keySet());
+
+        List<String> termList = new ArrayList<>(terminals);
+        List<String> nonTermList = new ArrayList<>(nonTerminals);
+
+        // Larghezza colonne
+        int colWidth = 10;
+        int stateWidth = 7;
+
+        // Tutti gli stati
+        Set<Integer> allStates = new TreeSet<>();
+        allStates.addAll(ACTION.keySet());
+        allStates.addAll(GOTO.keySet());
+
+        // Header
+        int totalCols = termList.size() + nonTermList.size();
+        int totalWidth = stateWidth + totalCols * colWidth;
+
+        System.out.println("=".repeat(totalWidth));
+        System.out.printf("%-" + stateWidth + "s", "STATE");
+
+        // Separatore ACTION / GOTO
+        System.out.printf("%-" + (termList.size() * colWidth) + "s", "ACTION");
+        System.out.printf("%-" + (nonTermList.size() * colWidth) + "s", "GOTO");
+        System.out.println();
+
+        System.out.printf("%-" + stateWidth + "s", "");
+        for (String t : termList)
+            System.out.printf("%-" + colWidth + "s", t);
+        for (String nt : nonTermList)
+            System.out.printf("%-" + colWidth + "s", nt);
+        System.out.println();
+
+        System.out.println("-".repeat(totalWidth));
+
+        // Righe
+        for (int state : allStates) {
+            System.out.printf("%-" + stateWidth + "d", state);
+
+            // ACTION
+            Map<String, int[]> actionRow = ACTION.getOrDefault(state, Collections.emptyMap());
+            for (String t : termList) {
+                if (actionRow.containsKey(t)) {
+                    int[] val = actionRow.get(t);
+                    String cell = switch (val[0]) {
+                        case 0 -> "s" + val[1];          // shift
+                        case 1 -> "r" + val[1];          // reduce
+                        case 2 -> "acc";                 // accept
+                        default -> "?";
+                    };
+                    System.out.printf("%-" + colWidth + "s", cell);
+                } else {
+                    System.out.printf("%-" + colWidth + "s", "");
+                }
+            }
+
+            // GOTO
+            Map<String, Integer> gotoRow = GOTO.getOrDefault(state, Collections.emptyMap());
+            for (String nt : nonTermList) {
+                if (gotoRow.containsKey(nt)) {
+                    System.out.printf("%-" + colWidth + "d", gotoRow.get(nt));
+                } else {
+                    System.out.printf("%-" + colWidth + "s", "");
+                }
+            }
+
+            System.out.println();
+        }
+
+        System.out.println("=".repeat(totalWidth));
+    }
 
     /**
      * This method parse list of string in input returning the corresponding parsing tree.
@@ -112,7 +189,7 @@ public class Parser {
      */
     public ParseTree parse(List<String> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
-        input.add("$");
+        input.add("#");
         Stack<Integer> states = new Stack<>();
         Stack<ParseTree> symbols = new Stack<>();
         states.push(0);
@@ -147,7 +224,6 @@ public class Parser {
                     symbols.push(new ParseTree(production.getLHS(), children.reversed()));
                     break;
                 case 2: // accept
-                    symbols.pop();
                     return symbols.peek();
                 default: // error
                     throw new IllegalArgumentException("The word is not recognized");
@@ -255,12 +331,9 @@ public class Parser {
 
 //            printPropagationGraph(propagate, state_encoding);
 
-
-
             lookaheadsPropagation(propagate);
 
-
-            printPropagationGraph(propagate, state_encoding);
+            // printPropagationGraph(propagate, state_encoding);
 
             return new Automaton(
                     transition,
