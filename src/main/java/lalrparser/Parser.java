@@ -8,7 +8,7 @@ import utils.ParseTree;
 import java.util.*;
 
 /**
- * This class implements an LR(0) Parser.
+ * This class implements an LALR(1) Parser.
  */
 public class Parser {
 
@@ -30,11 +30,19 @@ public class Parser {
     // probably we have to keep trace of the states where we reduce with the encoding.
 
     /**
-     * This is a constructor for an LR(0) Parser.
+     * This is a constructor for an LALR(1) Parser.
      * @param grammar the grammar to be parsed.
      */
     public Parser(@NotNull ContextFreeGrammar grammar) throws IllegalArgumentException {
         Automaton automaton = Automaton.fromGrammar(grammar);
+
+//        for (State state : automaton.states) {
+//            for (CoreItem it : state) {
+//                Set<String> la = state.items().get(it).getLookaheads();
+//                System.out.println(automaton.states_encoding.get(state)
+//                        + " | " + it + " | " + la);
+//            }
+//        }
 
         // Construction of the GOTO table.
 
@@ -56,7 +64,11 @@ public class Parser {
                     if (grammar.N.contains(symbol)) { // NON terminal → GOTO
                         GOTO.computeIfAbsent(from, k -> new HashMap<>()).put(symbol, to);
                     } else if (grammar.T.contains(symbol)) {
-                        ACTION.computeIfAbsent(from, k -> new HashMap<>()).put(symbol, new int[]{0, to});
+                        Map<String, int[]> row = ACTION.computeIfAbsent(from, k -> new HashMap<>());
+                        if (row.containsKey(symbol)) {
+                            throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT"); // shift/reduce
+                        }
+                        row.put(symbol, new int[]{0, to});
                     }
                 }
             }
@@ -69,7 +81,10 @@ public class Parser {
                     Map<String, int[]> row = ACTION.computeIfAbsent(stateId, k -> new HashMap<>());
                     for (String symbol : lookaheads) {
                         if (row.containsKey(symbol)) {
-                            throw new IllegalArgumentException("Conflict");
+                            if (row.get(symbol)[0] == 0)
+                                throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT");
+                            else
+                                throw new IllegalArgumentException("REDUCE/REDUCE CONFLICT");
                         }
                         if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id() && symbol.equals("#")) {
                             row.put("#", new int[]{2});
@@ -233,7 +248,7 @@ public class Parser {
 
 
     /**
-     * This class represents an LR(0) automaton.
+     * This class represents an LALR(1) automaton.
      */
     public static class Automaton implements Iterable<State> {
 
@@ -244,7 +259,7 @@ public class Parser {
         private final @NotNull Set<@NotNull State> states;
 
         /**
-         * This is a constructor for an LR(0) automaton.
+         * This is a constructor for an LALR(1) automaton.
          * @param transitions the transitions of the automata.
          * @param states the states of the automata.
          * @throws IllegalArgumentException if state or transitions are empty.
@@ -431,15 +446,16 @@ public class Parser {
                             for (CoreItem item1 : state) {
                                 if (item1.lhs().equals(B)) {
                                     if (item.hasFirstOfBeta()) {
-                                        // lookahead spontaneo
+                                        // lookahead spontaneo: aggiungi FIRST(β)
                                         Set<String> lookahead_spont = grammar.first(item.firstOfBeta());
                                         state.items().get(item1).addAllLookaheads(lookahead_spont);
+                                    } else {
+                                        // β è vuota: propaga sempre
+                                        propagate.computeIfAbsent(
+                                                new StateItem(state, state.items().get(item)),
+                                                k -> new HashSet<>()
+                                        ).add(new StateItem(state, state.items().get(item1)));
                                     }
-                                    // propaga SEMPRE, indipendentemente da hasFirstOfBeta()
-                                    propagate.computeIfAbsent(
-                                            new StateItem(state, state.items().get(item)),
-                                            k -> new HashSet<>()
-                                    ).add(new StateItem(state, state.items().get(item1)));
                                 }
                             }
                         }

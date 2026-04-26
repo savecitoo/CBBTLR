@@ -175,4 +175,100 @@ public class TestParser {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            // --- un solo numero ---
+            "n, true",
+
+            // --- addizione e sottrazione ---
+            "n + n, true",
+            "n - n, true",
+            "n + n + n, true",                          // associatività sinistra +
+            "n - n - n, true",                          // associatività sinistra -
+            "n + n - n, true",                          // misto + e -
+
+            // --- moltiplicazione e divisione ---
+            "n * n, true",
+            "n / n, true",
+            "n * n * n, true",                          // associatività sinistra *
+            "n / n / n, true",                          // associatività sinistra /
+            "n * n / n, true",                          // misto * e /
+
+            // --- precedenza: * e / prima di + e - ---
+            "n + n * n, true",
+            "n * n + n, true",
+            "n + n * n - n, true",
+            "n * n + n / n, true",
+            "n - n / n * n, true",
+
+            // --- parentesi ---
+            "( n ), true",
+            "( n + n ), true",
+            "( n * n ), true",
+            "( ( n ) ), true",
+            "( n + n ) * n, true",                      // parentesi che alterano precedenza
+            "n * ( n + n ), true",
+            "( n + n ) * ( n - n ), true",
+            "( n * ( n + n ) ), true",
+            "( ( n + n ) * ( n - n ) ), true",
+            "n + ( n * ( n - n ) ) / n, true",
+            "( n + n ) * ( n / ( n - n ) ), true",
+
+            // --- espressioni più lunghe e annidate ---
+            "n + n * n - n / n, true",
+            "( n + n ) * n - n / ( n - n ), true",
+            "( ( n + n ) ) * ( ( n ) ), true",
+            "n * n + n * n + n * n, true",
+
+            // --- operatori mancanti o doppi ---
+            "n n, false",                               // due operandi senza operatore
+            "n + + n, false",                           // operatore doppio
+            "n * * n, false",
+            "n + - n, false",                           // unario non supportato
+            "* n, false",                               // inizia con operatore
+            "/ n, false",
+            "+ n, false",
+            "- n, false",
+            "n +, false",                               // termina con operatore
+            "n -,false",
+            "n *,false",
+            "n /,false",
+            "n + n *, false",                           // operatore finale dopo espressione valida
+
+            // --- parentesi sbilanciate ---
+            "( n, false",                               // aperta non chiusa
+            "n ), false",                               // chiusa senza apertura
+            "( n + n, false",
+            "n + n ), false",
+            "( ( n ), false",
+            "( n ) ), false",
+            "( n + ( n * n ), false",
+            "( n + n ) * ( n, false",
+
+            // --- parentesi vuote ---
+            "( ), false",
+            "n + ( ), false",
+            "( ) * n, false",
+
+            // --- simboli fuori alfabeto ---
+            "x, false",
+            "n + x, false",
+            "f e, false",
+    })
+    void testArithmetic(String input, boolean result) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S' -> S \n" +
+                        "S -> E\n" +
+                        "E -> E + T | E - T | T\n" +
+                        "T -> T * F | T / F | F\n" +
+                        "F -> ( E ) | n"
+        );
+        List<String> tokens = input.isBlank()
+                ? List.of()
+                : Arrays.asList(input.split(" "));
+        Parser parser = new Parser(g);
+        assertThat(parser.isRecognized(tokens))
+                .isEqualTo(result);
+    }
+
 }
