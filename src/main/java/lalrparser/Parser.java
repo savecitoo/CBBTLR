@@ -43,6 +43,7 @@ public class Parser {
 //                        + " | " + it + " | " + la);
 //            }
 //        }
+//        System.out.println(automaton);
 
         // Construction of the GOTO table.
 
@@ -100,6 +101,7 @@ public class Parser {
         this.ACTION = ACTION;
 
         this.grammar = grammar;
+        // printTables();
     }
 
     /**
@@ -215,8 +217,12 @@ public class Parser {
 
             if (i < input.size())
                 next = input.get(i);
-            if (!ACTION.get(s).containsKey(next))
+            if (!ACTION.get(s).containsKey(next)) {
+//                System.out.println("state: " + s);
+//                System.out.println("Next Symbol: " + next);
+//                printTables();
                 throw new IllegalArgumentException("The word is not recognized");
+            }
             int[] action = ACTION.get(s).get(next);
             switch (action[0]) {
                 case 0: // shift

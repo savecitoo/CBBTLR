@@ -271,4 +271,99 @@ public class TestParser {
                 .isEqualTo(result);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            // --- casi base ---
+            "id, true",
+            "num, true",
+
+            // --- unary minus ---
+            "- id, true",
+            "- - id, true",
+
+            // --- potenza (associatività destra) ---
+            "id ^ id, true",
+            "id ^ id ^ id, true",
+
+            // --- precedenze ---
+            "id * id ^ id, true",
+            "- id * num ^ num, true",
+
+            // --- parentesi ---
+            "( id ), true",
+            "( id + num ) * id, true",
+
+            // --- errori ---
+            "id ^, false",
+            "^ id, false",
+            "id * ^ id, false",
+            "-, false",
+    })
+    void testGrammar1(String input, boolean result) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S' -> S\n" +
+                        "S -> E\n" +
+                        "E -> E + T | E - T | T\n" +
+                        "T -> T * F | T / F | F\n" +
+                        "F -> - F | P ^ F | P\n" +
+                        "P -> ( E ) | id | num"
+        );
+
+        List<String> tokens = input.isBlank()
+                ? List.of()
+                : Arrays.asList(input.split(" "));
+
+        Parser parser = new Parser(g);
+
+        assertThat(parser.isRecognized(tokens))
+                .isEqualTo(result);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // --- assegnazioni base ---
+            "id = num, true",
+            "id = id + num, true",
+            // --- if / else (matched) ---
+            "if id then id = num else id = num, true",
+            "if id then if id then id = num else id = num, true",
+            // --- while ---
+            "while id do id = num, true",
+            // --- blocchi ---
+            "{ id = num }, true",
+            "{ id = num ; id = num }, true",
+            // --- unmatched if (senza else) ---
+            "if id then id = num, true",
+            "if id then if id then id = num, true",
+            // --- combinazioni ---
+            "if id then { id = num ; id = num } else id = num, true",
+            "while id do if id then id = num else id = num, true",
+            // --- errori ---
+            "if id then, false",
+            "if then id = num, false",
+            "{ }, false",
+            "id =, false",
+            "else id = num, false",
+    })
+    void testIfElseGrammar(String input, boolean expected) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S' -> S\n" +
+                        "S -> M | U\n" +
+                        "M -> if E then M else M | while E do M | { L } | A\n" +
+                        "U -> if E then S | if E then M else U\n" +
+                        "L -> L ; S | S\n" +
+                        "A -> id = E\n" +
+                        // E stratificata: * lega più forte di +, entrambi left-assoc
+                        "E -> E + T | T\n" +
+                        "T -> T * F | F\n" +
+                        "F -> ( E ) | id | num"
+        );
+        List<String> tokens = input.isBlank()
+                ? List.of()
+                : Arrays.asList(input.split(" "));
+        Parser parser = new Parser(g);
+        assertThat(parser.isRecognized(tokens))
+                .isEqualTo(expected);
+    }
+
 }
