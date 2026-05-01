@@ -64,4 +64,23 @@ public interface ParserTables {
      * @return a 2D array indexed by [production_id], each entry being {lhs_id, rhs_length}
      */
     int @NotNull [] @NotNull [] getPRODUCTIONS();
+
+    /**
+     * Returns the symbol array used to encode terminals and non-terminals
+     * in the ACTION and GOTO tables.
+     *
+     * <p>The array maps each integer id to its corresponding symbol string.
+     * Specifically, {@code getSymbols()[id]} returns the symbol whose encoding
+     * is {@code id}. This encoding is consistent with the indices used in
+     * {@link #getACTION()} and {@link #getGOTO()}: if a terminal {@code t}
+     * has id {@code k}, then {@code ACTION[s][k]} holds the action for state
+     * {@code s} on input {@code t}, and similarly for non-terminals in GOTO.
+     *
+     * <p>The array must contain all terminals, all non-terminals, and the
+     * end-of-input marker {@code "#"}, in the order they were assigned ids
+     * during table generation. The array is treated as read-only by the parser.
+     *
+     * @return a non-null, non-empty array of symbol strings indexed by their id.
+     */
+    String[] getSymbols();
 }

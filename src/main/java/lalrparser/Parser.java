@@ -2,6 +2,7 @@ package lalrparser;
 
 import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
+import lexer.Token;
 import org.jetbrains.annotations.NotNull;
 import utils.ParseTree;
 import utils.SymbolTable;
@@ -25,20 +26,15 @@ public class Parser {
         - The second element is the state where we have to go.
      */
 
-    private final @NotNull SymbolTable<String> symbol_encoding;
-
     private final @NotNull ParserTables tables;
 
     /**
      * This is a constructor for an LALR(1) Parser.
      * @param tables the tables needed to the parser, you can build it with the generateParser method.
-     * @param symbol_encoding the symbol table that will be used to encode all the symbols in the grammar.
      */
-    public Parser(@NotNull ParserTables tables, @NotNull SymbolTable<String> symbol_encoding) throws IllegalArgumentException {
-
-        this.symbol_encoding = symbol_encoding;
+    public Parser(@NotNull ParserTables tables) throws IllegalArgumentException {
         this.tables = tables;
-        }
+    }
 
     /**
      * This method returns if the input is correct for the given grammar.
@@ -47,7 +43,7 @@ public class Parser {
      */
     public boolean isRecognized(List<String> input) {
         try {
-            parse(input);
+            parseStrings(input);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
@@ -63,7 +59,7 @@ public class Parser {
      * @return the corresponding parsing tree.
      * @throws IllegalArgumentException if the word is not recognized.
      */
-    public ParseTree parse(@NotNull List<String> input) throws IllegalArgumentException {
+    public ParseTree parseStrings(@NotNull List<String> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
         input.add("#");
         Stack<Integer> states = new Stack<>();
@@ -71,13 +67,20 @@ public class Parser {
         states.push(0);
         int i = 0;
 
+        int[][][] ACTION = tables.getACTION();
+        int[][] GOTO = tables.getGOTO();
+        int[][] PRODUCTIONS = tables.getPRODUCTIONS();
+        String[] SYMBOLS = tables.getSymbols();
+
         while (true) {
             int s = states.peek();
-            int next = symbol_encoding.getId(input.get(i));
+            String token = input.get(i);
 
-            int[][][] ACTION = tables.getACTION();
-            int[][] GOTO = tables.getGOTO();
-            int[][] PRODUCTIONS = tables.getPRODUCTIONS();
+            // ricerca lineare nell'array dei simboli
+            int next = -1;
+            for (int k = 0; k < SYMBOLS.length; k++) {
+                if (SYMBOLS[k].equals(token)) { next = k; break; }
+            }
 
             if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null)
                 throw new IllegalArgumentException("The word is not recognized");
@@ -86,7 +89,7 @@ public class Parser {
             switch (action[0]) {
                 case 0: // shift
                     states.push(action[1]);
-                    symbols.push(new ParseTree(input.get(i), true));
+                    symbols.push(new ParseTree(token, true));
                     i++;
                     break;
                 case 1: // reduce
@@ -100,7 +103,7 @@ public class Parser {
                     }
                     s = states.peek();
                     states.push(GOTO[s][lhs_id]);
-                    symbols.push(new ParseTree(symbol_encoding.getSymbol(lhs_id), children.reversed()));
+                    symbols.push(new ParseTree(SYMBOLS[lhs_id], children.reversed()));
                     break;
                 case 2: // accept
                     return symbols.peek();
@@ -110,10 +113,71 @@ public class Parser {
         }
     }
 
+    /**
+     * This method parse list of token in input returning the corresponding parsing tree.
+     * @param input list of token to be Parsed.
+     * @return the corresponding parsing tree.
+     * @throws IllegalArgumentException if the word is not recognized.
+     */
+    public ParseTree parse(@NotNull List<Token> input) throws IllegalArgumentException {
+        input = new ArrayList<>(input);
+        // input.add("#");
+        Stack<Integer> states = new Stack<>();
+        Stack<ParseTree> symbols = new Stack<>();
+        states.push(0);
+        int i = 0;
+
+        int[][][] ACTION = tables.getACTION();
+        int[][] GOTO = tables.getGOTO();
+        int[][] PRODUCTIONS = tables.getPRODUCTIONS();
+        String[] SYMBOLS = tables.getSymbols();
+
+        while (true) {
+            int s = states.peek();
+            String token = SYMBOLS[input.get(i).token_id()];
+
+            // ricerca lineare nell'array dei simboli
+            int next = -1;
+            for (int k = 0; k < SYMBOLS.length; k++) {
+                if (SYMBOLS[k].equals(token)) { next = k; break; }
+            }
+
+            if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null)
+                throw new IllegalArgumentException("The word is not recognized");
+
+            int[] action = ACTION[s][next];
+            switch (action[0]) {
+                case 0: // shift
+                    states.push(action[1]);
+                    symbols.push(new ParseTree(input.get(i).value(), true));
+                    i++;
+                    break;
+                case 1: // reduce
+                    int[] production = PRODUCTIONS[action[1]];
+                    int lhs_id = production[0];
+                    int rhs_len = production[1];
+                    List<ParseTree> children = new LinkedList<>();
+                    for (int j = 0; j < rhs_len; j++) {
+                        states.pop();
+                        children.addFirst(symbols.pop());
+                    }
+                    s = states.peek();
+                    states.push(GOTO[s][lhs_id]);
+                    symbols.push(new ParseTree(SYMBOLS[lhs_id], children));
+                    break;
+                case 2: // accept
+                    return symbols.peek();
+                default:
+                    throw new IllegalArgumentException("The word is not recognized");
+            }
+        }
+    }
+
+
     public static void generateParser(@NotNull ContextFreeGrammar grammar,
-                               @NotNull SymbolTable<@NotNull String> symbol_encoding,
-                               @NotNull String className,
-                               @NotNull String outputDir) {
+                                      @NotNull SymbolTable<@NotNull String> symbol_encoding,
+                                      @NotNull String className,
+                                      @NotNull String outputDir) {
         Automaton automaton = Automaton.fromGrammar(grammar);
         Map<Integer, Map<Integer, Integer>> GOTO = new HashMap<>();
         Map<Integer, Map<Integer, int[]>> ACTION = new HashMap<>();
@@ -127,6 +191,7 @@ public class Parser {
                     symbol_encoding,
                     grammar
             );
+            writeParserFile(className, Path.of(outputDir));
         } catch (IOException e) {
             throw new IllegalArgumentException
                     ("An exception has been raised with the following output:" + e.getMessage());
@@ -217,7 +282,7 @@ public class Parser {
            @NotNull Map<@NotNull Integer,
                    @NotNull Map<@NotNull Integer, int[]>> ACTION,
            @NotNull SymbolTable<@NotNull String> symbol_encoding,
-           @NotNull ContextFreeGrammar grammar  // solo per le produzioni, poi buttato
+           @NotNull ContextFreeGrammar grammar
     ) throws IOException {
         StringBuilder sb = new StringBuilder();
 
@@ -230,8 +295,8 @@ public class Parser {
         int nSymbols = symbol_encoding.size();
 
         // ── Header ──────────────────────────────────────────────────────────
-        sb.append("import java.util.Arrays;\n\n");
-        sb.append("import lalrparser.ParserTables;\n\n");
+        sb.append("import java.util.Arrays;\n");
+        sb.append("import lalrparser.ParserTables;\n");
         sb.append("import org.jetbrains.annotations.NotNull;\n\n");
         sb.append("public class ").append(className).append("ParserTables implements ParserTables {\n\n");
 
@@ -278,6 +343,15 @@ public class Parser {
         }
         sb.append("    }\n\n");
 
+        // ── SYMBOLS ─────────────────────────────────────────────────────────────
+        sb.append("    public static final String[] SYMBOLS = {\n");
+        for (int i = 0; i < symbol_encoding.size(); i++) {
+            sb.append("        \"")
+                    .append(symbol_encoding.getSymbol(i).replace("\"", "\\\""))
+                    .append("\",\n");
+        }
+        sb.append("    };\n\n");
+
         // ── Getters ─────────────────────────────────────────────────────────
         sb.append("    @Override\n");
         sb.append("    public int @NotNull [] @NotNull [] @NotNull [] getACTION() {\n");
@@ -294,6 +368,10 @@ public class Parser {
         sb.append("        return PRODUCTIONS;\n");
         sb.append("    }\n\n");
 
+        sb.append("    @Override\n");
+        sb.append("    public String[] getSymbols() { return SYMBOLS; }\n\n");
+
+
         sb.append("}\n");
 
         // ── Scrittura su file ────────────────────────────────────────────────
@@ -304,6 +382,57 @@ public class Parser {
         );
     }
 
+
+    /**
+     * Writes the {@code <className>Parser.java} file — a thin wrapper around {@link Parser}
+     * that instantiates {@code <className>ParserTables} and delegates to it.
+     * The generated class exposes {@link Parser#parse} and {@link Parser#isRecognized}
+     * without requiring the caller to manage tables or symbol encoding manually.
+     *
+     * <p>This file has no logic of its own: all parsing behaviour lives in {@link Parser},
+     * all grammar-specific data lives in the generated {@code ParserTables} class.
+     *
+     * @param className the base name used for the generated class and the corresponding
+     *                  tables class (e.g. {@code "MyGrammar"} produces {@code MyGrammarParser}
+     *                  referencing {@code MyGrammarParserTables}).
+     * @param outputDir the directory where {@code <className>Parser.java} will be written.
+     * @throws IOException if the file cannot be written.
+     */
+        private static void writeParserFile(
+                @NotNull String className,
+                @NotNull Path outputDir
+        ) throws IOException {
+
+            String src = """
+            import lalrparser.Parser;
+            import utils.ParseTree;
+            import java.util.List;
+            import lexer.Token;
+                    
+            public class %sParser {
+                        
+                private final Parser parser;
+                        
+                public %sParser() {
+                    this.parser = new Parser(new %sParserTables());
+                }
+                        
+                public ParseTree parseStrings(List<String> input) {
+                    return parser.parseStrings(input);
+                }
+                 
+                public ParseTree parse(List<Token> input) {
+                    return parser.parse(input);
+                }
+                        
+                public boolean isRecognized(List<String> input) {
+                    return parser.isRecognized(input);
+                }
+            }
+            """.formatted(className, className, className);
+
+            Files.writeString(outputDir.resolve(className + "Parser.java"), src);
+        }
 
     /**
      * This class represents an LALR(1) automaton.
