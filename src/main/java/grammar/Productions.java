@@ -87,6 +87,12 @@ public class Productions implements Iterable<ContextFreeProduction> {
         return new Productions(productions);
     }
 
+    public int size() {
+        int res = 0;
+        for (ContextFreeProduction p : productions) res += p.rhsSize();
+        return res;
+    }
+
     /**
      * This method returns the production of the starting symbol.
      * @return the production of the starting symbol.

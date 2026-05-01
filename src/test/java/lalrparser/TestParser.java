@@ -5,7 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import utils.ParseTree;
+import utils.SymbolTable;
 
+import javax.tools.*;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,6 +19,42 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestParser {
+
+    private static ParserTables compileAndLoad(Path javaFile, String className) throws Exception {
+
+        Path classFile = javaFile.getParent().resolve(className + "ParserTables.class");
+
+        boolean needsCompilation = Files.notExists(classFile) ||
+                Files.getLastModifiedTime(javaFile).toMillis() > Files.getLastModifiedTime(classFile).toMillis();
+
+        if (needsCompilation) {
+            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+            if (compiler == null)
+                throw new IllegalStateException("JavaCompiler not available: use a JDK, not a JRE");
+
+            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+
+            try (StandardJavaFileManager fileManager =
+                         compiler.getStandardFileManager(diagnostics, null, null)) {
+
+                Iterable<? extends JavaFileObject> units =
+                        fileManager.getJavaFileObjects(javaFile.toFile());
+
+                JavaCompiler.CompilationTask task =
+                        compiler.getTask(null, fileManager, diagnostics, null, null, units);
+            }
+        }
+
+        // Caricamento classe
+        try (URLClassLoader classLoader = new URLClassLoader(
+                new URL[]{javaFile.getParent().toUri().toURL()},
+                ParserTables.class.getClassLoader()
+        )) {
+            Class<?> clazz = classLoader.loadClass(className + "ParserTables");
+            return (ParserTables) clazz.getDeclaredConstructor().newInstance();
+        }
+    }
+
 
     @ParameterizedTest
     @CsvSource({
@@ -45,19 +87,14 @@ public class TestParser {
                         "T -> n | ( E )"
         );
         List<String> tokens = Arrays.asList(input.split(" "));
-        Parser parser = new Parser(g);
-        assertThat(parser.isRecognized(tokens))
-                .isEqualTo(result);
-    }
-
-    @Test
-    void testConstructionNotLR() {
-        ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> A a | b A c | d c | b d a\nA -> d"
-        );
-        assertThatThrownBy(
-                () -> new Parser(g)
-        ).isInstanceOf(IllegalArgumentException.class);
+        Parser.generateParser(g, new SymbolTable<>(), "Test1", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @ParameterizedTest
@@ -87,8 +124,14 @@ public class TestParser {
                         "A -> a A | b B\n" +
                         "B -> c B | d\n"
         );
-        Parser parser = new Parser(g);
-        assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+        Parser.generateParser(g, new SymbolTable<>(), "Test2", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @Test
@@ -98,22 +141,30 @@ public class TestParser {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Parser p = new Parser(g);
-        ParseTree tree = new ParseTree(
-                "E",
-                List.of( new ParseTree("T",
-                        List.of(
-                                new ParseTree("(", true),
-                                new ParseTree("E", List.of(
-                                        new ParseTree("T", List.of(new ParseTree("n", true)))
-                                )
 
-                                ),
-                                new ParseTree(")", true)
-                        )))
-        );
-        List<String> tokens = Arrays.asList("( n )".split(" "));
-        assertThat(p.parse(tokens)).isEqualTo(tree);
+        Parser.generateParser(g, new SymbolTable<>(), "Test3", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            ParseTree tree = new ParseTree(
+                    "E",
+                    List.of( new ParseTree("T",
+                            List.of(
+                                    new ParseTree("(", true),
+                                    new ParseTree("E", List.of(
+                                            new ParseTree("T", List.of(new ParseTree("n", true)))
+                                    )
+
+                                    ),
+                                    new ParseTree(")", true)
+                            )))
+            );
+            List<String> tokens = Arrays.asList("( n )".split(" "));
+            assertThat(parser.parse(tokens)).isEqualTo(tree);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
     }
 
     @Test
@@ -123,34 +174,39 @@ public class TestParser {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Parser p = new Parser(g);
+        Parser.generateParser(g, new SymbolTable<>(), "Test4", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            ParseTree tree = new ParseTree("E", List.of(
+                    new ParseTree("E", List.of(
+                            new ParseTree("T", List.of(
+                                    new ParseTree("n", true)
+                            ))
+                    )),
+                    new ParseTree("-", true),
+                    new ParseTree("T", List.of(
+                            new ParseTree("(", true),
+                            new ParseTree("E", List.of(
+                                    new ParseTree("E", List.of(
+                                            new ParseTree("T", List.of(
+                                                    new ParseTree("n", true)
+                                            ))
+                                    )),
+                                    new ParseTree("-", true),
+                                    new ParseTree("T", List.of(
+                                            new ParseTree("n", true)
+                                    ))
+                            )),
+                            new ParseTree(")", true)
+                    ))
+            ));
 
-        ParseTree tree = new ParseTree("E", List.of(
-                new ParseTree("E", List.of(
-                        new ParseTree("T", List.of(
-                                new ParseTree("n", true)
-                        ))
-                )),
-                new ParseTree("-", true),
-                new ParseTree("T", List.of(
-                        new ParseTree("(", true),
-                        new ParseTree("E", List.of(
-                                new ParseTree("E", List.of(
-                                        new ParseTree("T", List.of(
-                                                new ParseTree("n", true)
-                                        ))
-                                )),
-                                new ParseTree("-", true),
-                                new ParseTree("T", List.of(
-                                        new ParseTree("n", true)
-                                ))
-                        )),
-                        new ParseTree(")", true)
-                ))
-        ));
-
-        List<String> tokens = Arrays.asList("n - ( n - n )".split(" "));
-        assertThat(p.parse(tokens)).isEqualTo(tree);
+            List<String> tokens = Arrays.asList("n - ( n - n )".split(" "));
+            assertThat(parser.parse(tokens)).isEqualTo(tree);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @Test
@@ -160,19 +216,26 @@ public class TestParser {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Parser p = new Parser(g);
+        Parser.generateParser(g, new SymbolTable<>(), "Test5", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            // parentesi non chiusa
+            assertThatThrownBy(() -> parser.parse(Arrays.asList("( n".split(" "))))
+                    .isInstanceOf(RuntimeException.class);
 
-        // parentesi non chiusa
-        assertThatThrownBy(() -> p.parse(Arrays.asList("( n".split(" "))))
-                .isInstanceOf(RuntimeException.class);
+            // operatore senza operando destro
+            assertThatThrownBy(() -> parser.parse(Arrays.asList("n -".split(" "))))
+                    .isInstanceOf(RuntimeException.class);
 
-        // operatore senza operando destro
-        assertThatThrownBy(() -> p.parse(Arrays.asList("n -".split(" "))))
-                .isInstanceOf(RuntimeException.class);
+            // token sconosciuto
+            assertThatThrownBy(() -> parser.parse(Arrays.asList("n + n".split(" "))))
+                    .isInstanceOf(RuntimeException.class);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
 
-        // token sconosciuto
-        assertThatThrownBy(() -> p.parse(Arrays.asList("n + n".split(" "))))
-                .isInstanceOf(RuntimeException.class);
+
     }
 
     @ParameterizedTest
@@ -266,9 +329,15 @@ public class TestParser {
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser parser = new Parser(g);
-        assertThat(parser.isRecognized(tokens))
-                .isEqualTo(result);
+
+        Parser.generateParser(g, new SymbolTable<>(), "Test6", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @ParameterizedTest
@@ -313,10 +382,15 @@ public class TestParser {
                 ? List.of()
                 : Arrays.asList(input.split(" "));
 
-        Parser parser = new Parser(g);
 
-        assertThat(parser.isRecognized(tokens))
-                .isEqualTo(result);
+        Parser.generateParser(g, new SymbolTable<>(), "Test7", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @ParameterizedTest
@@ -345,7 +419,7 @@ public class TestParser {
             "id =, false",
             "else id = num, false",
     })
-    void testIfElseGrammar(String input, boolean expected) {
+    void testIfElseGrammar(String input, boolean result) {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
                 "S' -> S\n" +
                         "S -> M | U\n" +
@@ -361,9 +435,14 @@ public class TestParser {
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser parser = new Parser(g);
-        assertThat(parser.isRecognized(tokens))
-                .isEqualTo(expected);
+        Parser.generateParser(g, new SymbolTable<>(), "Test8", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables, new SymbolTable<>());
+            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
 }

@@ -1,0 +1,67 @@
+package lalrparser;
+
+import org.jetbrains.annotations.NotNull;
+
+/**
+ * Represents the parsing tables required by an LALR(1) parser at runtime.
+ *
+ * <p>Implementations of this interface are typically generated automatically
+ * by the parser generator from a ContextFreeGrammar, and contain
+ * all the information needed to drive the LR parsing algorithm without
+ * retaining the original grammar object.</p>
+ *
+ * <p>The parsing tables consist of:
+ * <ul>
+ *   <li><b>ACTION</b>: determines what action to take given a state and a terminal symbol</li>
+ *   <li><b>GOTO</b>: determines the next state after a reduction, given a state and a non-terminal</li>
+ *   <li><b>PRODUCTIONS</b>: encodes each production rule as {lhs_id, rhs_length}, used during reductions</li>
+ * </ul>
+ * </p>
+ */
+public interface ParserTables {
+
+    /**
+     * Returns the ACTION table used by the LALR(1) parser.
+     *
+     * <p>{@code ACTION[state][symbol_id]} encodes the action to take:
+     * <ul>
+     *   <li>{@code {0, s}} — SHIFT to state {@code s}</li>
+     *   <li>{@code {1, p}} — REDUCE using production {@code p}</li>
+     *   <li>{@code {2}}    — ACCEPT</li>
+     *   <li>{@code null}   — no action (syntax error)</li>
+     * </ul>
+     * </p>
+     *
+     * @return a 2D array of int arrays indexed by [state][symbol_id],
+     *         where null entries represent missing (error) entries
+     */
+    int @NotNull [] @NotNull [] @NotNull [] getACTION();
+
+    /**
+     * Returns the GOTO table used by the LALR(1) parser.
+     *
+     * <p>{@code GOTO[state][symbol_id]} contains the next state to transition to
+     * after reducing to the non-terminal identified by {@code symbol_id}.
+     * A value of {@code -1} indicates no transition (error).</p>
+     *
+     * @return a 2D array indexed by [state][symbol_id],
+     *         where -1 entries represent missing (error) entries
+     */
+    int @NotNull [] @NotNull [] getGOTO();
+
+    /**
+     * Returns the production rules encoded for use during reductions.
+     *
+     * <p>{@code PRODUCTIONS[production_id]} is an array {@code {lhs_id, rhs_length}} where:
+     * <ul>
+     *   <li>{@code lhs_id} is the symbol ID of the left-hand side non-terminal</li>
+     *   <li>{@code rhs_length} is the number of symbols in the right-hand side,
+     *       i.e. how many elements to pop from the stack during a reduction</li>
+     * </ul>
+     * The index of each production corresponds exactly to the production ID
+     * used in the ACTION table's REDUCE entries.</p>
+     *
+     * @return a 2D array indexed by [production_id], each entry being {lhs_id, rhs_length}
+     */
+    int @NotNull [] @NotNull [] getPRODUCTIONS();
+}

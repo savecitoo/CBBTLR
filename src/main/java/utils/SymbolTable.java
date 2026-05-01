@@ -76,7 +76,7 @@ public class SymbolTable<T> implements Serializable {
      */
     public int getId(@NotNull T symbol) throws NoSuchElementException {
         if (!table_o_id.containsKey(symbol))
-            throw new NoSuchElementException("The symbol is not in the table");
+            throw new NoSuchElementException("The symbol " + symbol + " is not in the table");
         return table_o_id.get(symbol);
     }
 
@@ -88,7 +88,7 @@ public class SymbolTable<T> implements Serializable {
      */
     public @NotNull T getSymbol(int id) throws NoSuchElementException{
         if (!table_id_o.containsKey(id))
-            throw new NoSuchElementException("The ID is not associated with any symbol");
+            throw new NoSuchElementException("The ID " + id +  " is not associated with any symbol");
         return table_id_o.get(id);
     }
 

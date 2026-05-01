@@ -4,7 +4,11 @@ import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
 import org.jetbrains.annotations.NotNull;
 import utils.ParseTree;
+import utils.SymbolTable;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -21,88 +25,20 @@ public class Parser {
         - The second element is the state where we have to go.
      */
 
-    private final @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull String, @NotNull Integer>> GOTO;
+    private final @NotNull SymbolTable<String> symbol_encoding;
 
-    private final @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull String, int[]>> ACTION;
-
-    private final @NotNull ContextFreeGrammar grammar;
-
-    // probably we have to keep trace of the states where we reduce with the encoding.
+    private final @NotNull ParserTables tables;
 
     /**
      * This is a constructor for an LALR(1) Parser.
-     * @param grammar the grammar to be parsed.
+     * @param tables the tables needed to the parser, you can build it with the generateParser method.
+     * @param symbol_encoding the symbol table that will be used to encode all the symbols in the grammar.
      */
-    public Parser(@NotNull ContextFreeGrammar grammar) throws IllegalArgumentException {
-        Automaton automaton = Automaton.fromGrammar(grammar);
+    public Parser(@NotNull ParserTables tables, @NotNull SymbolTable<String> symbol_encoding) throws IllegalArgumentException {
 
-//        for (State state : automaton.states) {
-//            for (CoreItem it : state) {
-//                Set<String> la = state.items().get(it).getLookaheads();
-//                System.out.println(automaton.states_encoding.get(state)
-//                        + " | " + it + " | " + la);
-//            }
-//        }
-//        System.out.println(automaton);
-
-        // Construction of the GOTO table.
-
-        Map<Integer, Map<String, Integer>> GOTO = new HashMap<>();
-
-        Map<Integer, Map<String, int[]>> ACTION = new HashMap<>();
-
-        for (State state : automaton.states) { // we iterate over each state on the automaton
-
-            // SHIFT
-            if (automaton.transitions.containsKey(state)) {
-                Map<String, State> transitions = automaton.transitions.get(state);
-                for (String symbol : transitions.keySet()) {
-
-                    State next = transitions.get(symbol);
-                    int from = automaton.states_encoding.get(state);
-                    int to = automaton.states_encoding.get(next);
-
-                    if (grammar.N.contains(symbol)) { // NON terminal → GOTO
-                        GOTO.computeIfAbsent(from, k -> new HashMap<>()).put(symbol, to);
-                    } else if (grammar.T.contains(symbol)) {
-                        Map<String, int[]> row = ACTION.computeIfAbsent(from, k -> new HashMap<>());
-                        if (row.containsKey(symbol)) {
-                            throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT"); // shift/reduce
-                        }
-                        row.put(symbol, new int[]{0, to});
-                    }
-                }
-            }
-
-            // REDUCE
-            int stateId = automaton.states_encoding.get(state);
-            for (CoreItem it : state) {
-                if (it.isComplete()) {
-                    Set<String> lookaheads = state.items().get(it).getLookaheads();
-                    Map<String, int[]> row = ACTION.computeIfAbsent(stateId, k -> new HashMap<>());
-                    for (String symbol : lookaheads) {
-                        if (row.containsKey(symbol)) {
-                            if (row.get(symbol)[0] == 0)
-                                throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT");
-                            else
-                                throw new IllegalArgumentException("REDUCE/REDUCE CONFLICT");
-                        }
-                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id() && symbol.equals("#")) {
-                            row.put("#", new int[]{2});
-                        } else {
-                            row.put(symbol, new int[]{1, it.production_id()});
-                        }
-                    }
-                }
-            }
+        this.symbol_encoding = symbol_encoding;
+        this.tables = tables;
         }
-        this.GOTO = GOTO;
-
-        this.ACTION = ACTION;
-
-        this.grammar = grammar;
-        // printTables();
-    }
 
     /**
      * This method returns if the input is correct for the given grammar.
@@ -115,87 +51,10 @@ public class Parser {
             return true;
         } catch (IllegalArgumentException e) {
             return false;
+        } catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+            return false;
         }
-    }
-
-    public void printTables() {
-        // Raccoglie tutti i simboli terminali e non terminali
-        Set<String> terminals = new TreeSet<>();
-        Set<String> nonTerminals = new TreeSet<>();
-
-        for (Map<String, int[]> row : ACTION.values())
-            terminals.addAll(row.keySet());
-        for (Map<String, Integer> row : GOTO.values())
-            nonTerminals.addAll(row.keySet());
-
-        List<String> termList = new ArrayList<>(terminals);
-        List<String> nonTermList = new ArrayList<>(nonTerminals);
-
-        // Larghezza colonne
-        int colWidth = 10;
-        int stateWidth = 7;
-
-        // Tutti gli stati
-        Set<Integer> allStates = new TreeSet<>();
-        allStates.addAll(ACTION.keySet());
-        allStates.addAll(GOTO.keySet());
-
-        // Header
-        int totalCols = termList.size() + nonTermList.size();
-        int totalWidth = stateWidth + totalCols * colWidth;
-
-        System.out.println("=".repeat(totalWidth));
-        System.out.printf("%-" + stateWidth + "s", "STATE");
-
-        // Separatore ACTION / GOTO
-        System.out.printf("%-" + (termList.size() * colWidth) + "s", "ACTION");
-        System.out.printf("%-" + (nonTermList.size() * colWidth) + "s", "GOTO");
-        System.out.println();
-
-        System.out.printf("%-" + stateWidth + "s", "");
-        for (String t : termList)
-            System.out.printf("%-" + colWidth + "s", t);
-        for (String nt : nonTermList)
-            System.out.printf("%-" + colWidth + "s", nt);
-        System.out.println();
-
-        System.out.println("-".repeat(totalWidth));
-
-        // Righe
-        for (int state : allStates) {
-            System.out.printf("%-" + stateWidth + "d", state);
-
-            // ACTION
-            Map<String, int[]> actionRow = ACTION.getOrDefault(state, Collections.emptyMap());
-            for (String t : termList) {
-                if (actionRow.containsKey(t)) {
-                    int[] val = actionRow.get(t);
-                    String cell = switch (val[0]) {
-                        case 0 -> "s" + val[1];          // shift
-                        case 1 -> "r" + val[1];          // reduce
-                        case 2 -> "acc";                 // accept
-                        default -> "?";
-                    };
-                    System.out.printf("%-" + colWidth + "s", cell);
-                } else {
-                    System.out.printf("%-" + colWidth + "s", "");
-                }
-            }
-
-            // GOTO
-            Map<String, Integer> gotoRow = GOTO.getOrDefault(state, Collections.emptyMap());
-            for (String nt : nonTermList) {
-                if (gotoRow.containsKey(nt)) {
-                    System.out.printf("%-" + colWidth + "d", gotoRow.get(nt));
-                } else {
-                    System.out.printf("%-" + colWidth + "s", "");
-                }
-            }
-
-            System.out.println();
-        }
-
-        System.out.println("=".repeat(totalWidth));
     }
 
     /**
@@ -204,52 +63,245 @@ public class Parser {
      * @return the corresponding parsing tree.
      * @throws IllegalArgumentException if the word is not recognized.
      */
-    public ParseTree parse(List<String> input) throws IllegalArgumentException {
+    public ParseTree parse(@NotNull List<String> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
         input.add("#");
         Stack<Integer> states = new Stack<>();
         Stack<ParseTree> symbols = new Stack<>();
         states.push(0);
         int i = 0;
-        String next = input.getFirst();
-        while (true) {
-            Integer s = states.peek();
 
-            if (i < input.size())
-                next = input.get(i);
-            if (!ACTION.get(s).containsKey(next)) {
-//                System.out.println("state: " + s);
-//                System.out.println("Next Symbol: " + next);
-//                printTables();
+        while (true) {
+            int s = states.peek();
+            int next = symbol_encoding.getId(input.get(i));
+
+            int[][][] ACTION = tables.getACTION();
+            int[][] GOTO = tables.getGOTO();
+            int[][] PRODUCTIONS = tables.getPRODUCTIONS();
+
+            if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null)
                 throw new IllegalArgumentException("The word is not recognized");
-            }
-            int[] action = ACTION.get(s).get(next);
+
+            int[] action = ACTION[s][next];
             switch (action[0]) {
                 case 0: // shift
-                    states.push(
-                            action[1]
-                    );
-                    symbols.push(new ParseTree(next, true));
+                    states.push(action[1]);
+                    symbols.push(new ParseTree(input.get(i), true));
                     i++;
                     break;
                 case 1: // reduce
-                    ContextFreeProduction production = grammar.P.fromProdId(action[1]);
-                    int prod_size = production.fromProdId(action[1]).size();
+                    int[] production = PRODUCTIONS[action[1]];
+                    int lhs_id = production[0];
+                    int rhs_len = production[1];
                     List<ParseTree> children = new ArrayList<>();
-                    for (int j = 0; j < prod_size; j++) {
+                    for (int j = 0; j < rhs_len; j++) {
                         states.pop();
                         children.add(symbols.pop());
                     }
                     s = states.peek();
-                    states.push(GOTO.get(s).get(production.getLHS()));
-                    symbols.push(new ParseTree(production.getLHS(), children.reversed()));
+                    states.push(GOTO[s][lhs_id]);
+                    symbols.push(new ParseTree(symbol_encoding.getSymbol(lhs_id), children.reversed()));
                     break;
                 case 2: // accept
                     return symbols.peek();
-                default: // error
+                default:
                     throw new IllegalArgumentException("The word is not recognized");
             }
         }
+    }
+
+    public static void generateParser(@NotNull ContextFreeGrammar grammar,
+                               @NotNull SymbolTable<@NotNull String> symbol_encoding,
+                               @NotNull String className,
+                               @NotNull String outputDir) {
+        Automaton automaton = Automaton.fromGrammar(grammar);
+        Map<Integer, Map<Integer, Integer>> GOTO = new HashMap<>();
+        Map<Integer, Map<Integer, int[]>> ACTION = new HashMap<>();
+        buildingTables(grammar, symbol_encoding, automaton, GOTO, ACTION);
+        try {
+            writeTo(
+                    className,
+                    Path.of(outputDir),
+                    GOTO,
+                    ACTION,
+                    symbol_encoding,
+                    grammar
+            );
+        } catch (IOException e) {
+            throw new IllegalArgumentException
+                    ("An exception has been raised with the following output:" + e.getMessage());
+        }
+    }
+
+
+    /**
+     * This method given a ContextFreeGrammar and a SymbolTable adds to the table all the symbols in the grammar.
+     * @param grammar the grammar.
+     * @param symbolEncoding the table.
+     */
+    private static void populateSymbolEncoding(@NotNull ContextFreeGrammar grammar,
+                                        @NotNull SymbolTable<@NotNull String> symbolEncoding) {
+        for (String s : grammar.T) symbolEncoding.add(s);
+        for (String s : grammar.N) symbolEncoding.add(s);
+        symbolEncoding.add("#");
+    }
+
+    /**
+     * This method builds the tables for the parser starting from the grammar.
+     * @param grammar the grammar wanted to be parsed.
+     * @param symbol_encoding the encoding of the symbols in the grammar.
+     * @param automaton the LALR(1) automaton.
+     * @param GOTO the GOTO table.
+     * @param ACTION the ACTION table.
+     */
+    private static void buildingTables(@NotNull ContextFreeGrammar grammar,
+                                       @NotNull SymbolTable<@NotNull String> symbol_encoding,
+                                       @NotNull Automaton automaton,
+                                       @NotNull Map<@NotNull Integer,
+                                               @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
+                                       @NotNull Map<@NotNull Integer,
+                                               @NotNull Map<@NotNull Integer, int[]>> ACTION) {
+        populateSymbolEncoding(grammar,symbol_encoding);
+        for (State state : automaton.states) { // we iterate over each state on the automaton
+            // SHIFT
+            if (automaton.transitions.containsKey(state)) {
+                Map<String, State> transitions = automaton.transitions.get(state);
+                for (String symbol : transitions.keySet()) {
+                    int id_symbol = symbol_encoding.getId(symbol);
+                    State next = transitions.get(symbol);
+                    int from = automaton.states_encoding.get(state);
+                    int to = automaton.states_encoding.get(next);
+
+                    if (grammar.N.contains(symbol)) { // NON terminal → GOTO
+                        GOTO.computeIfAbsent(from, k -> new HashMap<>()).put(id_symbol, to);
+                    } else if (grammar.T.contains(symbol)) {
+                        Map<Integer, int[]> row = ACTION.computeIfAbsent(from, k -> new HashMap<>());
+                        if (row.containsKey(id_symbol)) {
+                            throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT"); // shift/reduce
+                        }
+                        row.put(id_symbol, new int[]{0, to});
+                    }
+                }
+            }
+
+            // REDUCE
+            int stateId = automaton.states_encoding.get(state);
+            for (CoreItem it : state) {
+                if (it.isComplete()) {
+                    Set<String> lookaheads = state.items().get(it).getLookaheads();
+                    Map<Integer, int[]> row = ACTION.computeIfAbsent(stateId, k -> new HashMap<>());
+                    for (String symbol : lookaheads) {
+                        int id_symbol = symbol_encoding.getId(symbol);
+                        if (row.containsKey(id_symbol)) {
+                            if (row.get(id_symbol)[0] == 0)
+                                throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT");
+                            else
+                                throw new IllegalArgumentException("REDUCE/REDUCE CONFLICT");
+                        }
+                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id() && symbol.equals("#")) {
+                            row.put(symbol_encoding.getId("#"), new int[]{2});
+                        } else {
+                            row.put(id_symbol, new int[]{1, it.production_id()});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void writeTo(
+           @NotNull String className,
+           @NotNull Path outputDir,
+           @NotNull Map<@NotNull Integer,
+                   @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
+           @NotNull Map<@NotNull Integer,
+                   @NotNull Map<@NotNull Integer, int[]>> ACTION,
+           @NotNull SymbolTable<@NotNull String> symbol_encoding,
+           @NotNull ContextFreeGrammar grammar  // solo per le produzioni, poi buttato
+    ) throws IOException {
+        StringBuilder sb = new StringBuilder();
+
+        int nStates = 0;
+        for (int state : ACTION.keySet())
+            if (state + 1 > nStates) nStates = state + 1;
+        for (int state : GOTO.keySet())
+            if (state + 1 > nStates) nStates = state + 1;
+
+        int nSymbols = symbol_encoding.size();
+
+        // ── Header ──────────────────────────────────────────────────────────
+        sb.append("import java.util.Arrays;\n\n");
+        sb.append("import lalrparser.ParserTables;\n\n");
+        sb.append("import org.jetbrains.annotations.NotNull;\n\n");
+        sb.append("public class ").append(className).append("ParserTables implements ParserTables {\n\n");
+
+        // ── PRODUCTIONS ─────────────────────────────────────────────────────
+        sb.append("    public static final int[][] PRODUCTIONS = {\n");
+        for (int i = 0; i < grammar.P.size(); i++) {
+            ContextFreeProduction p = grammar.P.fromProdId(i);
+            int lhs_id = symbol_encoding.getId(p.getLHS());
+            int rhs_len = p.fromProdId(i).size();
+            sb.append("        {").append(lhs_id).append(", ").append(rhs_len).append("},\n");
+        }
+        sb.append("    };\n\n");
+
+        // ── ACTION ───────────────────────────────────────────────────────────
+        sb.append("    public static final int[][][] ACTION = new int[")
+                .append(nStates).append("][").append(nSymbols).append("][];\n");
+        sb.append("    static {\n");
+        for (int state : ACTION.keySet()) {
+            Map<Integer, int[]> row = ACTION.get(state);
+            for (int symbolId : row.keySet()) {
+                int[] action = row.get(symbolId);
+                sb.append("        ACTION[").append(state).append("][").append(symbolId).append("] = new int[]{");
+                for (int i = 0; i < action.length; i++) {
+                    if (i > 0) sb.append(", ");
+                    sb.append(action[i]);
+                }
+                sb.append("};\n");
+            }
+        }
+        sb.append("    }\n\n");
+
+        // ── GOTO ─────────────────────────────────────────────────────────────
+        sb.append("    public static final int[][] GOTO = new int[")
+                .append(nStates).append("][").append(nSymbols).append("];\n");
+        sb.append("    static {\n");
+        sb.append("        for (int[] row : GOTO) Arrays.fill(row, -1);\n");
+        for (int state : GOTO.keySet()) {
+            Map<Integer, Integer> row = GOTO.get(state);
+            for (int symbolId : row.keySet()) {
+                int nextState = row.get(symbolId);
+                sb.append("        GOTO[").append(state).append("][").append(symbolId)
+                        .append("] = ").append(nextState).append(";\n");
+            }
+        }
+        sb.append("    }\n\n");
+
+        // ── Getters ─────────────────────────────────────────────────────────
+        sb.append("    @Override\n");
+        sb.append("    public int @NotNull [] @NotNull [] @NotNull [] getACTION() {\n");
+        sb.append("        return ACTION;\n");
+        sb.append("    }\n\n");
+
+        sb.append("    @Override\n");
+        sb.append("    public int @NotNull [] @NotNull [] getGOTO() {\n");
+        sb.append("        return GOTO;\n");
+        sb.append("    }\n\n");
+
+        sb.append("    @Override\n");
+        sb.append("    public int @NotNull [] @NotNull [] getPRODUCTIONS() {\n");
+        sb.append("        return PRODUCTIONS;\n");
+        sb.append("    }\n\n");
+
+        sb.append("}\n");
+
+        // ── Scrittura su file ────────────────────────────────────────────────
+        Files.createDirectories(outputDir);
+        Files.writeString(
+                outputDir.resolve(className + "ParserTables.java"),
+                sb.toString()
+        );
     }
 
 
