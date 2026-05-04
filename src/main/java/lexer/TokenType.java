@@ -67,7 +67,7 @@ public record TokenType(@NotNull String identifier, @NotNull String regex, boole
                     matcher.group(3) != null
             );
         }
-        throw new IllegalArgumentException("The line specified for the token is not well formed.");
+        throw new IllegalArgumentException("The line " + line + "  specified for the token is not well formed.");
     }
 
     @Override

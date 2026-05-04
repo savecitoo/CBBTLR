@@ -113,7 +113,7 @@ public class Lexer implements Serializable {
             throws IllegalArgumentException {
         List<TokenType> tokens = new LinkedList<>();
         Set<String> identifiers = new HashSet<>();
-        Scanner s = new Scanner(lexer);
+        Scanner s = new Scanner(lexer.trim());
         while (s.hasNext()){
             TokenType t = TokenType.fromString(s.nextLine());
             if (!identifiers.add(t.identifier()))

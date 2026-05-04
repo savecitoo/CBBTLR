@@ -41,7 +41,7 @@ public class Parser {
      * @param input the word to be recognized.
      * @return true if it is in the language of the grammar, false otherwise.
      */
-    public boolean isRecognized(List<String> input) {
+    public boolean isRecognizedString(List<String> input) {
         try {
             parseStrings(input);
             return true;
@@ -52,6 +52,24 @@ public class Parser {
             return false;
         }
     }
+
+    /**
+     * This method returns if the input is correct for the given grammar.
+     * @param input the word to be recognized.
+     * @return true if it is in the language of the grammar, false otherwise.
+     */
+    public boolean isRecognized(List<Token> input) {
+        try {
+            parse(input);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        } catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * This method parse list of string in input returning the corresponding parsing tree.
@@ -121,7 +139,6 @@ public class Parser {
      */
     public ParseTree parse(@NotNull List<Token> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
-        // input.add("#");
         Stack<Integer> states = new Stack<>();
         Stack<ParseTree> symbols = new Stack<>();
         states.push(0);
@@ -131,6 +148,12 @@ public class Parser {
         int[][] GOTO = tables.getGOTO();
         int[][] PRODUCTIONS = tables.getPRODUCTIONS();
         String[] SYMBOLS = tables.getSymbols();
+        for (int j = 0; j < SYMBOLS.length; j++) {
+            if (SYMBOLS[j].equals("#")){
+                input.add(Token.createEOFToken(j));
+                break;
+            }
+        }
 
         while (true) {
             int s = states.peek();
@@ -176,6 +199,7 @@ public class Parser {
 
     public static void generateParser(@NotNull ContextFreeGrammar grammar,
                                       @NotNull SymbolTable<@NotNull String> symbol_encoding,
+                                      @NotNull String packageName,
                                       @NotNull String className,
                                       @NotNull String outputDir) {
         Automaton automaton = Automaton.fromGrammar(grammar);
@@ -183,18 +207,11 @@ public class Parser {
         Map<Integer, Map<Integer, int[]>> ACTION = new HashMap<>();
         buildingTables(grammar, symbol_encoding, automaton, GOTO, ACTION);
         try {
-            writeTo(
-                    className,
-                    Path.of(outputDir),
-                    GOTO,
-                    ACTION,
-                    symbol_encoding,
-                    grammar
-            );
-            writeParserFile(className, Path.of(outputDir));
+            writeTo(packageName, className, Path.of(outputDir), GOTO, ACTION, symbol_encoding, grammar);
+            writeParserFile(packageName, className, Path.of(outputDir));
         } catch (IOException e) {
-            throw new IllegalArgumentException
-                    ("An exception has been raised with the following output:" + e.getMessage());
+            throw new IllegalArgumentException(
+                    "An exception has been raised with the following output:" + e.getMessage());
         }
     }
 
@@ -275,14 +292,13 @@ public class Parser {
     }
 
     private static void writeTo(
-           @NotNull String className,
-           @NotNull Path outputDir,
-           @NotNull Map<@NotNull Integer,
-                   @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
-           @NotNull Map<@NotNull Integer,
-                   @NotNull Map<@NotNull Integer, int[]>> ACTION,
-           @NotNull SymbolTable<@NotNull String> symbol_encoding,
-           @NotNull ContextFreeGrammar grammar
+            @NotNull String packageName,
+            @NotNull String className,
+            @NotNull Path outputDir,
+            @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
+            @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull Integer, int[]>> ACTION,
+            @NotNull SymbolTable<@NotNull String> symbol_encoding,
+            @NotNull ContextFreeGrammar grammar
     ) throws IOException {
         StringBuilder sb = new StringBuilder();
 
@@ -295,6 +311,7 @@ public class Parser {
         int nSymbols = symbol_encoding.size();
 
         // ── Header ──────────────────────────────────────────────────────────
+        sb.append("package ").append(packageName).append(";\n\n");
         sb.append("import java.util.Arrays;\n");
         sb.append("import lalrparser.ParserTables;\n");
         sb.append("import org.jetbrains.annotations.NotNull;\n\n");
@@ -343,7 +360,7 @@ public class Parser {
         }
         sb.append("    }\n\n");
 
-        // ── SYMBOLS ─────────────────────────────────────────────────────────────
+        // ── SYMBOLS ──────────────────────────────────────────────────────────
         sb.append("    public static final String[] SYMBOLS = {\n");
         for (int i = 0; i < symbol_encoding.size(); i++) {
             sb.append("        \"")
@@ -352,7 +369,7 @@ public class Parser {
         }
         sb.append("    };\n\n");
 
-        // ── Getters ─────────────────────────────────────────────────────────
+        // ── Getters ──────────────────────────────────────────────────────────
         sb.append("    @Override\n");
         sb.append("    public int @NotNull [] @NotNull [] @NotNull [] getACTION() {\n");
         sb.append("        return ACTION;\n");
@@ -371,69 +388,88 @@ public class Parser {
         sb.append("    @Override\n");
         sb.append("    public String[] getSymbols() { return SYMBOLS; }\n\n");
 
-
         sb.append("}\n");
 
-        // ── Scrittura su file ────────────────────────────────────────────────
+        // ── Scrittura su file ─────────────────────────────────────────────────
         Files.createDirectories(outputDir);
-        Files.writeString(
-                outputDir.resolve(className + "ParserTables.java"),
-                sb.toString()
-        );
+        Files.writeString(outputDir.resolve(className + "ParserTables.java"), sb.toString());
     }
 
 
     /**
      * Writes the {@code <className>Parser.java} file — a thin wrapper around {@link Parser}
      * that instantiates {@code <className>ParserTables} and delegates to it.
-     * The generated class exposes {@link Parser#parse} and {@link Parser#isRecognized}
+     * The generated class exposes {@link Parser#parse} and {@link Parser#isRecognizedString}
      * without requiring the caller to manage tables or symbol encoding manually.
      *
      * <p>This file has no logic of its own: all parsing behaviour lives in {@link Parser},
      * all grammar-specific data lives in the generated {@code ParserTables} class.
      *
-     * @param className the base name used for the generated class and the corresponding
-     *                  tables class (e.g. {@code "MyGrammar"} produces {@code MyGrammarParser}
-     *                  referencing {@code MyGrammarParserTables}).
-     * @param outputDir the directory where {@code <className>Parser.java} will be written.
+     * @param packageName the package of the generated class.
+     * @param className   the base name used for the generated class and the corresponding
+     *                    tables class (e.g. {@code "MyGrammar"} produces {@code MyGrammarParser}
+     *                    referencing {@code MyGrammarParserTables}).
+     * @param outputDir   the directory where {@code <className>Parser.java} will be written.
      * @throws IOException if the file cannot be written.
      */
-        private static void writeParserFile(
-                @NotNull String className,
-                @NotNull Path outputDir
-        ) throws IOException {
+    private static void writeParserFile(
+            @NotNull String packageName,
+            @NotNull String className,
+            @NotNull Path outputDir
+    ) throws IOException {
 
-            String src = """
+        String src = """
+            package %s;
+                        
             import lalrparser.Parser;
+            import lexer.Lexer;
             import utils.ParseTree;
+            import java.io.IOException;
+            import java.io.ObjectInputStream;
             import java.util.List;
+            import java.util.Objects;
             import lexer.Token;
-                    
+                        
             public class %sParser {
                         
                 private final Parser parser;
+                private final Lexer lexer;
                         
                 public %sParser() {
                     this.parser = new Parser(new %sParserTables());
+                    try (ObjectInputStream ois = new ObjectInputStream(
+                            Objects.requireNonNull(
+                                %sParser.class.getResourceAsStream("%sLexer.ser")
+                            )
+                    )) {
+                        this.lexer = (Lexer) ois.readObject();
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new IllegalStateException("Cannot load lexer for %s", e);
+                    }
                 }
                         
                 public ParseTree parseStrings(List<String> input) {
                     return parser.parseStrings(input);
                 }
-                 
-                public ParseTree parse(List<Token> input) {
-                    return parser.parse(input);
+                        
+                public ParseTree parse(String input) {
+                    List<Token> tokenized = lexer.tokenize(input);
+                    return parser.parse(tokenized);
                 }
                         
-                public boolean isRecognized(List<String> input) {
-                    return parser.isRecognized(input);
+                public boolean isRecognizedString(List<String> input) {
+                    return parser.isRecognizedString(input);
+                }
+                
+                public boolean isRecognized(String input) {
+                    List<Token> tokenized = lexer.tokenize(input);
+                    return parser.isRecognized(tokenized);
                 }
             }
-            """.formatted(className, className, className);
+            """.formatted(packageName, className, className, className, className, className, className);
 
-            Files.writeString(outputDir.resolve(className + "Parser.java"), src);
-        }
-
+        Files.writeString(outputDir.resolve(className + "Parser.java"), src);
+    }
     /**
      * This class represents an LALR(1) automaton.
      */

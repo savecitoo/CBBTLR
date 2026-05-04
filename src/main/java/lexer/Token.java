@@ -8,4 +8,5 @@ import org.jetbrains.annotations.NotNull;
  * @param value the token lexeme.
  */
 public record Token(@NotNull Integer token_id, @NotNull String value) {
+    public static Token createEOFToken(int eofId) { return new Token(eofId, "#"); }
 }

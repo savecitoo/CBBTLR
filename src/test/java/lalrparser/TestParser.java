@@ -87,11 +87,11 @@ public class TestParser {
                         "T -> n | ( E )"
         );
         List<String> tokens = Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(), "Test1", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated", "Test1", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
-            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -124,11 +124,11 @@ public class TestParser {
                         "A -> a A | b B\n" +
                         "B -> c B | d\n"
         );
-        Parser.generateParser(g, new SymbolTable<>(),"Test2", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test2", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
-            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -142,7 +142,7 @@ public class TestParser {
                         "T -> n | ( E )"
         );
 
-        Parser.generateParser(g, new SymbolTable<>(),"Test3", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test3", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
@@ -174,7 +174,7 @@ public class TestParser {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Parser.generateParser(g, new SymbolTable<>(),"Test4", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test4", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
@@ -216,7 +216,7 @@ public class TestParser {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Parser.generateParser(g, new SymbolTable<>(),"Test5", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test5", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
@@ -330,11 +330,11 @@ public class TestParser {
                 ? List.of()
                 : Arrays.asList(input.split(" "));
 
-        Parser.generateParser(g, new SymbolTable<>(),"Test6", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test6", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
-            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -383,11 +383,11 @@ public class TestParser {
                 : Arrays.asList(input.split(" "));
 
 
-        Parser.generateParser(g, new SymbolTable<>(),"Test7", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test7", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
-            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -435,11 +435,11 @@ public class TestParser {
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(),"Test8", "src/test/java/lalrparser/generated-test/");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test8", "src/test/java/lalrparser/generated-test/");
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
-            assertThat(parser.isRecognized(tokens)).isEqualTo(result);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
