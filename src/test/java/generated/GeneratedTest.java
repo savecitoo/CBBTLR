@@ -80,4 +80,66 @@ public class GeneratedTest {
         assertThat(parser.isRecognized(input)).isEqualTo(result);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            // --- variabili e costanti ---
+            "p, true",
+            "true, true",
+            "false, true",
+            "myVar, true",
+
+            // --- not ---
+            "!p, true",
+            "!!p, true",
+            "!true, true",
+
+            // --- and ---
+            "p & q, true",
+            "p & q & r, true",
+            "p & !q, true",
+
+            // --- or ---
+            "p | q, true",
+            "p | q | r, true",
+            "p | !q, true",
+
+            // --- implies ---
+            "p -> q, true",
+            "p -> q -> r, true",
+            "p & q -> r | s, true",
+
+            // --- iff ---
+            "p <-> q, true",
+            "p <-> q <-> r, true",
+            "p -> q <-> r -> s, true",
+
+            // --- parentesi ---
+            "(p), true",
+            "(p & q), true",
+            "(p | q) & r, true",
+            "!(p & q), true",
+            "(p -> q) <-> (!p | q), true",
+
+            // --- formule complesse ---
+            "p & q | r -> s <-> t, true",
+            "!p & !q -> !(p | q), true",
+            "(p -> q) & (q -> r) -> (p -> r), true",
+
+            // --- errori ---
+            "p &, false",
+            "p | , false",
+            "-> p, false",
+            "<-> p, false",
+            "p <-> , false",
+            "( p, false",
+            "p ), false",
+            "(), false",
+            "p q, false",
+            "!, false",
+    })
+    void testLogicFormulaParser(String input, boolean result) {
+        LogicGrammarParser parser = new LogicGrammarParser();
+        assertThat(parser.isRecognized(input)).isEqualTo(result);
+    }
+
 }
