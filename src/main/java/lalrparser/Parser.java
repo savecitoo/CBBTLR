@@ -148,24 +148,15 @@ public class Parser {
         int[][] GOTO = tables.getGOTO();
         int[][] PRODUCTIONS = tables.getPRODUCTIONS();
         String[] SYMBOLS = tables.getSymbols();
-        for (int j = 0; j < SYMBOLS.length; j++) {
-            if (SYMBOLS[j].equals("#")){
-                input.add(Token.createEOFToken(j));
-                break;
-            }
-        }
+        input.add(Token.createEOFToken(SYMBOLS.length-1));
 
         while (true) {
             int s = states.peek();
             String token = SYMBOLS[input.get(i).token_id()];
 
-            // ricerca lineare nell'array dei simboli
-            int next = -1;
-            for (int k = 0; k < SYMBOLS.length; k++) {
-                if (SYMBOLS[k].equals(token)) { next = k; break; }
-            }
+            int next = input.get(i).token_id();
 
-            if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null)
+            if (next >= ACTION[s].length || ACTION[s][next] == null)
                 throw new IllegalArgumentException("The word is not recognized");
 
             int[] action = ACTION[s][next];
@@ -225,7 +216,8 @@ public class Parser {
                                         @NotNull SymbolTable<@NotNull String> symbolEncoding) {
         for (String s : grammar.T) symbolEncoding.add(s);
         for (String s : grammar.N) symbolEncoding.add(s);
-        symbolEncoding.add("#");
+        if (!symbolEncoding.add("#"))
+            throw new IllegalArgumentException("The symbol \"#\" must not be used.");
     }
 
     /**

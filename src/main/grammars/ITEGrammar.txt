@@ -1,0 +1,26 @@
+S' -> S
+S -> M | U
+M -> If E Then M Else M | While E Do M | Lgraph L Rgraph | A
+U -> If E Then S | If E Then M Else U
+L -> L Next S | S
+A -> Id Equal E
+E -> E Plus T | T
+T -> T Times F | F
+F -> LParen E RParen | Id | Number
+Token:
+Plus : \+
+Times : \*
+LParen : \(
+RParen : \)
+If : if
+Then : then
+Else : else
+While : while
+Do : do
+Lgraph : \{
+Rgraph : \}
+Next : ;
+Equal : =
+Number : [0-9][0-9]*
+Id : [a-zA-Z][a-zA-Z]*
+WS : [ \t\n]+ skip
