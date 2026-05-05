@@ -45,7 +45,6 @@ public class TestParser {
             }
         }
 
-        // Caricamento classe
         try (URLClassLoader classLoader = new URLClassLoader(
                 new URL[]{javaFile.getParent().toUri().toURL()},
                 ParserTables.class.getClassLoader()
@@ -66,17 +65,17 @@ public class TestParser {
             "( ( n ) ), true",
             "( n - ( n ) ), true",
             "( n - ( n ) ) - n, true",
-            "( n - n, false",                // parentesi non chiusa
-            "n -, false",                    // operatore senza operando
-            "- n, false",                    // inizio non valido
-            "n n, false",                    // due terminali consecutivi
-            "( ), false",                    // vuoto dentro parentesi
-            "( n ) n, false",                // simboli consecutivi non validi
-            "n - ( ), false",                // parentesi vuote
-            "( n - ( n ) ) - n (, false",    // parentesi extra
-            "( n - ( n ) ) ) - n, false",    // parentesi sbilanciate
-            "f e, false",                    // simboli non nel linguaggio
-            "n - ( n - ), false",            // espressione incompleta
+            "( n - n, false",
+            "n -, false",
+            "- n, false",
+            "n n, false",
+            "( ), false",
+            "( n ) n, false",
+            "n - ( ), false",
+            "( n - ( n ) ) - n (, false",
+            "( n - ( n ) ) ) - n, false",
+            "f e, false",
+            "n - ( n - ), false",
             "( n - ( n ) ) - ( n ), true",
             "( ( n - n ) - ( n ) ), true"
     })
@@ -220,15 +219,12 @@ public class TestParser {
         try {
             ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
             Parser parser = new Parser(tables);
-            // parentesi non chiusa
             assertThatThrownBy(() -> parser.parseStrings(Arrays.asList("( n".split(" "))))
                     .isInstanceOf(RuntimeException.class);
 
-            // operatore senza operando destro
             assertThatThrownBy(() -> parser.parseStrings(Arrays.asList("n -".split(" "))))
                     .isInstanceOf(RuntimeException.class);
 
-            // token sconosciuto
             assertThatThrownBy(() -> parser.parseStrings(Arrays.asList("n + n".split(" "))))
                     .isInstanceOf(RuntimeException.class);
         } catch (Exception e) {
@@ -240,36 +236,31 @@ public class TestParser {
 
     @ParameterizedTest
     @CsvSource({
-            // --- un solo numero ---
             "n, true",
 
-            // --- addizione e sottrazione ---
             "n + n, true",
             "n - n, true",
-            "n + n + n, true",                          // associatività sinistra +
-            "n - n - n, true",                          // associatività sinistra -
-            "n + n - n, true",                          // misto + e -
+            "n + n + n, true",
+            "n - n - n, true",
+            "n + n - n, true",
 
-            // --- moltiplicazione e divisione ---
             "n * n, true",
             "n / n, true",
-            "n * n * n, true",                          // associatività sinistra *
-            "n / n / n, true",                          // associatività sinistra /
-            "n * n / n, true",                          // misto * e /
+            "n * n * n, true",
+            "n / n / n, true",
+            "n * n / n, true",
 
-            // --- precedenza: * e / prima di + e - ---
             "n + n * n, true",
             "n * n + n, true",
             "n + n * n - n, true",
             "n * n + n / n, true",
             "n - n / n * n, true",
 
-            // --- parentesi ---
             "( n ), true",
             "( n + n ), true",
             "( n * n ), true",
             "( ( n ) ), true",
-            "( n + n ) * n, true",                      // parentesi che alterano precedenza
+            "( n + n ) * n, true",
             "n * ( n + n ), true",
             "( n + n ) * ( n - n ), true",
             "( n * ( n + n ) ), true",
@@ -277,30 +268,27 @@ public class TestParser {
             "n + ( n * ( n - n ) ) / n, true",
             "( n + n ) * ( n / ( n - n ) ), true",
 
-            // --- espressioni più lunghe e annidate ---
             "n + n * n - n / n, true",
             "( n + n ) * n - n / ( n - n ), true",
             "( ( n + n ) ) * ( ( n ) ), true",
             "n * n + n * n + n * n, true",
 
-            // --- operatori mancanti o doppi ---
-            "n n, false",                               // due operandi senza operatore
-            "n + + n, false",                           // operatore doppio
+            "n n, false",
+            "n + + n, false",
             "n * * n, false",
-            "n + - n, false",                           // unario non supportato
-            "* n, false",                               // inizia con operatore
+            "n + - n, false",
+            "* n, false",
             "/ n, false",
             "+ n, false",
             "- n, false",
-            "n +, false",                               // termina con operatore
+            "n +, false",
             "n -,false",
             "n *,false",
             "n /,false",
-            "n + n *, false",                           // operatore finale dopo espressione valida
+            "n + n *, false",
 
-            // --- parentesi sbilanciate ---
-            "( n, false",                               // aperta non chiusa
-            "n ), false",                               // chiusa senza apertura
+            "( n, false",
+            "n ), false",
             "( n + n, false",
             "n + n ), false",
             "( ( n ), false",
@@ -308,12 +296,10 @@ public class TestParser {
             "( n + ( n * n ), false",
             "( n + n ) * ( n, false",
 
-            // --- parentesi vuote ---
             "( ), false",
             "n + ( ), false",
             "( ) * n, false",
 
-            // --- simboli fuori alfabeto ---
             "x, false",
             "n + x, false",
             "f e, false",
@@ -342,27 +328,21 @@ public class TestParser {
 
     @ParameterizedTest
     @CsvSource({
-            // --- casi base ---
             "id, true",
             "num, true",
 
-            // --- unary minus ---
             "- id, true",
             "- - id, true",
 
-            // --- potenza (associatività destra) ---
             "id ^ id, true",
             "id ^ id ^ id, true",
 
-            // --- precedenze ---
             "id * id ^ id, true",
             "- id * num ^ num, true",
 
-            // --- parentesi ---
             "( id ), true",
             "( id + num ) * id, true",
 
-            // --- errori ---
             "id ^, false",
             "^ id, false",
             "id * ^ id, false",
@@ -395,24 +375,17 @@ public class TestParser {
 
     @ParameterizedTest
     @CsvSource({
-            // --- assegnazioni base ---
             "id = num, true",
             "id = id + num, true",
-            // --- if / else (matched) ---
             "if id then id = num else id = num, true",
             "if id then if id then id = num else id = num, true",
-            // --- while ---
             "while id do id = num, true",
-            // --- blocchi ---
             "{ id = num }, true",
             "{ id = num ; id = num }, true",
-            // --- unmatched if (senza else) ---
             "if id then id = num, true",
             "if id then if id then id = num, true",
-            // --- combinazioni ---
             "if id then { id = num ; id = num } else id = num, true",
             "while id do if id then id = num else id = num, true",
-            // --- errori ---
             "if id then, false",
             "if then id = num, false",
             "{ }, false",
