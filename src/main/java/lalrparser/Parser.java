@@ -152,7 +152,6 @@ public class Parser {
 
         while (true) {
             int s = states.peek();
-            String token = SYMBOLS[input.get(i).token_id()];
 
             int next = input.get(i).token_id();
 
@@ -198,8 +197,9 @@ public class Parser {
         Map<Integer, Map<Integer, int[]>> ACTION = new HashMap<>();
         buildingTables(grammar, symbol_encoding, automaton, GOTO, ACTION);
         try {
-            writeTo(packageName, className, Path.of(outputDir), GOTO, ACTION, symbol_encoding, grammar);
-            writeParserFile(packageName, className, Path.of(outputDir));
+            Path dir = Path.of(outputDir);
+            writeTo(packageName, className, dir, GOTO, ACTION, symbol_encoding, grammar);
+            writeParserFile(packageName, className, dir);
         } catch (IOException e) {
             throw new IllegalArgumentException(
                     "An exception has been raised with the following output:" + e.getMessage());
@@ -640,7 +640,7 @@ public class Parser {
 
         /**
          * This method starting from the automaton builds the channels to upgrade the automaton to an LALR(1) automaton. <br>
-         * The informations will be saved in the field @code{propagate} and @code{lookaheads}.
+         * The information will be saved in the field @code{propagate} and @code{lookaheads}.
          * @param grammar the grammar of the LALR(1) is currently being built.
          * @param states the states of the LR(0) automaton.
          * @param propagate a map where will be saved the propagations of the automata.
