@@ -13,6 +13,30 @@ import java.nio.file.Path;
 
 public class ParserGenerator {
 
+    /**
+     * Entry point of the {@code ParserGenerator} application.
+     * <p>
+     * Reads a grammar file containing a context-free grammar definition and a lexical
+     * rules section separated by a {@code Token:} marker, then produces two artifacts:
+     * <ul>
+     *   <li>A serialized {@link Lexer} saved under
+     *       {@code src/main/resources/<packagePath>/<className>Lexer.ser}, where
+     *       {@code packagePath} is derived from {@code packageName} by replacing dots
+     *       with the OS file separator.</li>
+     *   <li>The generated {@code .java} parser sources written to {@code outputDir}.</li>
+     * </ul>
+     *
+     * @param args command-line arguments, in order:
+     *             <ol>
+     *               <li>{@code grammarFile}  – path to the grammar file</li>
+     *               <li>{@code packageName} – target Java package name (e.g. {@code "com.example.generated"})</li>
+     *               <li>{@code className}   – base name of the class to generate</li>
+     *               <li>{@code outputDir}   – output directory for the generated {@code .java} sources</li>
+     *             </ol>
+     * @throws IllegalArgumentException if the number of arguments is not exactly four,
+     *                                  if the grammar file cannot be read,
+     *                                  or if it does not contain exactly one {@code Token:} section
+     */
     public static void main(String[] args) {
         if (args.length != 4)
             throw new IllegalArgumentException(
@@ -21,6 +45,34 @@ public class ParserGenerator {
         generate(args[0], args[1], args[2], args[3]);
     }
 
+    /**
+     * Reads a grammar file, extracts its lexical and syntactic definitions,
+     * serializes the resulting {@link Lexer}, and generates the corresponding parser source.
+     *
+     * <p>The grammar file must contain exactly one {@code Token:} section acting as a
+     * delimiter: everything before it is interpreted as a context-free grammar
+     * ({@link ContextFreeGrammar}), and everything after it as lexical rules ({@link Lexer}).</p>
+     *
+     * <p>The serialized {@link Lexer} object is saved to:
+     * <pre>
+     *   src/main/resources/&lt;packagePath&gt;/&lt;className&gt;Lexer.ser
+     * </pre>
+     * where {@code packagePath} is the {@code packageName} with dots replaced by the
+     * OS file separator.</p>
+     *
+     * <p>The generated {@code .java} parser sources are written to the directory
+     * specified by {@code outputDir}, via
+     * {@link Parser#generateParser(ContextFreeGrammar, SymbolTable, String, String, String)}.</p>
+     *
+     * @param grammarFile  path to the grammar file to read
+     * @param packageName  Java package name (e.g. {@code "com.example.generated"}),
+     *                     used both for the resources path and the generated sources
+     * @param className    base class name; the serialized lexer file will be named
+     *                     {@code <className>Lexer.ser}
+     * @param outputDir    root directory where the generated {@code .java} files will be written
+     * @throws IllegalArgumentException if the grammar file cannot be read,
+     *                                  or if it does not contain exactly one {@code Token:} section
+     */
     private static void generate(String grammarFile, String packageName,
                                  String className, String outputDir) {
         try {

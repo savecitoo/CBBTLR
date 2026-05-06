@@ -6,11 +6,16 @@ import utils.Finder;
 import java.util.*;
 
 /**
- * This class represents a Context Free Grammar for a Formal Language.
+ * Represents a context-free grammar (CFG) for a formal language.
+ *
+ * <p>A CFG is defined by a 4-tuple (N, T, P, S) where N is the set of non-terminal
+ * symbols, T is the set of terminal symbols, P is the set of production rules,
+ * and S ∈ N is the start symbol.</p>
+ *
+ * <p>This implementation does not support ε-productions; every right-hand side
+ * must contain at least one symbol.</p>
  */
 public class ContextFreeGrammar implements Iterable<String> {
-
-    // TODO: scrivere metodi semplificatore della grammatica.
 
     /** This field contains the non-Terminal symbols of the grammar. */
     public final @NotNull Set<@NotNull String> N;
@@ -25,14 +30,16 @@ public class ContextFreeGrammar implements Iterable<String> {
     public final @NotNull String S;
 
     /**
-     * This is a constructor for a grammar given the sets of terminals and non-terminals, the productions and the starting symbol.
-     * @param N the set of non-terminal symbols.
-     * @param T the set of terminal symbols.
-     * @param P the set of productions.
-     * @param S the startingl symbol.
-     * @throws IllegalArgumentException if the sets are empty or the sets are not disjuncted, if the starting symbol is blank
-     *                                  or is not in the non-terminal
-     *                                  symbols or if the productions have more symbols than they are specified.
+     * Constructs a context-free grammar from its fundamental components.
+     *
+     * @param N the set of non-terminal symbols; must not be empty
+     * @param T the set of terminal symbols; must not be empty and must be disjoint from {@code N}
+     * @param P the set of production rules; every symbol appearing in any right-hand side
+     *          must belong to either {@code N} or {@code T}
+     * @param S the start symbol; must not be blank and must be an element of {@code N}
+     * @throws IllegalArgumentException if {@code N} or {@code T} is empty, if {@code N} and {@code T}
+     *                                  are not disjoint, if {@code S} is blank or not in {@code N},
+     *                                  or if any production references a symbol not in {@code N} ∪ {@code T}
      */
     public ContextFreeGrammar(@NotNull Set<@NotNull String> N, @NotNull Set<@NotNull String> T, @NotNull Productions P, @NotNull String S) throws IllegalArgumentException {
         if (S.isBlank())
@@ -56,12 +63,18 @@ public class ContextFreeGrammar implements Iterable<String> {
 
 
     /**
-     * This method returns a Context Free Grammar starting from a string.<br>
-     * This method will read every symbol on the left-hand side as non-terminal, every other symbol will be considered a terminal one.<br>
-     * The starting symbol will be the one on the left-hand side of the first production rule.
-     * @param grammar the string representing the grammar.
-     * @return an instance of the corresponding grammar.
-     * @throws IllegalArgumentException if the string is blank or bad formatted.
+     * Parses a string representation of a context-free grammar and returns the corresponding instance.
+     *
+     * <p>Symbols are classified as follows:
+     * <ul>
+     *   <li>Every symbol appearing on the left-hand side of a production is treated as <em>non-terminal</em>.</li>
+     *   <li>Every other symbol is treated as <em>terminal</em>.</li>
+     * </ul>
+     * The start symbol is the left-hand side symbol of the first production rule.</p>
+     *
+     * @param grammar the string representation of the grammar; must not be blank or malformed
+     * @return a {@link ContextFreeGrammar} instance corresponding to the given string
+     * @throws IllegalArgumentException if {@code grammar} is blank or does not conform to the expected format
      */
     public static @NotNull ContextFreeGrammar fromString(@NotNull String grammar) throws IllegalArgumentException{
         if (grammar.isBlank())
@@ -165,7 +178,7 @@ public class ContextFreeGrammar implements Iterable<String> {
     }
 
     /**
-     * This metod returns a new grammar starting from the first one that keeps just the symbols in input. <br>
+     * This method returns a new grammar starting from the first one that keeps just the symbols in input. <br>
      * The resulting grammar has just the specified symbols, if any of the symbols are not in the Grammar they will be ignored.
      * @param symbols the set of symbol to be removed.
      * @return the resulting grammar.
@@ -229,15 +242,16 @@ public class ContextFreeGrammar implements Iterable<String> {
     }
 
     /**
-     * Computes the FIRST set of the given symbol.
+     * Computes the FIRST set of the given symbol, guarding against left-recursion.
      *
      * <p>FIRST(X) is the set of terminals that can appear as the first symbol
      * of some string derived from X. This implementation does not support
-     * nullable symbols (ε-productions).
+     * nullable symbols (ε-productions).</p>
      *
-     * @param symbol the terminal or non-terminal symbol to compute FIRST for.
-     * @param seen this set is to avoid problems with left-recursion, so it will always end.
-     * @return an unmodifiable set of terminal symbols in FIRST(symbol).
+     * @param symbol the terminal or non-terminal symbol whose FIRST set is to be computed
+     * @param seen   the set of symbols already visited during the current recursion;
+     *               prevents infinite loops caused by left-recursive productions
+     * @return an unmodifiable set of terminal symbols in FIRST({@code symbol})
      */
     private @NotNull Set<@NotNull String> first(@NotNull String symbol, @NotNull Set<@NotNull String> seen) {
         if (T.contains(symbol)) {
@@ -255,14 +269,15 @@ public class ContextFreeGrammar implements Iterable<String> {
     }
 
     /**
-     * Computes the FIRST set of this symbol (or sequence of symbols).
+     * Computes the FIRST set of the given symbol.
      *
-     * <p>FIRST(&alpha;) is the set of terminals that can appear as the first
-     * symbol of some string derived from &alpha;. If &alpha; can derive the
-     * empty string, the set also includes {@code "ε"}.
-     * @param symbol the set of terminals that might appear after the symbol in input.
-     * @return an unmodifiable set of symbols in FIRST.
-     * @throws IllegalArgumentException if the symbol is not in the grammar.
+     * <p>FIRST(α) is the set of terminals that can appear as the first symbol
+     * of some string derived from α. ε-productions are not supported.</p>
+     *
+     * @param symbol the terminal or non-terminal symbol whose FIRST set is to be computed;
+     *               must belong to the grammar
+     * @return an unmodifiable set of terminal symbols in FIRST({@code symbol})
+     * @throws IllegalArgumentException if {@code symbol} is not part of the grammar
      */
     public @NotNull Set<@NotNull String> first(@NotNull String symbol) throws IllegalArgumentException {
         if (!T.contains(symbol) && !N.contains(symbol)) {

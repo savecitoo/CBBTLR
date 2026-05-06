@@ -6,15 +6,31 @@ import java.io.StringReader;
 import java.util.*;
 
 /**
- * This class models all the production that a grammar has. <br>
- * Using the constructor doesn't guarantee that the key correspond to the left-hand side of the production
+ * Represents the complete set of production rules of a context-free grammar.
+ *
+ * <p>Productions are stored in the order they are added, and the first production
+ * is assumed to belong to the start symbol of the grammar. Each left-hand side
+ * symbol must appear in exactly one production rule.</p>
+ *
+ * <p>Note: using the constructor directly does not guarantee that the keys of the
+ * internal map correspond to the left-hand side of the associated production.</p>
  */
 public class Productions implements Iterable<ContextFreeProduction> {
 
+    /** A list of the production rules in the order they were passed in the initialization. */
     private final @NotNull List<@NotNull ContextFreeProduction> productions;
 
+    /** A map that goes from the lhs of the production to the corresponding {@code ContextFreeProduction}. */
     private final @NotNull Map<@NotNull String, @NotNull ContextFreeProduction> lhs_prods;
 
+    /**
+     * Constructs a {@code Productions} instance from the given list of production rules.
+     *
+     * <p>Note: the order of the productions is preserved, and the first element
+     * is treated as the production of the start symbol.</p>
+     *
+     * @param productions the list of production rules; must not be {@code null}
+     */
     public Productions(@NotNull List<@NotNull ContextFreeProduction> productions) {
         productions = List.copyOf(productions);
         this.productions = productions;
@@ -25,9 +41,10 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
-     * This method returns all the symbols that appear in {@code this} Productions.
+     * Returns the set of all symbols that appear in any production rule,
+     * including all left-hand side and right-hand side symbols.
      *
-     * @return the set of symbols that appear in the productions.
+     * @return the set of all symbols appearing in this collection of productions
      */
     public @NotNull Set<@NotNull String> symbols() {
         Set<String> symbols = new HashSet<>();
@@ -37,10 +54,11 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
-     * This method returns the production with the given id.
-     * @param prod_id the id of the production.
-     * @return the production corresponding to the given id.
-     * @throws NoSuchElementException if no production has the id.
+     * Returns the production rule that contains the given production id.
+     *
+     * @param prod_id the production id to look up
+     * @return the {@link ContextFreeProduction} whose id range includes {@code prod_id}
+     * @throws NoSuchElementException if no production rule owns {@code prod_id}
      */
     public @NotNull ContextFreeProduction fromProdId(int prod_id) throws NoSuchElementException {
         for (ContextFreeProduction p : productions) {
@@ -49,6 +67,13 @@ public class Productions implements Iterable<ContextFreeProduction> {
         throw new NoSuchElementException("No production has that id.");
     }
 
+    /**
+     * Returns the production rule whose left-hand side matches the given symbol.
+     *
+     * @param lhs the left-hand side symbol to look up; must not be {@code null}
+     * @return the {@link ContextFreeProduction} with left-hand side equal to {@code lhs}
+     * @throws IllegalArgumentException if no production rule has {@code lhs} as its left-hand side
+     */
     public @NotNull ContextFreeProduction fromLHS(@NotNull String lhs) throws IllegalArgumentException {
         if (!lhs_prods.containsKey(lhs))
             throw new IllegalArgumentException("No left-hand side match the input");
@@ -56,21 +81,26 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
-     * This method given a grammar specified only by its production rules, returns a Productions class that contains
-     * all the production of the grammar.<br>
-     * The grammar must be specified with a production rule divided in different rows.<br>
-     * If a non-Terminal symbol has more than one possible production it will be divided by the ASCII symbol "|".<br>
-     * If you use this method to build the {@code Productions} then the order of the productions will be the same as they appear
-     * in the string.
+     * Parses a string representation of a set of production rules and returns
+     * the corresponding {@code Productions} instance.
      *
-     * @param grammar the grammar.
-     * @return the productions specified by the grammar.
-     * @throws IllegalArgumentException if the grammar is blank or if a non-terminal symbol appear in more than one left-hand side.
+     * <p>Each line must contain exactly one production rule in the form:
+     * <pre>
+     *     A → α₁ | α₂ | ... | αₙ
+     * </pre>
+     * Each left-hand side symbol must appear on exactly one line. The order of
+     * the productions is preserved, and the first line is treated as the production
+     * of the start symbol.</p>
+     *
+     * @param grammar the string representation of the production rules; must not be blank
+     * @return a {@code Productions} instance corresponding to the given string
+     * @throws IllegalArgumentException if {@code grammar} is blank, any line is malformed,
+     *                                  or a left-hand side symbol appears on more than one line
      */
     public static @NotNull Productions fromString(@NotNull String grammar) throws IllegalArgumentException {
 
         if (grammar.isBlank())
-            throw new IllegalArgumentException("The gramar must not be blank.");
+            throw new IllegalArgumentException("The grammar must not be blank.");
         List<ContextFreeProduction> productions = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         Scanner s = new Scanner(new StringReader(grammar));
@@ -87,6 +117,11 @@ public class Productions implements Iterable<ContextFreeProduction> {
         return new Productions(productions);
     }
 
+    /**
+     * Returns the total number of right-hand side alternatives across all production rules.
+     *
+     * @return the sum of {@link ContextFreeProduction#rhsSize()} over all productions
+     */
     public int size() {
         int res = 0;
         for (ContextFreeProduction p : productions) res += p.rhsSize();
@@ -94,8 +129,10 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
-     * This method returns the production of the starting symbol.
-     * @return the production of the starting symbol.
+     * Returns the production rule of the start symbol, i.e. the first production
+     * in the order they were added.
+     *
+     * @return the production rule of the start symbol
      */
     public @NotNull ContextFreeProduction getStarting() {
         return productions.getFirst();

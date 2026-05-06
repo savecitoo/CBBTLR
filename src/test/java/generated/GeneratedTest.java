@@ -118,4 +118,5 @@ public class GeneratedTest {
         LogicGrammarParser parser = new LogicGrammarParser();
         assertThat(parser.isRecognized(input)).isEqualTo(result);
     }
+
 }
