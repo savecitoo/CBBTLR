@@ -165,12 +165,12 @@ public class ContextFreeProduction implements Iterable<List<String>> {
     /**
      * Parses a string representation of a production rule and returns the corresponding instance.
      *
-     * <p>The expected format is:
+     * <p>The expected format is:</p>
      * <pre>
      *     A -> α₁ | α₂ | ... | αₙ
      * </pre>
      * where {@code A} is the left-hand side non-terminal, and each αᵢ is a sequence
-     * of space-separated symbols. The left-hand side must be a single symbol with no spaces.</p>
+     * of space-separated symbols. The left-hand side must be a single symbol with no spaces.
      *
      * @param production the string representation of the production rule; must not be blank
      *                   and must conform to the expected format

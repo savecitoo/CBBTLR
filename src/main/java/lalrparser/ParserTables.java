@@ -16,21 +16,19 @@ import org.jetbrains.annotations.NotNull;
  *   <li><b>GOTO</b>: determines the next state after a reduction, given a state and a non-terminal</li>
  *   <li><b>PRODUCTIONS</b>: encodes each production rule as {lhs_id, rhs_length}, used during reductions</li>
  * </ul>
- * </p>
  */
 public interface ParserTables {
 
     /**
      * Returns the ACTION table used by the LALR(1) parser.
      *
-     * <p>{@code ACTION[state][symbol_id]} encodes the action to take:
+     * <p>{@code ACTION[state][symbol_id]} encodes the action to take:</p>
      * <ul>
      *   <li>{@code {0, s}} — SHIFT to state {@code s}</li>
      *   <li>{@code {1, p}} — REDUCE using production {@code p}</li>
      *   <li>{@code {2}}    — ACCEPT</li>
      *   <li>{@code null}   — no action (syntax error)</li>
      * </ul>
-     * </p>
      *
      * @return a 2D array of int arrays indexed by [state][symbol_id],
      *         where null entries represent missing (error) entries
@@ -52,14 +50,14 @@ public interface ParserTables {
     /**
      * Returns the production rules encoded for use during reductions.
      *
-     * <p>{@code PRODUCTIONS[production_id]} is an array {@code {lhs_id, rhs_length}} where:
+     * <p>{@code PRODUCTIONS[production_id]} is an array {@code {lhs_id, rhs_length}} where:</p>
      * <ul>
      *   <li>{@code lhs_id} is the symbol ID of the left-hand side non-terminal</li>
      *   <li>{@code rhs_length} is the number of symbols in the right-hand side,
      *       i.e. how many elements to pop from the stack during a reduction</li>
      * </ul>
      * The index of each production corresponds exactly to the production ID
-     * used in the ACTION table's REDUCE entries.</p>
+     * used in the ACTION table's REDUCE entries.
      *
      * @return a 2D array indexed by [production_id], each entry being {lhs_id, rhs_length}
      */

@@ -84,13 +84,13 @@ public class Productions implements Iterable<ContextFreeProduction> {
      * Parses a string representation of a set of production rules and returns
      * the corresponding {@code Productions} instance.
      *
-     * <p>Each line must contain exactly one production rule in the form:
+     * <p>Each line must contain exactly one production rule in the form:</p>
      * <pre>
      *     A → α₁ | α₂ | ... | αₙ
      * </pre>
      * Each left-hand side symbol must appear on exactly one line. The order of
      * the productions is preserved, and the first line is treated as the production
-     * of the start symbol.</p>
+     * of the start symbol.
      *
      * @param grammar the string representation of the production rules; must not be blank
      * @return a {@code Productions} instance corresponding to the given string

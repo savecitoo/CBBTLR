@@ -40,8 +40,7 @@ public class ItemLALR {
     /**
      * Constructs an {@code ItemLALR} with the given core and no lookaheads.
      *
-     * @param core the LR(0) core of this item; must not be {@code null}
-     * @throws NullPointerException if {@code core} is {@code null}
+     * @param core the LR(0) core of this item.
      */
     public ItemLALR(@NotNull CoreItem core) {
         this.core = core;
@@ -50,7 +49,7 @@ public class ItemLALR {
     /**
      * Returns the LR(0) core of this item.
      *
-     * @return the core; never {@code null}
+     * @return the core.
      */
     public @NotNull CoreItem getCore() {
         return core;
@@ -59,7 +58,7 @@ public class ItemLALR {
     /**
      * Returns an unmodifiable view of the current lookahead set.
      *
-     * @return the lookahead terminals; never {@code null}
+     * @return the lookahead terminals.
      */
     public @NotNull java.util.Set<@NotNull String> getLookaheads() {
         return Set.copyOf(lookaheads);
@@ -68,7 +67,7 @@ public class ItemLALR {
     /**
      * Adds a lookahead terminal to this item.
      *
-     * @param terminal the terminal to add; must not be {@code null}
+     * @param terminal the terminal to add.
      * @return {@code true} if the lookahead set changed as a result
      */
     public boolean addLookahead(@NotNull String terminal) {
@@ -78,7 +77,7 @@ public class ItemLALR {
     /**
      * Adds all lookahead terminals from the given collection to this item.
      *
-     * @param terminals the terminals to add; must not be {@code null}
+     * @param terminals the terminals to add.
      * @return {@code true} if the lookahead set changed as a result
      */
     public boolean addAllLookaheads(@NotNull java.util.Collection<@NotNull String> terminals) {

@@ -65,12 +65,12 @@ public class ContextFreeGrammar implements Iterable<String> {
     /**
      * Parses a string representation of a context-free grammar and returns the corresponding instance.
      *
-     * <p>Symbols are classified as follows:
+     * <p>Symbols are classified as follows:</p>
      * <ul>
      *   <li>Every symbol appearing on the left-hand side of a production is treated as <em>non-terminal</em>.</li>
      *   <li>Every other symbol is treated as <em>terminal</em>.</li>
      * </ul>
-     * The start symbol is the left-hand side symbol of the first production rule.</p>
+     * The start symbol is the left-hand side symbol of the first production rule.
      *
      * @param grammar the string representation of the grammar; must not be blank or malformed
      * @return a {@link ContextFreeGrammar} instance corresponding to the given string

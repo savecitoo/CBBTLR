@@ -13,7 +13,13 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * This class implements an LALR(1) Parser.
+ * An LALR(1) parser that recognizes strings and builds parse trees
+ * for a given context-free grammar.
+ *
+ * <p>Instances are created by supplying a {@link ParserTables} object,
+ * which encodes the ACTION and GOTO tables for the grammar.
+ * Use {@link #generateParser} to produce those tables from a
+ * {@link ContextFreeGrammar} and write the corresponding Java source files.
  */
 public class Parser {
 
@@ -26,20 +32,24 @@ public class Parser {
         - The second element is the state where we have to go.
      */
 
+    /** The tables the parser has to use to parse. */
     private final @NotNull ParserTables tables;
 
     /**
-     * This is a constructor for an LALR(1) Parser.
-     * @param tables the tables needed to the parser, you can build it with the generateParser method.
+     * Creates a parser backed by the given tables.
+     *
+     * @param tables the ACTION, GOTO, and production tables for the grammar.
      */
     public Parser(@NotNull ParserTables tables) throws IllegalArgumentException {
         this.tables = tables;
     }
 
     /**
-     * This method returns if the input is correct for the given grammar.
-     * @param input the word to be recognized.
-     * @return true if it is in the language of the grammar, false otherwise.
+     * Returns whether the given sequence of symbol names belongs to the language
+     * defined by the grammar.
+     *
+     * @param input the sequence of terminal symbols to test.
+     * @return {@code true} if the sequence is recognized; {@code false} otherwise.
      */
     public boolean isRecognizedString(List<String> input) {
         try {
@@ -54,9 +64,11 @@ public class Parser {
     }
 
     /**
-     * This method returns if the input is correct for the given grammar.
-     * @param input the word to be recognized.
-     * @return true if it is in the language of the grammar, false otherwise.
+     * Returns whether the given token sequence belongs to the language
+     * defined by the grammar.
+     *
+     * @param input the token sequence to test.
+     * @return {@code true} if the sequence is recognized; {@code false} otherwise.
      */
     public boolean isRecognized(List<Token> input) {
         try {
@@ -70,12 +82,12 @@ public class Parser {
         }
     }
 
-
     /**
-     * This method parse list of string in input returning the corresponding parsing tree.
-     * @param input the input we want to parse.
-     * @return the corresponding parsing tree.
-     * @throws IllegalArgumentException if the word is not recognized.
+     * Parses a sequence of symbol names and returns the corresponding parse tree.
+     *
+     * @param input the sequence of terminal symbols to parse.
+     * @return the root of the parse tree for the input.
+     * @throws IllegalArgumentException if the sequence is not recognized by the grammar.
      */
     public ParseTree parseStrings(@NotNull List<String> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
@@ -94,7 +106,6 @@ public class Parser {
             int s = states.peek();
             String token = input.get(i);
 
-            // ricerca lineare nell'array dei simboli
             int next = -1;
             for (int k = 0; k < SYMBOLS.length; k++) {
                 if (SYMBOLS[k].equals(token)) { next = k; break; }
@@ -132,10 +143,11 @@ public class Parser {
     }
 
     /**
-     * This method parse list of token in input returning the corresponding parsing tree.
-     * @param input list of token to be Parsed.
-     * @return the corresponding parsing tree.
-     * @throws IllegalArgumentException if the word is not recognized.
+     * Parses a token sequence and returns the corresponding parse tree.
+     *
+     * @param input the token sequence to parse.
+     * @return the root of the parse tree for the input.
+     * @throws IllegalArgumentException if the sequence is not recognized by the grammar.
      */
     public ParseTree parse(@NotNull List<Token> input) throws IllegalArgumentException {
         input = new ArrayList<>(input);
@@ -186,7 +198,22 @@ public class Parser {
         }
     }
 
-
+    /**
+     * Generates an LALR(1) parser for the given grammar and writes the
+     * corresponding Java source files to the specified output directory.
+     *
+     * <p>Two files are produced: {@code <className>ParserTables.java},
+     * containing the precomputed ACTION, GOTO, and production tables,
+     * and {@code <className>Parser.java}, a ready-to-use parser class
+     * that wraps them.
+     *
+     * @param grammar          the context-free grammar to generate a parser for.
+     * @param symbol_encoding  a symbol table used to assign numeric IDs to grammar symbols.
+     * @param packageName      the Java package of the generated classes.
+     * @param className        the base name for the generated classes.
+     * @param outputDir        the directory where the source files will be written.
+     * @throws IllegalArgumentException if the grammar is ambiguous or the output cannot be written.
+     */
     public static void generateParser(@NotNull ContextFreeGrammar grammar,
                                       @NotNull SymbolTable<@NotNull String> symbol_encoding,
                                       @NotNull String packageName,
@@ -206,14 +233,16 @@ public class Parser {
         }
     }
 
-
     /**
-     * This method given a ContextFreeGrammar and a SymbolTable adds to the table all the symbols in the grammar.
-     * @param grammar the grammar.
-     * @param symbolEncoding the table.
+     * Registers all terminal and non-terminal symbols of the grammar
+     * into the symbol table, appending the end-of-input marker {@code "#"}.
+     *
+     * @param grammar         the grammar whose symbols are to be registered.
+     * @param symbolEncoding  the symbol table to populate.
+     * @throws IllegalArgumentException if the grammar already uses the reserved symbol {@code "#"}.
      */
     private static void populateSymbolEncoding(@NotNull ContextFreeGrammar grammar,
-                                        @NotNull SymbolTable<@NotNull String> symbolEncoding) {
+                                               @NotNull SymbolTable<@NotNull String> symbolEncoding) {
         for (String s : grammar.T) symbolEncoding.add(s);
         for (String s : grammar.N) symbolEncoding.add(s);
         if (!symbolEncoding.add("#"))
@@ -221,12 +250,14 @@ public class Parser {
     }
 
     /**
-     * This method builds the tables for the parser starting from the grammar.
-     * @param grammar the grammar wanted to be parsed.
-     * @param symbol_encoding the encoding of the symbols in the grammar.
-     * @param automaton the LALR(1) automaton.
-     * @param GOTO the GOTO table.
-     * @param ACTION the ACTION table.
+     * Fills the ACTION and GOTO tables from the given LALR(1) automaton.
+     *
+     * @param grammar          the context-free grammar being parsed.
+     * @param symbol_encoding  the symbol-to-integer mapping for the grammar.
+     * @param automaton        the LALR(1) automaton for the grammar.
+     * @param GOTO             the GOTO table to populate.
+     * @param ACTION           the ACTION table to populate.
+     * @throws IllegalArgumentException if a shift/reduce or reduce/reduce conflict is detected.
      */
     private static void buildingTables(@NotNull ContextFreeGrammar grammar,
                                        @NotNull SymbolTable<@NotNull String> symbol_encoding,
@@ -236,7 +267,7 @@ public class Parser {
                                        @NotNull Map<@NotNull Integer,
                                                @NotNull Map<@NotNull Integer, int[]>> ACTION) {
         populateSymbolEncoding(grammar,symbol_encoding);
-        for (State state : automaton.states) { // we iterate over each state on the automaton
+        for (State state : automaton.states) {
             // SHIFT
             if (automaton.transitions.containsKey(state)) {
                 Map<String, State> transitions = automaton.transitions.get(state);
@@ -246,12 +277,12 @@ public class Parser {
                     int from = automaton.states_encoding.get(state);
                     int to = automaton.states_encoding.get(next);
 
-                    if (grammar.N.contains(symbol)) { // NON terminal → GOTO
+                    if (grammar.N.contains(symbol)) {
                         GOTO.computeIfAbsent(from, k -> new HashMap<>()).put(id_symbol, to);
                     } else if (grammar.T.contains(symbol)) {
                         Map<Integer, int[]> row = ACTION.computeIfAbsent(from, k -> new HashMap<>());
                         if (row.containsKey(id_symbol)) {
-                            throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT"); // shift/reduce
+                            throw new IllegalArgumentException("SHIFT/REDUCE CONFLICT");
                         }
                         row.put(id_symbol, new int[]{0, to});
                     }
@@ -283,6 +314,19 @@ public class Parser {
         }
     }
 
+    /**
+     * Writes the {@code <className>ParserTables.java} source file containing
+     * the precomputed ACTION, GOTO, and production tables for the grammar.
+     *
+     * @param packageName      the Java package of the generated class.
+     * @param className        the base name of the generated class.
+     * @param outputDir        the directory where the file will be written.
+     * @param GOTO             the GOTO table.
+     * @param ACTION           the ACTION table.
+     * @param symbol_encoding  the symbol-to-integer mapping used to build the tables.
+     * @param grammar          the grammar the tables were derived from.
+     * @throws IOException if the file cannot be written.
+     */
     private static void writeTo(
             @NotNull String packageName,
             @NotNull String className,
@@ -382,26 +426,21 @@ public class Parser {
 
         sb.append("}\n");
 
-        // ── Scrittura su file ─────────────────────────────────────────────────
         Files.createDirectories(outputDir);
         Files.writeString(outputDir.resolve(className + "ParserTables.java"), sb.toString());
     }
 
-
     /**
-     * Writes the {@code <className>Parser.java} file — a thin wrapper around {@link Parser}
-     * that instantiates {@code <className>ParserTables} and delegates to it.
-     * The generated class exposes {@link Parser#parse} and {@link Parser#isRecognizedString}
-     * without requiring the caller to manage tables or symbol encoding manually.
+     * Writes the {@code <className>Parser.java} source file — a thin facade
+     * that instantiates {@code <className>ParserTables} and delegates to {@link Parser}.
      *
-     * <p>This file has no logic of its own: all parsing behaviour lives in {@link Parser},
-     * all grammar-specific data lives in the generated {@code ParserTables} class.
+     * <p>The generated class exposes {@link Parser#parse} and
+     * {@link Parser#isRecognizedString} without requiring the caller to manage
+     * tables or symbol encoding manually.
      *
-     * @param packageName the package of the generated class.
-     * @param className   the base name used for the generated class and the corresponding
-     *                    tables class (e.g. {@code "MyGrammar"} produces {@code MyGrammarParser}
-     *                    referencing {@code MyGrammarParserTables}).
-     * @param outputDir   the directory where {@code <className>Parser.java} will be written.
+     * @param packageName the Java package of the generated class.
+     * @param className   the base name of the generated class.
+     * @param outputDir   the directory where the file will be written.
      * @throws IOException if the file cannot be written.
      */
     private static void writeParserFile(
@@ -462,22 +501,32 @@ public class Parser {
 
         Files.writeString(outputDir.resolve(className + "Parser.java"), src);
     }
+
     /**
-     * This class represents an LALR(1) automaton.
+     * An LALR(1) automaton derived from a context-free grammar.
+     *
+     * <p>The automaton is built once from the grammar and then used to
+     * populate the ACTION and GOTO tables. It can also be printed for
+     * debugging purposes.
      */
     public static class Automaton implements Iterable<State> {
 
+        /** The edges of the automaton. */
         private final @NotNull Map<@NotNull State, @NotNull Map<@NotNull String, @NotNull State>> transitions;
 
+        /** A map that encodes every state in an integer. */
         private final @NotNull Map<@NotNull State, @NotNull Integer> states_encoding;
 
+        /** The set of all the states created in the map. */
         private final @NotNull Set<@NotNull State> states;
 
         /**
-         * This is a constructor for an LALR(1) automaton.
-         * @param transitions the transitions of the automata.
-         * @param states the states of the automata.
-         * @throws IllegalArgumentException if state or transitions are empty.
+         * Creates an automaton with the given states and transitions.
+         *
+         * @param transitions    the labeled edges between states.
+         * @param statesEncoding a mapping from each state to its numeric identifier.
+         * @param states         the complete set of states.
+         * @throws IllegalArgumentException if the state set or transitions are empty.
          */
         private Automaton(@NotNull Map<@NotNull State, @NotNull Map<@NotNull String, @NotNull State>> transitions,
                           @NotNull Map<@NotNull State, @NotNull Integer> statesEncoding,
@@ -491,13 +540,13 @@ public class Parser {
             this.states_encoding = statesEncoding;
         }
 
-
         /**
-         * This method given a grammar and a starting set of items turn back the closure of these items.
-         * @param grammar the grammar.
-         * @param start the starting items.
-         * @param cache_item a cache that helps to use always the same items, instead of building new ones.
-         * @return the closure of the starting set
+         * Returns the closure of the given set of LR(0) items under the grammar.
+         *
+         * @param grammar    the context-free grammar.
+         * @param start      the initial set of items.
+         * @param cache_item a shared cache ensuring item identity across the automaton.
+         * @return the closure of {@code start}.
          */
         private static @NotNull Set<@NotNull CoreItem> closure(@NotNull ContextFreeGrammar grammar,
                                                                @NotNull Set<CoreItem> start,
@@ -529,41 +578,34 @@ public class Parser {
         }
 
         /**
-         * This method build an LALR(1) automaton from a grammar.
-         * @param grammar the grammar that has to be transformed in an automaton.
-         * @return the corresponding LALR(1) automaton.
+         * Builds an LALR(1) automaton from a context-free grammar.
+         *
+         * <p>The grammar must be augmented: its start symbol must have exactly
+         * one production whose left-hand side does not appear elsewhere.
+         *
+         * @param grammar the augmented context-free grammar.
+         * @return the LALR(1) automaton for the grammar.
+         * @throws IllegalArgumentException if the grammar is not augmented.
          */
         public static @NotNull Automaton fromGrammar(@NotNull ContextFreeGrammar grammar) {
             if (grammar.P.fromLHS(grammar.S).rhsSize() != 1)
                 throw new IllegalArgumentException
                         ("The grammar should be augmented, this means the starting symbol should be wrapped by another symbol.");
 
-            // items needed by the constructor
             Map<State, Map<String, State>> transition = new HashMap<>();
             Set<State> states = new HashSet<>();
             Map<State, Integer> state_encoding = new HashMap<>();
 
-            // First part: LR(0) automaton building.
-
             State first = automatonBuilding(grammar, transition, states, state_encoding);
 
-            Map<StateItem, Set<StateItem>> propagate  = new HashMap<>();  // (stato, item) → (stato, item)
-
-
-            // second part of the algorithm: we construct the channels and the lookaheads
+            Map<StateItem, Set<StateItem>> propagate  = new HashMap<>();
 
             CoreItem start = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
             first.items().get(start).addLookahead("#");
 
             channelBuilding(grammar, states, propagate, transition);
 
-            // third part of the algorithm: we propagate the lookaheads.
-
-//            printPropagationGraph(propagate, state_encoding);
-
             lookaheadsPropagation(propagate);
-
-            // printPropagationGraph(propagate, state_encoding);
 
             return new Automaton(
                     transition,
@@ -573,21 +615,23 @@ public class Parser {
         }
 
         /**
-         * This method build the LR(0) automaton data-structures starting from a grammar.
-         * @param grammar the grammar that we use to construct the LR(0) automaton.
-         * @param transition the edges of the automaton.
-         * @param states the states of the automaton.
-         * @param state_encoding the encoding of the states of the automaton.
-         * @return the starting state of the automaton.
+         * Constructs the LR(0) automaton for the given grammar.
+         *
+         * @param grammar        the context-free grammar.
+         * @param transition     the edge map to populate.
+         * @param states         the state set to populate.
+         * @param state_encoding the state-to-integer map to populate.
+         * @return the initial state of the automaton.
          */
-        private static @NotNull State automatonBuilding(@NotNull ContextFreeGrammar grammar, Map<State, Map<String, State>> transition, Set<State> states, Map<State, Integer> state_encoding) {
-            // useful for avoiding loops and add memory efficiency
+        private static @NotNull State automatonBuilding(@NotNull ContextFreeGrammar grammar,
+                                                        Map<State, Map<String, State>> transition,
+                                                        Set<State> states,
+                                                        Map<State, Integer> state_encoding) {
             Map<CoreItem, CoreItem> cache_item = new HashMap<>();
             Map<State, State> cache_state = new HashMap<>();
             Queue<State> queue = new ArrayDeque<>();
             Set<State> seen = new HashSet<>();
 
-            // the start of the building
             CoreItem curr = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
             cache_item.put(curr, curr);
 
@@ -597,32 +641,26 @@ public class Parser {
             queue.add(s);
             seen.add(s);
 
-            // first part of the algorithm: in this step the LR(0) automaton is built.
             while (!queue.isEmpty()) {
                 s = queue.remove();
-                for (String symb : grammar) { // search for all symbols
+                for (String symb : grammar) {
 
-                    Set<CoreItem> v = new HashSet<>(); // creation of the new state for the symbol v
-                    for (CoreItem it : s) { //search for every item in the current state which one is going to be in the new
-                        // state
+                    Set<CoreItem> v = new HashSet<>();
+                    for (CoreItem it : s) {
                         if (!it.isComplete() && it.afterDot().equals(symb)) {
                             v.add(it.advanceDot());
                         }
                     }
 
-                    if (!v.isEmpty()) { // if v is not empty we do the closure and eventually create the new state
+                    if (!v.isEmpty()) {
                         State new_state = State.fromCore(closure(grammar, v, cache_item));
                         if (seen.add(new_state)) {
-                            // the new state is added to the queue to be expanded after
                             queue.add(new_state);
                             cache_state.put(new_state,new_state);
                         } else {
-                            // since every state creates its personal LALR(1) item we have to use always
-                            // the same state also in the arrow map, otherwise the propagation will be erroneous.
                             new_state = cache_state.get(new_state);
                         }
 
-                        // creation of the transition in the automaton.
                         Map<String, State> arrow = transition.getOrDefault(
                                 s, new HashMap<>()
                         );
@@ -639,12 +677,13 @@ public class Parser {
         }
 
         /**
-         * This method starting from the automaton builds the channels to upgrade the automaton to an LALR(1) automaton. <br>
-         * The information will be saved in the field @code{propagate} and @code{lookaheads}.
-         * @param grammar the grammar of the LALR(1) is currently being built.
-         * @param states the states of the LR(0) automaton.
-         * @param propagate a map where will be saved the propagations of the automata.
-         * @param transition the transitions of the automata.
+         * Computes lookahead propagation channels for each item in the automaton,
+         * upgrading the LR(0) automaton to LALR(1).
+         *
+         * @param grammar    the context-free grammar.
+         * @param states     the states of the LR(0) automaton.
+         * @param propagate  the propagation map to populate.
+         * @param transition the transitions of the automaton.
          */
         private static void channelBuilding(@NotNull ContextFreeGrammar grammar,
                                             @NotNull Set<@NotNull State> states,
@@ -652,20 +691,17 @@ public class Parser {
                                             @NotNull Map<@NotNull State, @NotNull Map< @NotNull String, @NotNull State>> transition) {
             for (State state : states) {
                 for (CoreItem item : state) {
-                    if (!item.isComplete()) { // check that the item has something after the dot.
+                    if (!item.isComplete()) {
 
                         String B = item.afterDot();
-                        // This part id for spontaneous lookahead.
 
                         if (grammar.N.contains(B)) {
                             for (CoreItem item1 : state) {
                                 if (item1.lhs().equals(B)) {
                                     if (item.hasFirstOfBeta()) {
-                                        // lookahead spontaneo: aggiungi FIRST(β)
                                         Set<String> lookahead_spont = grammar.first(item.firstOfBeta());
                                         state.items().get(item1).addAllLookaheads(lookahead_spont);
                                     } else {
-                                        // β è vuota: propaga sempre
                                         propagate.computeIfAbsent(
                                                 new StateItem(state, state.items().get(item)),
                                                 k -> new HashSet<>()
@@ -676,8 +712,6 @@ public class Parser {
                         }
                     }
                 }
-
-                // now we construct the lookaheads for the goto table.
 
                 for (CoreItem item : state) {
                     if (!item.isComplete()) {
@@ -692,10 +726,10 @@ public class Parser {
             }
         }
 
-
         /**
-         * This method given the propagations and the lookaheads for each item propagates the lookaheads.
-         * @param propagate the propagation for each LALR(1) item.
+         * Propagates lookaheads through the automaton until a fixed point is reached.
+         *
+         * @param propagate the propagation channels between LALR(1) items.
          */
         private static void lookaheadsPropagation(Map<StateItem, Set<StateItem>> propagate) {
             boolean changes = true;
@@ -740,7 +774,6 @@ public class Parser {
             sb.append("LALR(1) Automaton\n");
             sb.append("====================\n\n");
 
-            // Stati
             sb.append("States:\n");
             for (State s : states) {
                 int id = states_encoding.getOrDefault(s, -1);
@@ -752,7 +785,6 @@ public class Parser {
                 sb.append("\n");
             }
 
-            // Transizioni
             sb.append("Transitions:\n");
             for (Map.Entry<State, Map<String, State>> entry : transitions.entrySet()) {
                 State from = entry.getKey();
@@ -774,7 +806,5 @@ public class Parser {
             }
             return sb.toString();
         }
-
     }
-
 }
