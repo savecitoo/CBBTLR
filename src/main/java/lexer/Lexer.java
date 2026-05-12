@@ -64,6 +64,9 @@ public class Lexer implements Serializable {
             matchers.put(tt, tt.getPattern().matcher(tokenized));
         }
 
+        int line = 1;
+        int col = 1;
+
         for (int i = 0; i < tokenized.length(); ) {
             TokenType bestType = null;
             int bestLength = 0;
@@ -88,10 +91,21 @@ public class Lexer implements Serializable {
                 throw new NoSuchElementException();
             }
 
+            String consumed = tokenized.substring(i, i + bestLength);
             if (!bestType.skip()) { // if the best token type is not a skip token type we add to the list
-                tokenList.add(new Token(table.getId(bestType.identifier()), tokenized.substring(i, i + bestLength)));
+                tokenList.add(new Token(
+                        table.getId(bestType.identifier()), consumed, line, col));
             }
 
+
+            for (char c : consumed.toCharArray()) {
+                if (c == '\n') {
+                    line++;
+                    col = 1;
+                } else {
+                    col++;
+                }
+            }
             i += bestLength;
         }
         return tokenList;

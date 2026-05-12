@@ -4,7 +4,7 @@ import grammar.ContextFreeGrammar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import utils.ParseTree;
+import tree.ParseTree;
 import utils.SymbolTable;
 
 import javax.tools.*;

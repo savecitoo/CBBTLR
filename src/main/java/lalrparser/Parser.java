@@ -4,7 +4,7 @@ import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
 import lexer.Token;
 import org.jetbrains.annotations.NotNull;
-import utils.ParseTree;
+import tree.ParseTree;
 import utils.SymbolTable;
 
 import java.io.IOException;
@@ -351,6 +351,14 @@ public class Parser {
         sb.append("import java.util.Arrays;\n");
         sb.append("import lalrparser.ParserTables;\n");
         sb.append("import org.jetbrains.annotations.NotNull;\n\n");
+        sb.append("/**\n");
+        sb.append(" * LALR parser tables generated for the ").append(className).append(" grammar.\n");
+        sb.append(" *\n");
+        sb.append(" * <p>Contains the precomputed {@code ACTION}, {@code GOTO}, {@code PRODUCTIONS},\n");
+        sb.append(" * and {@code SYMBOLS} tables used by the LALR parser at runtime.</p>\n");
+        sb.append(" *\n");
+        sb.append(" * <p>This class is auto-generated — do not edit manually.</p>\n");
+        sb.append(" */\n");
         sb.append("public class ").append(className).append("ParserTables implements ParserTables {\n\n");
 
         // ── PRODUCTIONS ─────────────────────────────────────────────────────
@@ -422,7 +430,7 @@ public class Parser {
         sb.append("    }\n\n");
 
         sb.append("    @Override\n");
-        sb.append("    public String[] getSymbols() { return SYMBOLS; }\n\n");
+        sb.append("    public @NotNull String @NotNull [] getSymbols() { return SYMBOLS; }\n\n");
 
         sb.append("}\n");
 
@@ -450,54 +458,100 @@ public class Parser {
     ) throws IOException {
 
         String src = """
-            package %s;
-                        
-            import lalrparser.Parser;
-            import lexer.Lexer;
-            import utils.ParseTree;
-            import java.io.IOException;
-            import java.io.ObjectInputStream;
-            import java.util.List;
-            import java.util.Objects;
-            import lexer.Token;
-                        
-            public class %sParser {
-                        
-                private final Parser parser;
-                private final Lexer lexer;
-                        
-                public %sParser() {
-                    this.parser = new Parser(new %sParserTables());
-                    try (ObjectInputStream ois = new ObjectInputStream(
-                            Objects.requireNonNull(
-                                %sParser.class.getResourceAsStream("%sLexer.ser")
-                            )
-                    )) {
-                        this.lexer = (Lexer) ois.readObject();
-                    } catch (IOException | ClassNotFoundException e) {
-                        throw new IllegalStateException("Cannot load lexer for %s", e);
-                    }
-                }
-                        
-                public ParseTree parseStrings(List<String> input) {
-                    return parser.parseStrings(input);
-                }
-                        
-                public ParseTree parse(String input) {
-                    List<Token> tokenized = lexer.tokenize(input);
-                    return parser.parse(tokenized);
-                }
-                        
-                public boolean isRecognizedString(List<String> input) {
-                    return parser.isRecognizedString(input);
-                }
+    package %s;
                 
-                public boolean isRecognized(String input) {
-                    List<Token> tokenized = lexer.tokenize(input);
-                    return parser.isRecognized(tokenized);
-                }
+    import lalrparser.Parser;
+    import lexer.Lexer;
+    import utils.ParseTree;
+    import java.io.IOException;
+    import java.io.ObjectInputStream;
+    import java.util.List;
+    import java.util.Objects;
+    import lexer.Token;
+                
+    /**
+     * Parser for the %s language.
+     *
+     * <p>Combines a lexer and an LALR parser to process input strings
+     * and produce parse trees according to the %s grammar.</p>
+     *
+     * <p>Usage example:</p>
+     * <pre>{@code
+     * %sParser parser = new %sParser();
+     * ParseTree tree = parser.parse("your input here");
+     * }</pre>
+     */
+    public class %sParser {
+                
+        private final Parser parser;
+        private final Lexer lexer;
+                
+        /**
+         * Constructs a new {@code %sParser}, loading the precompiled
+         * lexer and parser tables from the embedded resources.
+         *
+         * @throws IllegalStateException if the lexer resource cannot be loaded
+         */
+        public %sParser() {
+            this.parser = new Parser(new %sParserTables());
+            try (ObjectInputStream ois = new ObjectInputStream(
+                    Objects.requireNonNull(
+                        %sParser.class.getResourceAsStream("%sLexer.ser")
+                    )
+            )) {
+                this.lexer = (Lexer) ois.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                throw new IllegalStateException("Cannot load lexer for %s", e);
             }
-            """.formatted(packageName, className, className, className, className, className, className);
+        }
+                
+        /**
+         * Parses a pre-tokenized input provided as a list of token strings,
+         * bypassing the lexing phase.
+         *
+         * @param input the list of token strings to parse
+         * @return the resulting {@link ParseTree}
+         */
+        public ParseTree parseStrings(List<String> input) {
+            return parser.parseStrings(input);
+        }
+                
+        /**
+         * Tokenizes and parses the given input string.
+         *
+         * @param input the raw input string to lex and parse
+         * @return the resulting {@link ParseTree}
+         */
+        public ParseTree parse(String input) {
+            List<Token> tokenized = lexer.tokenize(input);
+            return parser.parse(tokenized);
+        }
+                
+        /**
+         * Checks whether a pre-tokenized input is recognized by the grammar,
+         * without building a parse tree.
+         *
+         * @param input the list of token strings to check
+         * @return {@code true} if the input is valid, {@code false} otherwise
+         */
+        public boolean isRecognizedString(List<String> input) {
+            return parser.isRecognizedString(input);
+        }
+        
+        /**
+         * Checks whether the given input string is recognized by the grammar,
+         * without building a parse tree.
+         *
+         * @param input the raw input string to lex and check
+         * @return {@code true} if the input is valid, {@code false} otherwise
+         */
+        public boolean isRecognized(String input) {
+            List<Token> tokenized = lexer.tokenize(input);
+            return parser.isRecognized(tokenized);
+        }
+    }
+    """.formatted(packageName, className, className, className, className, className, className,
+                className, className, className, className, className, className);
 
         Files.writeString(outputDir.resolve(className + "Parser.java"), src);
     }
@@ -696,6 +750,13 @@ public class Parser {
                         String B = item.afterDot();
 
                         if (grammar.N.contains(B)) {
+                            /*
+                            * If the symbol after the dot is non-terminal then we iterate on every core item
+                            * of the state and if the lhs of the item1 is equal to B then we can:
+                            *   1. Add the first of the item into the lookaheads of item to the LALR(1) item of item1,
+                            *      if item1 has the first of beta.
+                            *   2. Create a channel that goes from item to item1.
+                            */
                             for (CoreItem item1 : state) {
                                 if (item1.lhs().equals(B)) {
                                     if (item.hasFirstOfBeta()) {
@@ -714,6 +775,10 @@ public class Parser {
                 }
 
                 for (CoreItem item : state) {
+                    /*
+                    * If the item in the state is not complete then we add a transition that goes from
+                    * the item in the current state to the state that has the advanced item.
+                    */
                     if (!item.isComplete()) {
                         State destination = transition.get(state).get(item.afterDot());
                         Set<StateItem> propagations = propagate.computeIfAbsent(
@@ -734,6 +799,10 @@ public class Parser {
         private static void lookaheadsPropagation(Map<StateItem, Set<StateItem>> propagate) {
             boolean changes = true;
             while (changes) {
+                /*
+                * Until no lookaheads are propagated the algorithm continue
+                * to propagate through all the channels the lookaheads.
+                */
                 changes = false;
                 for (Map.Entry<StateItem, Set<StateItem>> entry : propagate.entrySet()) {
                     StateItem src = entry.getKey();
@@ -747,7 +816,8 @@ public class Parser {
             }
         }
 
-        private static void printPropagationGraph(Map<StateItem, Set<StateItem>> propagate, Map<State, Integer> states_encoding) {
+        private static void printPropagationGraph(@NotNull Map<@NotNull StateItem, @NotNull Set<@NotNull StateItem>> propagate,
+                                                  @NotNull Map<@NotNull State, @NotNull Integer> states_encoding) {
             System.out.println("Propagation Graph");
             System.out.println("=================");
             for (Map.Entry<StateItem, Set<StateItem>> entry : propagate.entrySet()) {

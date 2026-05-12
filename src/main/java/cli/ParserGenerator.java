@@ -11,6 +11,29 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Utility class that generates a lexer/parser pair from a combined grammar file.
+ *
+ * <p>A grammar file is a plain-text file divided into two sections by a {@code Token:} marker:
+ * <ul>
+ *   <li>The section <em>before</em> {@code Token:} defines the context-free grammar
+ *       ({@link ContextFreeGrammar}).</li>
+ *   <li>The section <em>after</em> {@code Token:} defines the lexical rules ({@link Lexer}).</li>
+ * </ul>
+ *
+ * <p>Running this generator produces two artifacts:
+ * <ol>
+ *   <li>A serialized {@link Lexer} saved to
+ *       {@code src/main/resources/<packagePath>/<className>Lexer.ser}.</li>
+ *   <li>The {@code .java} parser source files written to the specified output directory.</li>
+ * </ol>
+ *
+ * <p>This class is not instantiable; use the {@link #main(String[])} entry point directly.</p>
+ *
+ * @see ContextFreeGrammar
+ * @see Lexer
+ * @see Parser
+ */
 public class ParserGenerator {
 
     /**

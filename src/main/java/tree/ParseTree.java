@@ -1,6 +1,7 @@
-package utils;
+package tree;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,17 +13,29 @@ import java.util.List;
 public class ParseTree implements Iterable<ParseTree> {
 
     public final @NotNull String symbol;
+
     private final @NotNull List<@NotNull ParseTree> children;
-    public boolean isTerminal;
+
+    public final boolean isTerminal;
+
+    public final int line;
+
+    public final int col;
+
+    public final @NotNull String expression_type;
+
 
     /**
      * This is a constructor for a parsing tree with no children, i.e. a leaf.
      * @param symbol the symbol in the root node.
      * @param isTerminal if the symbol is terminal or not.
      */
-    public ParseTree(@NotNull String symbol, boolean isTerminal) {
+    public ParseTree(@NotNull String symbol, boolean isTerminal, int line, int col, @NotNull String expression_type) {
         this.symbol = symbol;
         this.isTerminal = isTerminal;
+        this.line = line;
+        this.col = col;
+        this.expression_type = expression_type;
         this.children = new ArrayList<>();
     }
 
@@ -31,10 +44,13 @@ public class ParseTree implements Iterable<ParseTree> {
      * @param symbol the symbol in the root node.
      * @param children the children of the root.
      */
-    public ParseTree(@NotNull String symbol, @NotNull List<@NotNull ParseTree> children) {
+    public ParseTree(@NotNull String symbol, @NotNull List<@NotNull ParseTree> children, int line, int col, @NotNull String expression_type) {
         this.symbol = symbol;
         this.isTerminal = children.isEmpty();
         this.children = children;
+        this.line = line;
+        this.col = col;
+        this.expression_type = expression_type;
     }
 
     @Override

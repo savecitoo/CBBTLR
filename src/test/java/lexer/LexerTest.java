@@ -91,10 +91,10 @@ public class LexerTest {
         assertThat(lexer.tokenize("93   \n np_hard 9 //ciao"))
                 .isEqualTo(
                         List.of(
-                                new Token(0, "93"),
-                                new Token(3, "np_hard"),
-                                new Token(0, "9"),
-                                new Token(2, "//ciao")
+                                new Token(0, "93",1,1),
+                                new Token(3, "np_hard",2,2),
+                                new Token(0, "9",2,10),
+                                new Token(2, "//ciao",2,12)
                                 )
                 );
     }
@@ -109,9 +109,9 @@ public class LexerTest {
         assertThat(lexer.tokenize("abc   def\tghi"))
                 .isEqualTo(
                         List.of(
-                                new Token(0, "abc"),
-                                new Token(0, "def"),
-                                new Token(0, "ghi")
+                                new Token(0, "abc",1,1),
+                                new Token(0, "def",1,7),
+                                new Token(0, "ghi",1,11)
                         )
                 );
     }
@@ -126,8 +126,8 @@ public class LexerTest {
         assertThat(lexer.tokenize("if else"))
                 .isEqualTo(
                         List.of(
-                                new Token(0, "if"),
-                                new Token(1, "else")
+                                new Token(0, "if",1,1),
+                                new Token(1, "else",1,4)
                         )
                 );
     }
@@ -142,8 +142,8 @@ public class LexerTest {
         assertThat(lexer.tokenize("== ="))
                 .isEqualTo(
                         List.of(
-                                new Token(0, "=="),
-                                new Token(1, "=")
+                                new Token(0, "==",1,1),
+                                new Token(1, "=",1,4)
                         )
                 );
     }
@@ -158,9 +158,9 @@ public class LexerTest {
         assertThat(lexer.tokenize("10 3.14 42"))
                 .isEqualTo(
                         List.of(
-                                new Token(0, "10"),
-                                new Token(0, "3.14"),
-                                new Token(0, "42")
+                                new Token(0, "10",1,1),
+                                new Token(0, "3.14",1,4),
+                                new Token(0, "42",1,9)
                         )
                 );
     }
@@ -175,9 +175,9 @@ public class LexerTest {
         assertThat(lexer.tokenize("abc //hello\nxyz"))
                 .isEqualTo(
                         List.of(
-                                new Token(1, "abc"),
-                                new Token(0, "//hello"),
-                                new Token(1, "xyz")
+                                new Token(1, "abc",1,1),
+                                new Token(0, "//hello",1,5),
+                                new Token(1, "xyz",2,1)
                         )
                 );
     }
@@ -215,11 +215,11 @@ public class LexerTest {
         assertThat(lexer.tokenize("1+2+3"))
                 .isEqualTo(
                         List.of(
-                                new Token(0, "1"),
-                                new Token(1, "+"),
-                                new Token(0, "2"),
-                                new Token(1, "+"),
-                                new Token(0, "3")
+                                new Token(0, "1",1,1),
+                                new Token(1, "+",1,2),
+                                new Token(0, "2",1,3),
+                                new Token(1, "+",1,4),
+                                new Token(0, "3",1,5)
                         )
                 );
     }
