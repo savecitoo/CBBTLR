@@ -82,11 +82,11 @@ public class ContextFreeGrammar implements Iterable<String> {
         Productions productions = Productions.fromString(grammar);
         Set<String> N = new HashSet<>();
         for (ContextFreeProduction cfp : productions)
-            N.add(cfp.getLHS());
+            N.add(cfp.lhs);
         Set<String> T = productions.symbols();
         T.removeAll(N);
         return new ContextFreeGrammar(
-                N, T, productions, productions.getStarting().getLHS()
+                N, T, productions, productions.getStarting().lhs
         );
 
     }
@@ -126,13 +126,11 @@ public class ContextFreeGrammar implements Iterable<String> {
 
         for (ContextFreeProduction cfp : this.P) {
             // if cfp.lhs is in productive we can skip
-            if (productive.contains(cfp.getLHS()))
+            if (productive.contains(cfp.lhs))
                 continue;
             // else we search if a production rule is entirely contained in productive.
-            for (List<String> rhs : cfp) {
-                if (prod.containsAll(rhs)) {
-                    productive.add(cfp.getLHS());
-                }
+            if (prod.containsAll(cfp.getRHS())) {
+                    productive.add(cfp.lhs);
             }
         }
         return productive;
@@ -160,7 +158,7 @@ public class ContextFreeGrammar implements Iterable<String> {
         for (ContextFreeProduction cfp : this.P) {
             // we iterate over the productions if the lhs of cfp is in reach then all
             // the symbols in the rhs can be reached.
-            if (reachable.contains(cfp.getLHS()))
+            if (reachable.contains(cfp.lhs))
                 reachable.addAll(cfp.symbols());    // since the lhs is already in reachable we
                                                     // can add all the symbols in the production to it
         }
@@ -195,34 +193,24 @@ public class ContextFreeGrammar implements Iterable<String> {
             if (this.T.contains(s))
                 T.add(s);
 
-        List<ContextFreeProduction> P = new LinkedList<>();
+        Map<Integer, ContextFreeProduction> P = new HashMap<>();
 
         int i = 0;
 
         for (ContextFreeProduction p : this.P) {
-            if (symbols.contains(p.getLHS())) {
+            if (symbols.contains(p.lhs)) {
 
-                // we search for production rules that have only symbols in symbols
-                List<List<String>> rules = new LinkedList<>();
-
-
-
-                for (List<String> rule : p) {
-                    boolean ok = true;
-                    for (String s : rule) {
-                        if (!symbols.contains(s)) {
-                            ok = false ;
-                            break;
-                        }
+                boolean ok = true;
+                for (String s : p) {
+                    if (!symbols.contains(s)) {
+                        ok = false ;
+                        break;
                     }
-
-                    if (ok) // if all are in symbols we can add it.
-                        rules.add(rule);
                 }
 
-                if (!rules.isEmpty()) { // if there is at least one rule we add it.
-                    P.add(new ContextFreeProduction(p.getLHS(), rules, i));
-                    i += rules.size();
+                if (ok) { // if there is at least one rule we add it.
+                    P.put(i, new ContextFreeProduction(p.lhs, p.getRHS(), i, p.prod_tag));
+                    i++;
                 }
 
             }
@@ -262,8 +250,8 @@ public class ContextFreeGrammar implements Iterable<String> {
         }
         seen.add(symbol);
         Set<String> result = new HashSet<>();
-        for (List<String> prod : P.fromLHS(symbol)) {
-            result.addAll(first(prod.getFirst(), seen));
+        for (ContextFreeProduction prod : P.fromLHS(symbol)) {
+            result.addAll(first(prod.getRHS().getFirst(), seen));
         }
         return result;
     }

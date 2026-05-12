@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -13,74 +14,54 @@ public class TestProduction {
 
     @Test
     void testToStringBase() {
-        String prod = "A -> a";
+        String prod = "A -> a [A_tag]";
         ContextFreeProduction CFprod = new ContextFreeProduction(
                 "A",
-                List.of(List.of("a")),
-                0
-        );
-        assertThat(CFprod.toString()).isEqualTo(prod);
-    }
-
-    @Test
-    void testToStringMultipleProduction() {
-        String prod = "A -> a | aB | CD";
-        ContextFreeProduction CFprod = new ContextFreeProduction(
-                "A",
-                List.of(
-                        List.of("a"),
-                        List.of("a", "B"),
-                        List.of("C", "D")
-                        ),0
+                (List.of("a")),
+                0,
+                "A_tag"
         );
         assertThat(CFprod.toString()).isEqualTo(prod);
     }
 
     @Test
     void testFromString1() {
-        assertThat(ContextFreeProduction.fromString("A -> a", 0)).isEqualTo(new ContextFreeProduction(
+        assertThat(ContextFreeProduction.fromString("A -> a", 0).getFirst()).isEqualTo(new ContextFreeProduction(
                 "A",
-                List.of(List.of("a")),0
+                List.of("a"),0, ""
         ));
     }
 
     @Test
     void testFromString2() {
-        assertThat(ContextFreeProduction.fromString("A -> a | a B | C D", 0)).isEqualTo(
-                new ContextFreeProduction(
-                        "A",
-                        List.of(
-                                List.of("a"),
-                                List.of("a", "B"),
-                                List.of("C", "D")
-                        ),0
+        assertThat(ContextFreeProduction.fromString("A -> a | a B | C D #dai", 0)).isEqualTo(
+                List.of(
+                        new ContextFreeProduction("A", List.of("a"), 0, ""),
+                        new ContextFreeProduction("A", List.of("a", "B"), 1, ""),
+                        new ContextFreeProduction("A", List.of("C","D"), 2, "dai")
                 )
         );
     }
 
 
-    @ParameterizedTest
-    @CsvSource({
-            "A -> a | a B | C D, a, true",
-            "A -> a | a B | C D, d, false",
-            "A -> a , d, false",
-            "A -> d , d, true"
-    })
-    void testContains(String prod, String symb, boolean res) {
-        assertThat(ContextFreeProduction.fromString(prod,0).contains(symb)).isEqualTo(res);
-    }
 
     @Test
     void testSymbolsBase() {
+        Set<String> symbols = new HashSet<>();
+        for (ContextFreeProduction p : ContextFreeProduction.fromString("A -> d | C", 0))
+            symbols.addAll(p.symbols());
         assertThat(
-            ContextFreeProduction.fromString("A -> d | C", 0).symbols()
+           symbols
         ).isEqualTo(Set.of("A" , "d", "C"));
     }
 
     @Test
     void testSymbols() {
+        Set<String> symbols = new HashSet<>();
+        for (ContextFreeProduction p : ContextFreeProduction.fromString("A -> a | a B | C D", 0))
+            symbols.addAll(p.symbols());
         assertThat(
-                ContextFreeProduction.fromString("A -> a | a B | C D", 0).symbols()
+                symbols
         ).isEqualTo(Set.of("a" , "B", "D", "A", "C"));
     }
 

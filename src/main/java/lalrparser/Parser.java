@@ -125,14 +125,14 @@ public class Parser {
                     int[] production = PRODUCTIONS[action[1]];
                     int lhs_id = production[0];
                     int rhs_len = production[1];
-                    List<ParseTree> children = new ArrayList<>();
+                    List<ParseTree> children = new LinkedList<>();
                     for (int j = 0; j < rhs_len; j++) {
                         states.pop();
-                        children.add(symbols.pop());
+                        children.addFirst(symbols.pop());
                     }
                     s = states.peek();
                     states.push(GOTO[s][lhs_id]);
-                    symbols.push(new ParseTree(SYMBOLS[lhs_id], children.reversed()));
+                    symbols.push(new ParseTree(SYMBOLS[lhs_id], children));
                     break;
                 case 2: // accept
                     return symbols.peek();
@@ -303,7 +303,7 @@ public class Parser {
                             else
                                 throw new IllegalArgumentException("REDUCE/REDUCE CONFLICT");
                         }
-                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getStartingProd_id() && symbol.equals("#")) {
+                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getFirst().getProd_id() && symbol.equals("#")) {
                             row.put(symbol_encoding.getId("#"), new int[]{2});
                         } else {
                             row.put(id_symbol, new int[]{1, it.production_id()});
@@ -365,8 +365,8 @@ public class Parser {
         sb.append("    public static final int[][] PRODUCTIONS = {\n");
         for (int i = 0; i < grammar.P.size(); i++) {
             ContextFreeProduction p = grammar.P.fromProdId(i);
-            int lhs_id = symbol_encoding.getId(p.getLHS());
-            int rhs_len = p.fromProdId(i).size();
+            int lhs_id = symbol_encoding.getId(p.lhs);
+            int rhs_len = p.rhsSize();
             sb.append("        {").append(lhs_id).append(", ").append(rhs_len).append("},\n");
         }
         sb.append("    };\n\n");
@@ -462,7 +462,7 @@ public class Parser {
                 
     import lalrparser.Parser;
     import lexer.Lexer;
-    import utils.ParseTree;
+    import tree.ParseTree;
     import java.io.IOException;
     import java.io.ObjectInputStream;
     import java.util.List;
@@ -613,9 +613,9 @@ public class Parser {
                     if (!item.isComplete()) {
                         String A = item.afterDot();
                         if (grammar.N.contains(A)) {
-                            ContextFreeProduction production = grammar.P.fromLHS(A);
-                            for (int i = 0; i < production.rhsSize(); i++) {
-                                CoreItem new_item = CoreItem.fromProduction(production, i, 0);
+                            List<ContextFreeProduction> production = grammar.P.fromLHS(A);
+                            for (ContextFreeProduction p : production) {
+                                CoreItem new_item = CoreItem.fromProduction(p, 0);
                                 new_item = cache_item.computeIfAbsent(new_item, k -> k);
                                 if (!closure.contains(new_item))
                                     toAdd.add(new_item);
@@ -642,7 +642,7 @@ public class Parser {
          * @throws IllegalArgumentException if the grammar is not augmented.
          */
         public static @NotNull Automaton fromGrammar(@NotNull ContextFreeGrammar grammar) {
-            if (grammar.P.fromLHS(grammar.S).rhsSize() != 1)
+            if (grammar.P.fromLHS(grammar.S).size() != 1)
                 throw new IllegalArgumentException
                         ("The grammar should be augmented, this means the starting symbol should be wrapped by another symbol.");
 
@@ -654,7 +654,7 @@ public class Parser {
 
             Map<StateItem, Set<StateItem>> propagate  = new HashMap<>();
 
-            CoreItem start = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
+            CoreItem start = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S).getFirst(), 0);
             first.items().get(start).addLookahead("#");
 
             channelBuilding(grammar, states, propagate, transition);
@@ -686,7 +686,7 @@ public class Parser {
             Queue<State> queue = new ArrayDeque<>();
             Set<State> seen = new HashSet<>();
 
-            CoreItem curr = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S), 0, 0);
+            CoreItem curr = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S).getFirst(), 0);
             cache_item.put(curr, curr);
 
             State s = State.fromCore(closure(grammar, Set.of(curr), cache_item));

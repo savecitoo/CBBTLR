@@ -18,10 +18,10 @@ import java.util.*;
 public class Productions implements Iterable<ContextFreeProduction> {
 
     /** A list of the production rules in the order they were passed in the initialization. */
-    private final @NotNull List<@NotNull ContextFreeProduction> productions;
+    private final @NotNull Map<@NotNull Integer, @NotNull ContextFreeProduction> productions;
 
     /** A map that goes from the lhs of the production to the corresponding {@code ContextFreeProduction}. */
-    private final @NotNull Map<@NotNull String, @NotNull ContextFreeProduction> lhs_prods;
+    private final @NotNull Map<@NotNull String, @NotNull List<ContextFreeProduction>> lhs_prods;
 
     /**
      * Constructs a {@code Productions} instance from the given list of production rules.
@@ -31,12 +31,14 @@ public class Productions implements Iterable<ContextFreeProduction> {
      *
      * @param productions the list of production rules; must not be {@code null}
      */
-    public Productions(@NotNull List<@NotNull ContextFreeProduction> productions) {
-        productions = List.copyOf(productions);
-        this.productions = productions;
-        Map<String, ContextFreeProduction> lhs_prods = new HashMap<>();
-        for (ContextFreeProduction p : productions)
-            lhs_prods.put(p.getLHS(), p);
+    public Productions(@NotNull Map<@NotNull Integer, @NotNull ContextFreeProduction> productions) {
+        this.productions = Map.copyOf(productions);
+        Map<String, List<ContextFreeProduction>> lhs_prods = new HashMap<>();
+        for (ContextFreeProduction p : this.productions.values()) {
+            List<ContextFreeProduction> prod = lhs_prods.getOrDefault(p.lhs, new ArrayList<>());
+            prod.add(p);
+            lhs_prods.put(p.lhs, prod);
+        }
         this.lhs_prods = lhs_prods;
     }
 
@@ -48,8 +50,8 @@ public class Productions implements Iterable<ContextFreeProduction> {
      */
     public @NotNull Set<@NotNull String> symbols() {
         Set<String> symbols = new HashSet<>();
-        for (ContextFreeProduction cfp : productions)
-            symbols.addAll(cfp.symbols());
+        for (int prod_id : productions.keySet())
+            symbols.addAll(productions.get(prod_id).symbols());
         return symbols;
     }
 
@@ -61,20 +63,19 @@ public class Productions implements Iterable<ContextFreeProduction> {
      * @throws NoSuchElementException if no production rule owns {@code prod_id}
      */
     public @NotNull ContextFreeProduction fromProdId(int prod_id) throws NoSuchElementException {
-        for (ContextFreeProduction p : productions) {
-            if (p.hasProdId(prod_id)) return p;
-        }
-        throw new NoSuchElementException("No production has that id.");
+        if (!productions.containsKey(prod_id))
+            throw new NoSuchElementException("No production has that id.");
+        return productions.get(prod_id);
     }
 
     /**
      * Returns the production rule whose left-hand side matches the given symbol.
      *
      * @param lhs the left-hand side symbol to look up; must not be {@code null}
-     * @return the {@link ContextFreeProduction} with left-hand side equal to {@code lhs}
+     * @return a list of all the {@link ContextFreeProduction} with left-hand side equal to {@code lhs}
      * @throws IllegalArgumentException if no production rule has {@code lhs} as its left-hand side
      */
-    public @NotNull ContextFreeProduction fromLHS(@NotNull String lhs) throws IllegalArgumentException {
+    public @NotNull List<@NotNull ContextFreeProduction> fromLHS(@NotNull String lhs) throws IllegalArgumentException {
         if (!lhs_prods.containsKey(lhs))
             throw new IllegalArgumentException("No left-hand side match the input");
         return lhs_prods.get(lhs);
@@ -86,7 +87,7 @@ public class Productions implements Iterable<ContextFreeProduction> {
      *
      * <p>Each line must contain exactly one production rule in the form:</p>
      * <pre>
-     *     A → α₁ | α₂ | ... | αₙ
+     *     A → α₁ #rule_tag? | α₂ #rule_tag? | ... | αₙ #rule_tag?
      * </pre>
      * Each left-hand side symbol must appear on exactly one line. The order of
      * the productions is preserved, and the first line is treated as the production
@@ -101,17 +102,19 @@ public class Productions implements Iterable<ContextFreeProduction> {
 
         if (grammar.isBlank())
             throw new IllegalArgumentException("The grammar must not be blank.");
-        List<ContextFreeProduction> productions = new ArrayList<>();
+        Map<Integer, ContextFreeProduction> productions = new HashMap<>();
         Set<String> seen = new HashSet<>();
         Scanner s = new Scanner(new StringReader(grammar));
         int i = 0;
         while (s.hasNext()) {
-            ContextFreeProduction prod = ContextFreeProduction.fromString(s.nextLine(), i);
-            if (!seen.add(prod.getLHS()))
+            List<ContextFreeProduction> prod = ContextFreeProduction.fromString(s.nextLine(), i);
+            if (!seen.add(prod.getFirst().lhs))
                 throw new IllegalArgumentException
                         ("The left-hand side of the productions must appear in only one line as starting symbol for the production rule");
-            productions.add(prod);
-            i += prod.rhsSize();
+            for (ContextFreeProduction p : prod) {
+                productions.put(p.getProd_id(),p);
+            }
+            i += prod.size();
         }
         s.close();
         return new Productions(productions);
@@ -123,9 +126,7 @@ public class Productions implements Iterable<ContextFreeProduction> {
      * @return the sum of {@link ContextFreeProduction#rhsSize()} over all productions
      */
     public int size() {
-        int res = 0;
-        for (ContextFreeProduction p : productions) res += p.rhsSize();
-        return res;
+        return productions.size();
     }
 
     /**
@@ -135,30 +136,47 @@ public class Productions implements Iterable<ContextFreeProduction> {
      * @return the production rule of the start symbol
      */
     public @NotNull ContextFreeProduction getStarting() {
-        return productions.getFirst();
+        return productions.get(0);
     }
 
     @Override
     public @NotNull Iterator<ContextFreeProduction> iterator() {
-        return productions.iterator();
+        return new Iterator<ContextFreeProduction>() {
+
+            private final Iterator<Map.Entry<Integer, ContextFreeProduction>> it = productions.entrySet().iterator();
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public ContextFreeProduction next() {
+                return it.next().getValue();
+            }
+        };
     }
 
     @Override
     public @NotNull String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < productions.size() - 1; i++) {
-            sb.append(productions.get(i)).append("\n");
+        int i = 0;
+        for (int prod_id : productions.keySet()) {
+            sb.append(productions.get(prod_id));
+            if (i++ < productions.size())
+                sb.append("\n");
         }
-        sb.append(productions.getLast());
+
         return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-       if (o == this) return true;
-       if (o instanceof Productions prods) // do not check lhs_prod because is built from productions.
-           return prods.productions.equals(this.productions);
-       return false;
+        if (o == this) return true;
+        if (o instanceof Productions prods)
+            return new HashSet<>(prods.productions.values())
+                    .equals(new HashSet<>(this.productions.values()));
+        return false;
     }
 
     @Override

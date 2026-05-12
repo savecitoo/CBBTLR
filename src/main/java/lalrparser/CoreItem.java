@@ -171,7 +171,6 @@ public record CoreItem(@NotNull String lhs,
      *
      * @param production    the context-free production rule from which to derive the item;
      *                      must not be {@code null}.
-     * @param rhs_index     the index of the desired right-hand side alternative within
      *                      {@code production} (productions may have multiple alternatives).
      * @param dot_position  the initial position of the dot in the new item;
      *                      must satisfy {@code 0 <= dot_position <= rhs.size()}.
@@ -180,9 +179,9 @@ public record CoreItem(@NotNull String lhs,
      * @throws IllegalArgumentException if {@code dot_position} is out of range (delegated
      *                                  to the canonical constructor).
      */
-    public static CoreItem fromProduction(@NotNull ContextFreeProduction production, int rhs_index, int dot_position) {
-        return new CoreItem(production.getLHS(), production.getRHS(rhs_index),
-                dot_position, production.getProd_id(production.getRHS(rhs_index)));
+    public static CoreItem fromProduction(@NotNull ContextFreeProduction production, int dot_position) {
+        return new CoreItem(production.lhs, production.getRHS(),
+                dot_position, production.getProd_id());
     }
 
     @Override

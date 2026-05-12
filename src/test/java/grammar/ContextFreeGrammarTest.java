@@ -114,6 +114,5 @@ public class ContextFreeGrammarTest {
                 Productions.fromString("S -> A B \nA -> a\nB -> b C\nC -> c"),
                 g.S
         ));
-        System.out.println(g.simplifyGrammar());
     }
 }

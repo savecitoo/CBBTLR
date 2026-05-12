@@ -8,14 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestProductions {
 
-    @Test
-    void testFromString() {
-        assertThat(
-                Productions.fromString("A -> a | a B | C D\n" +
-                                   "D -> a | a B | C D").toString()
-        ).isEqualTo("A -> a | aB | CD\n" +
-                "D -> a | aB | CD");
-    }
 
     @Test
     void testSymbols() {
