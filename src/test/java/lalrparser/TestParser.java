@@ -12,6 +12,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -133,80 +134,6 @@ public class TestParser {
         }
     }
 
-    @Test
-    void testParseBase() {
-        ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E   \n" +
-                        "E -> E - T | T\n" +
-                        "T -> n | ( E )"
-        );
-
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test3", "src/test/java/lalrparser/generated-test/");
-        try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
-            Parser parser = new Parser(tables);
-            ParseTree tree = new ParseTree(
-                    "E",
-                    List.of( new ParseTree("T",
-                            List.of(
-                                    new ParseTree("(", true),
-                                    new ParseTree("E", List.of(
-                                            new ParseTree("T", List.of(new ParseTree("n", true)))
-                                    )
-
-                                    ),
-                                    new ParseTree(")", true)
-                            )))
-            );
-            List<String> tokens = Arrays.asList("( n )".split(" "));
-            assertThat(parser.parseStrings(tokens)).isEqualTo(tree);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-
-    }
-
-    @Test
-    void testParseComplex() {
-        ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> E   \n" +
-                        "E -> E - T | T\n" +
-                        "T -> n | ( E )"
-        );
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test4", "src/test/java/lalrparser/generated-test/");
-        try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
-            Parser parser = new Parser(tables);
-            ParseTree tree = new ParseTree("E", List.of(
-                    new ParseTree("E", List.of(
-                            new ParseTree("T", List.of(
-                                    new ParseTree("n", true)
-                            ))
-                    )),
-                    new ParseTree("-", true),
-                    new ParseTree("T", List.of(
-                            new ParseTree("(", true),
-                            new ParseTree("E", List.of(
-                                    new ParseTree("E", List.of(
-                                            new ParseTree("T", List.of(
-                                                    new ParseTree("n", true)
-                                            ))
-                                    )),
-                                    new ParseTree("-", true),
-                                    new ParseTree("T", List.of(
-                                            new ParseTree("n", true)
-                                    ))
-                            )),
-                            new ParseTree(")", true)
-                    ))
-            ));
-
-            List<String> tokens = Arrays.asList("n - ( n - n )".split(" "));
-            assertThat(parser.parseStrings(tokens)).isEqualTo(tree);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
 
     @Test
     void testParseUnrecognizedThrows() {

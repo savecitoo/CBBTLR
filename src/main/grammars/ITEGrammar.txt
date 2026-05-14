@@ -1,11 +1,11 @@
 S' -> S
 S -> M | U
-M -> If E Then M Else M | While E Do M | Lgraph L Rgraph | A
-U -> If E Then S | If E Then M Else U
+M -> If E Then M Else M #ite | While E Do M #while | Lgraph L Rgraph | A
+U -> If E Then S #it | If E Then M Else U
 L -> L Next S | S
 A -> Id Equal E
 E -> E Plus T | T
-T -> T Times F | F
+T -> T Times F #mul | F
 F -> LParen E RParen | Id | Number
 Token:
 Plus : \+

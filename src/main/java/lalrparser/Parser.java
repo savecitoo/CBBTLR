@@ -101,6 +101,7 @@ public class Parser {
         int[][] GOTO = tables.getGOTO();
         int[][] PRODUCTIONS = tables.getPRODUCTIONS();
         String[] SYMBOLS = tables.getSymbols();
+        String[] TAG = tables.getPROD_TAGS();
 
         while (true) {
             int s = states.peek();
@@ -118,7 +119,8 @@ public class Parser {
             switch (action[0]) {
                 case 0: // shift
                     states.push(action[1]);
-                    symbols.push(new ParseTree(token, true));
+                    symbols.push(new ParseTree(token, true,
+                            new ArrayList<>(), 1, i, ""));
                     i++;
                     break;
                 case 1: // reduce
@@ -132,7 +134,8 @@ public class Parser {
                     }
                     s = states.peek();
                     states.push(GOTO[s][lhs_id]);
-                    symbols.push(new ParseTree(SYMBOLS[lhs_id], children));
+                    symbols.push(new ParseTree(SYMBOLS[lhs_id], false, children,
+                            children.getFirst().line, children.getFirst().col, TAG[action[1]]));
                     break;
                 case 2: // accept
                     return symbols.peek();
@@ -160,6 +163,8 @@ public class Parser {
         int[][] GOTO = tables.getGOTO();
         int[][] PRODUCTIONS = tables.getPRODUCTIONS();
         String[] SYMBOLS = tables.getSymbols();
+        String[] TAG = tables.getPROD_TAGS();
+
         input.add(Token.createEOFToken(SYMBOLS.length-1));
 
         while (true) {
@@ -174,7 +179,8 @@ public class Parser {
             switch (action[0]) {
                 case 0: // shift
                     states.push(action[1]);
-                    symbols.push(new ParseTree(input.get(i).value(), true));
+                    symbols.push(new ParseTree(input.get(i).value(), true,
+                            new ArrayList<>(), input.get(i).line(), input.get(i).col(), ""));
                     i++;
                     break;
                 case 1: // reduce
@@ -188,7 +194,8 @@ public class Parser {
                     }
                     s = states.peek();
                     states.push(GOTO[s][lhs_id]);
-                    symbols.push(new ParseTree(SYMBOLS[lhs_id], children));
+                    symbols.push(new ParseTree(SYMBOLS[lhs_id], false, children,
+                            children.getFirst().line, children.getFirst().col, TAG[action[1]]));
                     break;
                 case 2: // accept
                     return symbols.peek();
@@ -413,6 +420,13 @@ public class Parser {
         }
         sb.append("    };\n\n");
 
+        // ── PROD_TAGS ────────────────────────────────────────────────────────
+        sb.append("    public static final String[] PROD_TAGS = {\n");
+        for (ContextFreeProduction p : grammar.P) {
+            sb.append("        \"").append(p.prod_tag).append("\",\n");
+        }
+        sb.append("    };\n\n");
+
         // ── Getters ──────────────────────────────────────────────────────────
         sb.append("    @Override\n");
         sb.append("    public int @NotNull [] @NotNull [] @NotNull [] getACTION() {\n");
@@ -431,6 +445,11 @@ public class Parser {
 
         sb.append("    @Override\n");
         sb.append("    public @NotNull String @NotNull [] getSymbols() { return SYMBOLS; }\n\n");
+
+        sb.append("    @Override\n");
+        sb.append("    public @NotNull String @NotNull [] getPROD_TAGS() {\n");
+        sb.append("        return PROD_TAGS;\n");
+        sb.append("    }\n\n");
 
         sb.append("}\n");
 

@@ -119,4 +119,10 @@ public class GeneratedTest {
         assertThat(parser.isRecognized(input)).isEqualTo(result);
     }
 
+    @Test
+    void testTag() {
+        ITEGrammarParser parser = new ITEGrammarParser();
+        System.out.println(parser.parse("while x do y = 3"));
+    }
+
 }

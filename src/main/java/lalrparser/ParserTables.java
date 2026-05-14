@@ -81,4 +81,20 @@ public interface ParserTables {
      * @return a non-null, non-empty array of symbol strings indexed by their id.
      */
     String[] getSymbols();
+
+    /**
+     * Returns the production tags associated with each production rule.
+     *
+     * <p>{@code PROD_TAGS[production_id]} is the tag string attached to the
+     * production at that index, where the index corresponds exactly to the
+     * production ID used in the ACTION table's REDUCE entries and in
+     * {@link #getPRODUCTIONS()}.</p>
+     *
+     * <p>Productions that carry no tag are represented by an empty string
+     * {@code ""}.</p>
+     *
+     * @return a non-null array indexed by [production_id], each entry being
+     *         the tag string of the corresponding production.
+     */
+    @NotNull String @NotNull [] getPROD_TAGS();
 }

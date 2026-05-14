@@ -12,28 +12,30 @@ import java.util.List;
 public class ParseTree implements Iterable<ParseTree> {
 
     public final @NotNull String symbol;
+
     private final @NotNull List<@NotNull ParseTree> children;
+
     public boolean isTerminal;
+
+    public final int line;
+
+    public final int col;
+
+    public final @NotNull String rule_tag;
 
     /**
      * This is a constructor for a parsing tree with no children, i.e. a leaf.
      * @param symbol the symbol in the root node.
      * @param isTerminal if the symbol is terminal or not.
+     * @param children the children of the current node.
      */
-    public ParseTree(@NotNull String symbol, boolean isTerminal) {
+    public ParseTree(@NotNull String symbol, boolean isTerminal, @NotNull List<@NotNull ParseTree> children,
+                     int line, int col, @NotNull String expr_tag) {
         this.symbol = symbol;
         this.isTerminal = isTerminal;
-        this.children = new ArrayList<>();
-    }
-
-    /**
-     * This is a constructor for a parsing tree with children.
-     * @param symbol the symbol in the root node.
-     * @param children the children of the root.
-     */
-    public ParseTree(@NotNull String symbol, @NotNull List<@NotNull ParseTree> children) {
-        this.symbol = symbol;
-        this.isTerminal = children.isEmpty();
+        this.line = line;
+        this.col = col;
+        this.rule_tag = expr_tag;
         this.children = children;
     }
 
@@ -48,7 +50,9 @@ public class ParseTree implements Iterable<ParseTree> {
         if (o instanceof ParseTree tree) {
             return this.symbol.equals(tree.symbol) &&
                     this.isTerminal == tree.isTerminal &&
-                    this.children.equals(tree.children);
+                    this.children.equals(tree.children) &&
+                    this.col == tree.col && this.line == tree.line &&
+                    this.rule_tag.equals(tree.rule_tag);
         }
         return false;
     }
@@ -60,7 +64,10 @@ public class ParseTree implements Iterable<ParseTree> {
 
     private String toStringHelper(String prefix, String childPrefix) {
         StringBuilder sb = new StringBuilder();
-        sb.append(prefix).append(symbol).append(isTerminal ? " [Terminal]" : "").append("\n");
+        String label = rule_tag.isEmpty()
+                ? symbol
+                : "(" + rule_tag + ") " + symbol;
+        sb.append(prefix).append(label).append(isTerminal ? " [Terminal]" : "").append("\n");
         for (int i = 0; i < children.size(); i++) {
             ParseTree child = children.get(i);
             if (i < children.size() - 1) {
