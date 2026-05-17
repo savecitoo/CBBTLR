@@ -11,16 +11,23 @@ import java.util.List;
  */
 public class ParseTree implements Iterable<ParseTree> {
 
+    /** The symbol of the grammar that generated this node. */
     public final @NotNull String symbol;
 
+    /** The children of the current node, it could be an empty list.  */
     private final @NotNull List<@NotNull ParseTree> children;
 
+    /** The information that tell if this node is terminal. */
     public boolean isTerminal;
 
+    /** The line where the first character of the token is found. */
     public final int line;
 
+    /** The column where the first character of the token is found. */
     public final int col;
 
+    /** The rule that represents the semantic meaning of the grammar rule that generates
+     * this node and its children. */
     public final @NotNull String rule_tag;
 
     /**
@@ -28,6 +35,9 @@ public class ParseTree implements Iterable<ParseTree> {
      * @param symbol the symbol in the root node.
      * @param isTerminal if the symbol is terminal or not.
      * @param children the children of the current node.
+     * @param line the line where the first character of  current node is found in the text.
+     * @param col the column where the first character of  current node is found in the text.
+     * @param expr_tag the tag of the rule that generated this nodes and its eventual children.
      */
     public ParseTree(@NotNull String symbol, boolean isTerminal, @NotNull List<@NotNull ParseTree> children,
                      int line, int col, @NotNull String expr_tag) {

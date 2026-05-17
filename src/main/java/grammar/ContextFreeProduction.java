@@ -33,7 +33,8 @@ public class ContextFreeProduction implements Iterable<String> {
      * @param rhs     the list of right-hand side alternatives; must not be empty,
      *                and each alternative must be a non-empty list of non-blank symbols
      * @param prod_id the numeric identifier assigned to the first alternative of {@code this} production;
-     *                subsequent alternatives are assigned consecutive ids
+     *                subsequent alternatives are assigned consecutive ids.
+     * @param prod_tag the tag that specifies the semantic mean of the rule.
      * @throws IllegalArgumentException if {@code lhs} is blank, if {@code rhs} is empty,
      *                                  or if any alternative is empty or contains a blank symbol
      */

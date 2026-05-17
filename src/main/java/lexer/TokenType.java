@@ -9,6 +9,11 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
+ *
+ * This class represent a Type of Token that the {@code Lexer} will have to recognize.
+ *
+ * @see Lexer
+ *
  * @param identifier This field represent the token identifier.
  * @param regex      This field is the regular expression of the TokenType.
  * @param skip       If this token must be skipped in the tokenization process.
@@ -42,6 +47,10 @@ public record TokenType(@NotNull String identifier, @NotNull String regex, boole
         this.skip = skip;
     }
 
+    /**
+     * This method returns the {@code Pattern} that recognizes {@code this} Token Type.
+     * @return the recognizing pattern of {@code this} Token Type.
+     */
     public Pattern getPattern() {
         return Pattern.compile(regex);
     }

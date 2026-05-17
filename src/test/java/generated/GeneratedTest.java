@@ -125,4 +125,10 @@ public class GeneratedTest {
         System.out.println(parser.parse("while x do y = 3"));
     }
 
+    @Test
+    void testError() {
+        ITEGrammarParser parser = new ITEGrammarParser();
+        parser.parse("if ( then");
+    }
+
 }

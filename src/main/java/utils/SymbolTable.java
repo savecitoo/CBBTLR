@@ -11,6 +11,8 @@ import java.util.NoSuchElementException;
 /**
  * This class represent a table where each object of type T putted in has an identifier. <br>
  * If the class is meant to be serializable then the type T should implemens the interface Serializable.
+ *
+ * @param <T> The type of the objects that the symbol table has to encode in an Integer.
  */
 public class SymbolTable<T> implements Serializable {
 

@@ -7,6 +7,8 @@ import java.util.Set;
 /**
  * Represents a strategy to search for or extract a property from a set of objects. <br>
  * Implementations define the criteria for finding elements.
+ *
+ * @param <T> The type of the objects the find method has to produce.
  */
 public interface Finder <T> {
 

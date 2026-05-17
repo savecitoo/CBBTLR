@@ -112,8 +112,29 @@ public class Parser {
                 if (SYMBOLS[k].equals(token)) { next = k; break; }
             }
 
-            if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null)
-                throw new IllegalArgumentException("The word is not recognized");
+            if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null) {
+
+                List<String> expected = new LinkedList<>();
+
+                for (int j = 0; j < ACTION[s].length ; j++) {
+                    if (ACTION[s][j] != null) expected.add(SYMBOLS[j]);
+                }
+
+                if (expected.size() == 1) {
+                    throw new IllegalArgumentException(
+                            String.format("Unexpected token %s, expected %s",
+                                    token, expected.getFirst())
+                    );
+                } else {
+                    StringBuilder sb = new StringBuilder().append("Unexpected token ")
+                            .append(token).append(" expected one of the following: ");
+                    for (int j = 0; j < expected.size()-1; j++) {
+                        sb.append(expected.get(j)).append(", ");
+                    }
+                    sb.append(expected.getLast());
+                    throw new IllegalArgumentException(sb.toString());
+                }
+            }
 
             int[] action = ACTION[s][next];
             switch (action[0]) {
@@ -140,7 +161,9 @@ public class Parser {
                 case 2: // accept
                     return symbols.peek();
                 default:
-                    throw new IllegalArgumentException("The word is not recognized");
+                    throw new IllegalArgumentException(
+                            String.format("Error during the parsing, the code %d is not recognized.", action[0])
+                    );
             }
         }
     }
@@ -153,6 +176,7 @@ public class Parser {
      * @throws IllegalArgumentException if the sequence is not recognized by the grammar.
      */
     public ParseTree parse(@NotNull List<Token> input) throws IllegalArgumentException {
+        System.out.println(input);
         input = new ArrayList<>(input);
         Stack<Integer> states = new Stack<>();
         Stack<ParseTree> symbols = new Stack<>();
@@ -172,8 +196,32 @@ public class Parser {
 
             int next = input.get(i).token_id();
 
-            if (next >= ACTION[s].length || ACTION[s][next] == null)
-                throw new IllegalArgumentException("The word is not recognized");
+            if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null) {
+
+                List<String> expected = new LinkedList<>();
+
+                for (int j = 0; j < ACTION[s].length ; j++) {
+                    if (ACTION[s][j] != null) expected.add(SYMBOLS[j]);
+                }
+                String msg;
+
+                if (expected.size() == 1) {
+                    msg = String.format("Unexpected token \"%s\" at line %d, column %d, expected %s",
+                            input.get(i).value(), input.get(i).line(), input.get(i).col(), expected.getFirst());
+                } else {
+                    StringBuilder sb = new StringBuilder().append("Unexpected token \"")
+                            .append(input.get(i).value()).append("\" at line ")
+                            .append(input.get(i).line()).append(" and column ").append(input.get(i).col())
+                            .append(", expected one of the following: ");
+                    for (int j = 0; j < expected.size()-1; j++) {
+                        sb.append(expected.get(j)).append(", ");
+                    }
+                    sb.append(expected.getLast());
+                    msg = sb.toString();
+                }
+                throw new ParseException(msg,
+                        input.get(i).value(), expected, input.get(i).line(), input.get(i).col());
+            }
 
             int[] action = ACTION[s][next];
             switch (action[0]) {
