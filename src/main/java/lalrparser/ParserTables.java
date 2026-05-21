@@ -15,6 +15,8 @@ import org.jetbrains.annotations.NotNull;
  *   <li><b>ACTION</b>: determines what action to take given a state and a terminal symbol</li>
  *   <li><b>GOTO</b>: determines the next state after a reduction, given a state and a non-terminal</li>
  *   <li><b>PRODUCTIONS</b>: encodes each production rule as {lhs_id, rhs_length}, used during reductions</li>
+ *   <li><b>PROD_TAGS</b>: the production tag associated with each rule.</li>
+ *   <li><b>SYMBOLS</b>: decodes each symbol id used in the tables to the corresponding terminal or non-terminal.</li>
  * </ul>
  */
 public interface ParserTables {
@@ -80,7 +82,7 @@ public interface ParserTables {
      *
      * @return a non-null, non-empty array of symbol strings indexed by their id.
      */
-    String[] getSymbols();
+    @NotNull String @NotNull[] getSYMBOLS();
 
     /**
      * Returns the production tags associated with each production rule.

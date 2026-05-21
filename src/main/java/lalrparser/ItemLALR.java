@@ -49,7 +49,7 @@ public class ItemLALR {
     /**
      * Returns the LR(0) core of this item.
      *
-     * @return the core.
+     * @return the LR(0) core.
      */
     public @NotNull CoreItem getCore() {
         return core;
@@ -80,7 +80,7 @@ public class ItemLALR {
      * @param terminals the terminals to add.
      * @return {@code true} if the lookahead set changed as a result
      */
-    public boolean addAllLookaheads(@NotNull java.util.Collection<@NotNull String> terminals) {
+    public boolean addAllLookaheads(@NotNull Set<@NotNull String> terminals) {
         return lookaheads.addAll(terminals);
     }
 

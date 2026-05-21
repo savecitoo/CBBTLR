@@ -44,7 +44,7 @@ public record State(@NotNull Set<@NotNull CoreItem> cores, @NotNull Map<@NotNull
      * @return a new {@code State} whose {@code items} map contains one {@link ItemLALR}
      *         per core item, each with an initially empty lookahead set.
      */
-    public static State fromCore(@NotNull Set<@NotNull CoreItem> cores) {
+    public static @NotNull State fromCore(@NotNull Set<@NotNull CoreItem> cores) {
         Map<CoreItem, ItemLALR> items = new HashMap<>();
         for (CoreItem core : cores)
             items.put(core, new ItemLALR(core));

@@ -87,9 +87,10 @@ public class Parser {
      *
      * @param input the sequence of terminal symbols to parse.
      * @return the root of the parse tree for the input.
-     * @throws IllegalArgumentException if the sequence is not recognized by the grammar.
-     */
-    public ParseTree parseStrings(@NotNull List<String> input) throws IllegalArgumentException {
+     * @throws ParseException if the sequence is not recognized by the grammar.
+     * @throws IllegalArgumentException if the code used in the action table has been modified.
+     * */
+    public ParseTree parseStrings(@NotNull List<String> input) throws ParseException, IllegalArgumentException {
         input = new ArrayList<>(input);
         input.add("#");
         Stack<Integer> states = new Stack<>();
@@ -100,7 +101,7 @@ public class Parser {
         int[][][] ACTION = tables.getACTION();
         int[][] GOTO = tables.getGOTO();
         int[][] PRODUCTIONS = tables.getPRODUCTIONS();
-        String[] SYMBOLS = tables.getSymbols();
+        String[] SYMBOLS = tables.getSYMBOLS();
         String[] TAG = tables.getPROD_TAGS();
 
         while (true) {
@@ -115,16 +116,14 @@ public class Parser {
             if (next < 0 || next >= ACTION[s].length || ACTION[s][next] == null) {
 
                 List<String> expected = new LinkedList<>();
-
+                String msg;
                 for (int j = 0; j < ACTION[s].length ; j++) {
                     if (ACTION[s][j] != null) expected.add(SYMBOLS[j]);
                 }
 
                 if (expected.size() == 1) {
-                    throw new IllegalArgumentException(
-                            String.format("Unexpected token %s, expected %s",
-                                    token, expected.getFirst())
-                    );
+                    msg = String.format("Unexpected token %s, expected %s",
+                                    token, expected.getFirst());
                 } else {
                     StringBuilder sb = new StringBuilder().append("Unexpected token ")
                             .append(token).append(" expected one of the following: ");
@@ -132,8 +131,11 @@ public class Parser {
                         sb.append(expected.get(j)).append(", ");
                     }
                     sb.append(expected.getLast());
-                    throw new IllegalArgumentException(sb.toString());
+                    msg = sb.toString();
                 }
+                throw new ParseException(
+                    msg, token, expected, 1, i+1
+                );
             }
 
             int[] action = ACTION[s][next];
@@ -173,9 +175,10 @@ public class Parser {
      *
      * @param input the token sequence to parse.
      * @return the root of the parse tree for the input.
-     * @throws IllegalArgumentException if the sequence is not recognized by the grammar.
+     * @throws ParseException if the sequence is not recognized by the grammar.
+     * @throws IllegalArgumentException if the code used in the action table has been modified.
      */
-    public ParseTree parse(@NotNull List<Token> input) throws IllegalArgumentException {
+    public ParseTree parse(@NotNull List<Token> input) throws ParseException, IllegalArgumentException {
         System.out.println(input);
         input = new ArrayList<>(input);
         Stack<Integer> states = new Stack<>();
@@ -186,7 +189,7 @@ public class Parser {
         int[][][] ACTION = tables.getACTION();
         int[][] GOTO = tables.getGOTO();
         int[][] PRODUCTIONS = tables.getPRODUCTIONS();
-        String[] SYMBOLS = tables.getSymbols();
+        String[] SYMBOLS = tables.getSYMBOLS();
         String[] TAG = tables.getPROD_TAGS();
 
         input.add(Token.createEOFToken(SYMBOLS.length-1));

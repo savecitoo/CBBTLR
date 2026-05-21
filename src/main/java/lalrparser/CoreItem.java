@@ -14,22 +14,16 @@ import java.util.List;
  * have already been recognised, and the parser is now expecting {@code B} followed
  * by {@code β}.
  *
- * <p>This record is <em>immutable</em>: the {@code rhs} list is defensively copied
- * on construction, so external modifications to the original list have no effect.
- *
- * @param lhs           the non-terminal on the left-hand side of the production rule
- *                      (e.g. {@code "E"}).
+ * @param lhs           the non-terminal on the left-hand side of the production rule.
  * @param rhs           the ordered list of grammar symbols (terminals and non-terminals)
- *                      on the right-hand side of the production rule
- *                      (e.g. {@code ["E", "+", "T"]}).
- * @param dot_position  the zero-based index indicating the position of the dot
+ *                      on the right-hand side of the production rule.
+ * @param dot_position  the 0-based index indicating the position of the dot
  *                      <em>before</em> the symbol at that index.
  *                      A value of {@code 0} places the dot before the first symbol;
  *                      a value equal to {@code rhs.size()} places it at the end,
  *                      marking a <em>complete</em> item.
- * @param production_id a unique numeric identifier for the underlying production rule,
- *                      used to distinguish items that share the same {@code lhs} and
- *                      {@code rhs} but originate from different grammar productions.
+ * @param production_id the unique numeric identifier given by the grammar of
+ *                      the underlying production rule.
  */
 public record CoreItem(@NotNull String lhs,
                        @NotNull List<@NotNull String> rhs,
@@ -49,9 +43,6 @@ public record CoreItem(@NotNull String lhs,
      *   <li>{@code dot_position == rhs.size()} — the dot is at the end of the
      *       right-hand side (the item is <em>complete</em>, i.e. a reduce item).</li>
      * </ul>
-     *
-     * <p>The supplied {@code rhs} list is defensively copied via {@link List#copyOf},
-     * so the constructed item is unaffected by later mutations to the original list.
      *
      * @param lhs           the non-terminal on the left-hand side; must not be {@code null}.
      * @param rhs           the list of grammar symbols on the right-hand side;
@@ -93,8 +84,7 @@ public record CoreItem(@NotNull String lhs,
      *
      * <p>An item is complete when the dot has reached the end of the right-hand side,
      * i.e. when all symbols of the production have been consumed. Formally, this
-     * corresponds to an item of the form {@code A → α ·} (with an empty {@code β}).
-     * A complete item triggers a <em>reduce</em> action in the LR automaton.
+     * corresponds to an item of the form {@code A → α ·}.
      *
      * @return {@code true} if {@code dot_position == rhs.size()}, {@code false} otherwise.
      */
@@ -111,8 +101,7 @@ public record CoreItem(@NotNull String lhs,
      *
      * <p>The original item is not modified; a fresh instance is returned.
      *
-     * @return a new {@code CoreItem} with {@code dot_position} incremented by one;
-     *         never {@code null}.
+     * @return a new {@code CoreItem} with {@code dot_position} incremented by one.
      * @throws IllegalArgumentException if the item is already complete and the dot
      *                                  cannot be advanced further. Callers should
      *                                  check {@link #isComplete()} before invoking
@@ -169,17 +158,16 @@ public record CoreItem(@NotNull String lhs,
      * <p>This is a convenience entry point that avoids extracting the left-hand side,
      * the right-hand side at a given index, and the production identifier manually.
      *
-     * @param production    the context-free production rule from which to derive the item;
-     *                      must not be {@code null}.
-     *                      {@code production} (productions may have multiple alternatives).
-     * @param dot_position  the initial position of the dot in the new item;
+     * @param production    the context-free production rule from which to derive the item.
+     *
+     * @param dot_position  the position of the dot in the new item;
      *                      must satisfy {@code 0 <= dot_position <= rhs.size()}.
      * @return a new {@code CoreItem} corresponding to the specified production alternative
      *         with the dot placed at {@code dot_position}.
      * @throws IllegalArgumentException if {@code dot_position} is out of range (delegated
      *                                  to the canonical constructor).
      */
-    public static CoreItem fromProduction(@NotNull ContextFreeProduction production, int dot_position) {
+    public static @NotNull CoreItem fromProduction(@NotNull ContextFreeProduction production, int dot_position) {
         return new CoreItem(production.lhs, production.getRHS(),
                 dot_position, production.getProd_id());
     }
