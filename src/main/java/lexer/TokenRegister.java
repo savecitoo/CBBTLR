@@ -7,44 +7,67 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * This class keeps trace of the priority of the tokens.
+ * Tracks the declaration-order priority of {@link TokenType} instances.
+ *
+ * <p>Each token type is assigned an integer priority equal to its insertion order,
+ * starting from {@code 0}. Lower values mean higher priority: a token type added
+ * first always beats one added later when two patterns match a string of equal length.
+ *
+ * <p>Priorities are keyed by {@link TokenType#identifier()}.
  */
 public class TokenRegister implements Serializable {
-
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /**
-     * This field saves the priorities between tokens.
+     * Maps each token-type identifier to its priority (0 = highest).
+     * The priority of a new entry is always {@code register.size()} at insertion time,
+     * which guarantees a strict total order consistent with declaration order.
      */
     private final @NotNull Map<@NotNull String, @NotNull Integer> register = new HashMap<>();
 
     /**
-     * This is a constructor for a TokenRegister.
+     * Creates an empty {@code TokenRegister} with no entries.
      */
-    public TokenRegister(){}
+    public TokenRegister() {}
 
     /**
-     * This method adds to the register a new Token, it will have the lowest priority among all the token previously added.
-     * @param token the token to be added in the register.
-     * @return true if it is a new token in the register, false otherwise.
+     * Registers a token type with the next available (lowest) priority.
+     *
+     * <p>If a token type with the same {@link TokenType#identifier() identifier}
+     * is already present, the register is left unchanged and {@code false} is returned.
+     *
+     * @param token the token type to register; must not be {@code null}.
+     * @return {@code true} if the token type was newly added,
+     *         {@code false} if it was already present.
      */
-    public boolean add(@NotNull TokenType token) throws IllegalArgumentException {
+    public boolean add(@NotNull TokenType token) {
         if (register.containsKey(token.identifier())) return false;
         register.put(token.identifier(), register.size());
         return true;
     }
 
     /**
-     * This method returns the priority of the token, if it is not in the register it returns -1.
-     * @param token the token you are looking for priority.
-     * @return the priority of the token if it is in the register, -1 otherwise.
+     * Returns the priority of the given token type.
+     *
+     * <p>Lower values indicate higher priority. Returns {@code -1} if the token
+     * type has not been registered.
+     *
+     * @param token the token type to look up; must not be {@code null}.
+     * @return the token type's priority, or {@code -1} if not registered.
      */
     public int priority(@NotNull TokenType token) {
         return register.getOrDefault(token.identifier(), -1);
     }
 
+    /**
+     * Two {@code TokenRegister} instances are equal if they contain the same
+     * identifier-to-priority mappings.
+     *
+     * @param o the object to compare.
+     * @return {@code true} if {@code o} is a {@code TokenRegister} with identical entries.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -9,95 +9,151 @@ import java.util.*;
 import java.util.regex.Matcher;
 
 /**
- * This class implements a Lexer.
+ * A lexer (tokenizer) that splits an input string into a sequence of {@link Token} objects
+ * according to a set of {@link TokenType} rules.
+ *
+ * <p>Each {@link TokenType} defines a regular expression and an identifier. When multiple
+ * token types can match the same substring starting at the current position, the lexer
+ * applies a two-level disambiguation strategy:
+ * <ol>
+ *   <li><b>Longest match</b>: the token type consuming the most characters wins.</li>
+ *   <li><b>Priority</b>: if two types match the same length, the one with the lower
+ *       priority value wins.</li>
+ * </ol>
+ *
+ * <p>Token types marked as {@link TokenType#skip() skip} are consumed from the input
+ * but not added to the output list (useful for whitespace or comments).
+ *
+ * <p>Token identifiers are interned into a {@link SymbolTable} so that identity
+ * comparison can be used instead of string equality during subsequent processing.
+ *
+ *
+ * <h2>Example usage</h2>
+ * <pre>{@code
+ * SymbolTable<String> table = new SymbolTable<>();
+ * Lexer lexer = Lexer.fromString("""
+ *     NUMBER : [0-9]+
+ *     PLUS   : \\+
+ *     WS     : \\s+ skip
+ *     """, table);
+ * List<Token> tokens = lexer.tokenize("3 + 42");
+ * }</pre>
  */
 public class Lexer implements Serializable {
-
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** This field keeps saved all the tokens that the lexer recognize. */
+    /**
+     * The complete set of token types this lexer recognizes.
+     * Stored as an unmodifiable set; order-sensitive priority information
+     * is kept separately in {@link #reg}.
+     */
     private final @NotNull Set<@NotNull TokenType> tokens;
 
-    // We use a symbol table to speed up the comparison between token identifiers,
-    // this is useful
-    /** This field is the SymbolTable that the lexer uses. */
+    /**
+     * Symbol table used to intern token-type identifiers.
+     * Interning allows O(1) identity comparisons in downstream passes
+     * instead of O(n) string equality checks.
+     */
     private final @NotNull SymbolTable<@NotNull String> table;
 
-    /** This field contains the token's priority. */
+    /**
+     * Maps each {@link TokenType} to its declaration-order priority.
+     * Lower values mean higher priority; used to break ties when two
+     * token types produce a match of equal length.
+     */
     private final @NotNull TokenRegister reg = new TokenRegister();
 
     /**
-     * This is a constructor for a Lexer starting from a set of TokenType.<br>
-     * The order of the tokens will be their priority in case of two TokenTypes recognizes the same string.
-     * @param tokens the list of tokens that the Lexer will recognize.
-     * @param table the SymbolTable used by the lexer.
-     * @throws IllegalArgumentException if the same token appears more than once.
+     * Creates a {@code Lexer} from an ordered list of token types and a symbol table.
+     *
+     * <p>The position of each {@link TokenType} in {@code tokens} determines its
+     * priority: index {@code 0} has the highest priority and wins all tie-breaks
+     * against later entries.
+     *
+     * <p>Every token-type identifier is added to {@code table} if not already present,
+     * so that {@link Token} objects produced by {@link #tokenize} carry interned IDs.
+     *
+     * @param tokens an ordered list of token types; must not contain duplicate identifiers.
+     * @param table  the symbol table used to intern token-type identifiers.
+     * @throws IllegalArgumentException if any identifier appears more than once in {@code tokens}.
      */
     public Lexer(@NotNull List<@NotNull TokenType> tokens, @NotNull SymbolTable<@NotNull String> table) {
         Set<String> seen = new HashSet<>();
         for (TokenType tt : tokens) {
             if (!seen.add(tt.identifier()))
-                throw new IllegalArgumentException("The identifier " + tt.identifier() + " appears more than once");
+                throw new IllegalArgumentException(
+                        "The identifier " + tt.identifier() + " appears more than once");
             reg.add(tt);
             if (!table.contains(tt.identifier()))
                 table.add(tt.identifier());
         }
         this.table = table;
         this.tokens = Set.copyOf(tokens);
-
     }
 
     /**
-     * This method starting from a string returns a List of tokens recognized by the string.
-     * @param tokenized the string that has to be transformed.
-     * @return a list of tokens representing the string.
-     * @throws NoSuchElementException if no TokenType reflects a substring of the input.
+     * Tokenizes the entire input string and returns the resulting token list.
+     *
+     *
+     * @param tokenized the input string to tokenize; must not be {@code null}.
+     * @return an ordered, mutable list of tokens representing the full input.
+     * @throws NoSuchElementException if any position in {@code tokenized} is not
+     *                                matched by any registered token type.
      */
-    public @NotNull List<@NotNull Token> tokenize(@NotNull String tokenized) throws NoSuchElementException {
+    public @NotNull List<@NotNull Token> tokenize(@NotNull String tokenized) {
         List<Token> tokenList = new LinkedList<>();
 
-        // we construct the matchers body outside the main part of the algorithm so we build it just one time.
+        // Build one Matcher per TokenType upfront; regions are adjusted per iteration
+        // so the underlying Pattern is compiled only once per call.
         Map<TokenType, Matcher> matchers = new HashMap<>();
         for (TokenType tt : tokens) {
             matchers.put(tt, tt.getPattern().matcher(tokenized));
         }
 
         int line = 1;
-        int col = 1;
+        int col  = 1;
 
         for (int i = 0; i < tokenized.length(); ) {
-            TokenType bestType = null;
-            int bestLength = 0;
+            TokenType bestType   = null;
+            int       bestLength = 0;
 
-            // we search for a token that matches from the start of the string to a point of it.
+            // Find the token type whose pattern matches the longest prefix at position i.
+            // Ties are broken by the declaration-order priority stored in `reg`.
             for (TokenType tt : tokens) {
                 Matcher matcher = matchers.get(tt);
                 matcher.region(i, tokenized.length());
 
-
-                if (matcher.lookingAt()) { // we found a substring that matches the regex
+                if (matcher.lookingAt()) {
                     int len = matcher.end() - i;
 
                     if (len > bestLength ||
-                            (len == bestLength && (bestType == null || reg.priority(tt) < reg.priority(bestType)))) {
-                        bestType = tt;
+                            (len == bestLength &&
+                                    (bestType == null || reg.priority(tt) < reg.priority(bestType)))) {
+                        bestType   = tt;
                         bestLength = len;
                     }
                 }
             }
-            if (bestType == null) { // from start to the end of the string no token type matched the input
-                throw new NoSuchElementException();
+
+            // No token type matched at position i — the input is not fully covered.
+            if (bestType == null) {
+                throw new NoSuchElementException(
+                        "No token type matches input at position " + i +
+                                " (line " + line + ", col " + col + "): '" +
+                                tokenized.substring(i, Math.min(i + 20, tokenized.length())) + "'");
             }
 
             String consumed = tokenized.substring(i, i + bestLength);
-            if (!bestType.skip()) { // if the best token type is not a skip token type we add to the list
+
+            // Skip tokens (e.g. whitespace) are consumed but not added to the output list.
+            if (!bestType.skip()) {
                 tokenList.add(new Token(
                         table.getId(bestType.identifier()), consumed, line, col));
             }
 
-
+            // Update line/column tracking character by character.
             for (char c : consumed.toCharArray()) {
                 if (c == '\n') {
                     line++;
@@ -112,37 +168,60 @@ public class Lexer implements Serializable {
     }
 
     /**
-     * This method starting from a string returns the lexer specified by the string. <br>
-     * Every token has to be specified with the following scheme, after a token you have to put
-     * a new line to add another one:<br>
-     * TokenType : regex (skip)?<br>
-     * The addition of skip is necessary if the lexer has to skip the regular expression recognized by the Token.<br>
-     * If some token can recognize the same word it will be assigned to the first one written in the string.
-     * @param lexer the string that describes the lexer.
-     * @param table the symbol table the lexer will use to encode the identifiers.
-     * @return the lexer represented by the string.
-     * @throws IllegalArgumentException if the string is not well-formed or if an identifier appears more than once.
+     * Parses a plain-text lexer specification and returns the corresponding {@code Lexer}.
+     *
+     * <p>The specification consists of one token-type definition per line, in the form:
+     * <pre>
+     *     Identifier : regex
+     *     Identifier : regex skip
+     * </pre>
+     * where {@code Identifier} is the token name, {@code regex} is a Java regular
+     * expression, and the optional {@code skip} keyword instructs the lexer to consume
+     * but discard matches (e.g. for whitespace or comments).
+     *
+     * <p>Lines are processed in order; earlier lines have higher priority when two
+     * patterns match a string of equal length.
+     *
+     * <p>Leading and trailing whitespace in the specification string is ignored.
+     *
+     * @param lexer the plain-text specification string; must not be {@code null}.
+     * @param table the symbol table used to intern token-type identifiers.
+     * @return a fully configured {@code Lexer} representing the specification.
+     * @throws IllegalArgumentException if any line is malformed, or if the same
+     *                                  identifier appears more than once.
      */
-    public static @NotNull Lexer fromString(@NotNull String lexer, @NotNull SymbolTable<@NotNull String> table)
-            throws IllegalArgumentException {
-        List<TokenType> tokens = new LinkedList<>();
-        Set<String> identifiers = new HashSet<>();
-        Scanner s = new Scanner(lexer.trim());
-        while (s.hasNext()){
+    public static @NotNull Lexer fromString(
+            @NotNull String lexer,
+            @NotNull SymbolTable<@NotNull String> table) {
+
+        List<TokenType> tokenList   = new LinkedList<>();
+        Set<String>     identifiers = new HashSet<>();
+        Scanner         s           = new Scanner(lexer.trim());
+
+        while (s.hasNextLine()) {
             TokenType t = TokenType.fromString(s.nextLine());
             if (!identifiers.add(t.identifier()))
-                throw new IllegalArgumentException("This identifier " + t.identifier() + "appears twice in the string.");
-            tokens.add(t);
+                throw new IllegalArgumentException(
+                        "Identifier '" + t.identifier() + "' appears twice in the specification.");
+            tokenList.add(t);
         }
         s.close();
-        return new Lexer(tokens, table);
+        return new Lexer(tokenList, table);
     }
 
+    /**
+     * Two {@code Lexer} instances are equal if and only if they have the same token set and
+     * the same priority register.
+     *
+     * @param o the object to compare.
+     * @return {@code true} if {@code o} is a {@code Lexer} equal to this one.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o instanceof Lexer lexer) {
-            return reg.equals(lexer.reg) && tokens.equals(lexer.tokens) && table.equals(lexer.table);
+        if (o instanceof Lexer other) {
+            return reg.equals(other.reg)
+                    && tokens.equals(other.tokens);
         }
         return false;
     }

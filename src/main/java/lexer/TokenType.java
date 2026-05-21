@@ -9,84 +9,112 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
+ * Describes a single token type that a {@link Lexer} can recognize.
  *
- * This class represent a Type of Token that the {@code Lexer} will have to recognize.
+ * <p>A token type is defined by three properties:
+ * <ul>
+ *   <li><b>identifier</b> — a unique name used to refer to this token type (e.g. {@code "NUMBER"}).</li>
+ *   <li><b>regex</b> — the Java regular expression whose matches are recognized as this token.</li>
+ *   <li><b>skip</b> — when {@code true}, matches are consumed from the input but not emitted
+ *       as {@link Token} objects (useful for whitespace or comments).</li>
+ * </ul>
+ *
+ * <p>Both {@code identifier} and {@code regex} must be non-blank, and {@code regex} must be
+ * a valid Java regular expression; the constructor enforces these invariants eagerly.
+ *
+ * <p>Instances are compared by value (record semantics) and are serializable.
+ *
+ * @param identifier unique name of this token type; must not be blank.
+ * @param regex      Java regular expression matched by this token type; must not be blank
+ *                   and must be a valid pattern.
+ * @param skip       {@code true} if matches should be consumed but not emitted.
  *
  * @see Lexer
- *
- * @param identifier This field represent the token identifier.
- * @param regex      This field is the regular expression of the TokenType.
- * @param skip       If this token must be skipped in the tokenization process.
  */
-public record TokenType(@NotNull String identifier, @NotNull String regex, boolean skip) implements Serializable {
+public record TokenType(@NotNull String identifier, @NotNull String regex, boolean skip)
+        implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /**
-     * This is a constructor for a Token Type.
+     * Creates a {@code TokenType} and validates its arguments.
      *
-     * @param identifier the identifier of the Token Type.
-     * @param regex      the regular expression recognized by the Token Type.
-     * @param skip       if the TokenType is a skip token.
-     * @throws IllegalArgumentException if the identifier or the regular expression is blank, or if the regex
-     *                                  is not correct.
+     * @param identifier unique name of this token type; must not be blank.
+     * @param regex      Java regular expression for this token type; must not be blank.
+     * @param skip       {@code true} if the lexer should consume but not emit this token.
+     * @throws IllegalArgumentException if {@code identifier} or {@code regex} is blank,
+     *                                  or if {@code regex} is not a valid Java regular expression.
      */
-    public TokenType(@NotNull String identifier, @NotNull String regex, boolean skip) {
+    public TokenType {
         if (identifier.isBlank())
             throw new IllegalArgumentException("The identifier cannot be blank");
         if (regex.isBlank())
             throw new IllegalArgumentException("The regex cannot be blank");
-        this.identifier = identifier;
-        this.regex = regex;
         try {
             Pattern.compile(regex);
         } catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid regex: " + e.getMessage(), e);
         }
-        this.skip = skip;
     }
 
     /**
-     * This method returns the {@code Pattern} that recognizes {@code this} Token Type.
-     * @return the recognizing pattern of {@code this} Token Type.
+     * Returns a compiled {@link Pattern} for this token type's regular expression.
+     *
+     * <p><b>Note:</b> the pattern is recompiled on every call. Callers that invoke
+     * this method repeatedly in a hot path should cache the result.
+     *
+     * @return a freshly compiled {@link Pattern} equivalent to {@code Pattern.compile(regex())}.
      */
     public Pattern getPattern() {
         return Pattern.compile(regex);
     }
 
     /**
-     * This method starting from a string returns an instance of the corresponding TokenType.<br>
-     * To be recognized you have to write the string in following way:<br>
-     * [a-zA-Z0-9_]+ : (.+?)(?:+(skip))?
-     * If the TokenType must be skipped write it after the regex.
+     * Parses a single specification line and returns the corresponding {@code TokenType}.
      *
-     * @param line the line that describes the TokenType.
-     * @return the corresponding TokenType.
-     * @throws IllegalArgumentException if the string is not well-formed.
+     * <p>The expected format is:
+     * <pre>
+     *     identifier : regex
+     *     identifier : regex skip
+     * </pre>
+     * where {@code identifier} matches {@code [a-zA-Z0-9_]+}, {@code regex} is any
+     * non-empty string, and the optional trailing {@code skip} keyword marks the token
+     * type as a skip token. Leading and trailing whitespace is ignored.
+     *
+     * @param line the specification line to parse; must not be {@code null}.
+     * @return the {@code TokenType} described by {@code line}.
+     * @throws IllegalArgumentException if {@code line} does not match the expected format,
+     *                                  or if the extracted regex is invalid.
      */
-    public static @NotNull TokenType fromString(@NotNull String line) throws IllegalArgumentException {
-
-        // (.+?) is a lazy group and not a greedy one, so the skip is not captured by this group.
-        Matcher matcher = Pattern.compile("\\s*([a-zA-Z0-9_]+)\\s*:\\s*(.+?)(?:\\s+(skip))?\\s*").matcher(line);
+    public static @NotNull TokenType fromString(@NotNull String line) {
+        // The regex group (.+?) is intentionally lazy so the optional trailing
+        // "skip" keyword is not captured as part of the token regex.
+        Matcher matcher = Pattern
+                .compile("\\s*([a-zA-Z0-9_]+)\\s*:\\s*(.+?)(?:\\s+(skip))?\\s*")
+                .matcher(line);
         if (matcher.matches()) {
             return new TokenType(
                     matcher.group(1),
                     matcher.group(2),
-                    matcher.group(3) != null
-            );
+                    matcher.group(3) != null);
         }
-        throw new IllegalArgumentException("The line " + line + "  specified for the token is not well formed.");
+        throw new IllegalArgumentException(
+                "Malformed token specification: '" + line + "'. " +
+                        "Expected format: 'identifier : regex [skip]'");
     }
 
+    /**
+     * Returns a string representation in the same format accepted by {@link #fromString}.
+     *
+     * @return a string of the form {@code "identifier: <id> <regex> [skip]"}.
+     */
     @Override
     public @NotNull String toString() {
-        StringBuilder sb = new StringBuilder().append("identifier: ").append(identifier).append(" ");
-        sb.append(regex);
-        if (skip) {
-            sb.append(" skip");
-        }
+        StringBuilder sb = new StringBuilder()
+                .append("identifier: ").append(identifier).append(" ")
+                .append(regex);
+        if (skip) sb.append(" skip");
         return sb.toString();
     }
-
 }
