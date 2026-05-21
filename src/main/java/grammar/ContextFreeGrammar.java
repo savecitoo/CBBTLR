@@ -63,18 +63,40 @@ public class ContextFreeGrammar implements Iterable<String> {
 
 
     /**
-     * Parses a string representation of a context-free grammar and returns the corresponding instance.
+     * Parses a textual representation of a context-free grammar and returns the
+     * corresponding {@link ContextFreeGrammar} instance.
      *
      * <p>Symbols are classified as follows:</p>
      * <ul>
-     *   <li>Every symbol appearing on the left-hand side of a production is treated as <em>non-terminal</em>.</li>
-     *   <li>Every other symbol is treated as <em>terminal</em>.</li>
+     *   <li>Every symbol appearing on the left-hand side of a production is
+     *       considered a non-terminal.</li>
+     *   <li>Every other symbol is considered a terminal.</li>
      * </ul>
-     * The start symbol is the left-hand side symbol of the first production rule.
      *
-     * @param grammar the string representation of the grammar; must not be blank or malformed
-     * @return a {@link ContextFreeGrammar} instance corresponding to the given string
-     * @throws IllegalArgumentException if {@code grammar} is blank or does not conform to the expected format
+     * <p>The start symbol is the left-hand side of the first production rule.</p>
+     *
+     * <p>The grammar string must contain one production per line using the
+     * following format:</p>
+     *
+     * <pre>
+     * A -> α1 #tag | α2
+     * B -> β1 | β2 #anotherTag
+     * </pre>
+     *
+     * <p>where:</p>
+     * <ul>
+     *   <li>{@code A}, {@code B}, ... are non-terminal symbols;</li>
+     *   <li>each alternative on the right-hand side is separated by {@code |};</li>
+     *   <li>symbols inside a production must be separated by whitespace;</li>
+     *   <li>an optional production tag can be appended using the
+     *       {@code #tag} syntax;</li>
+     * </ul>
+     *
+     * @param grammar the textual representation of the grammar;
+     *                must not be blank or malformed
+     * @return the parsed {@link ContextFreeGrammar}
+     * @throws IllegalArgumentException if {@code grammar} is blank or does not
+     *                                  conform to the expected format
      */
     public static @NotNull ContextFreeGrammar fromString(@NotNull String grammar) throws IllegalArgumentException{
         if (grammar.isBlank())
@@ -86,7 +108,7 @@ public class ContextFreeGrammar implements Iterable<String> {
         Set<String> T = productions.symbols();
         T.removeAll(N);
         return new ContextFreeGrammar(
-                N, T, productions, productions.getStarting().lhs
+                N, T, productions, productions.getStarting().getFirst().lhs
         );
 
     }
@@ -129,7 +151,7 @@ public class ContextFreeGrammar implements Iterable<String> {
             if (productive.contains(cfp.lhs))
                 continue;
             // else we search if a production rule is entirely contained in productive.
-            if (prod.containsAll(cfp.getRHS())) {
+            if (prod.containsAll(cfp.rhs)) {
                     productive.add(cfp.lhs);
             }
         }
@@ -209,7 +231,7 @@ public class ContextFreeGrammar implements Iterable<String> {
                 }
 
                 if (ok) { // if there is at least one rule we add it.
-                    P.put(i, new ContextFreeProduction(p.lhs, p.getRHS(), i, p.prod_tag));
+                    P.put(i, new ContextFreeProduction(p.lhs, p.rhs, i, p.prod_tag));
                     i++;
                 }
 
@@ -251,7 +273,7 @@ public class ContextFreeGrammar implements Iterable<String> {
         seen.add(symbol);
         Set<String> result = new HashSet<>();
         for (ContextFreeProduction prod : P.fromLHS(symbol)) {
-            result.addAll(first(prod.getRHS().getFirst(), seen));
+            result.addAll(first(prod.rhs.getFirst(), seen));
         }
         return result;
     }

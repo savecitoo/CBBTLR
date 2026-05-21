@@ -168,8 +168,8 @@ public record CoreItem(@NotNull String lhs,
      *                                  to the canonical constructor).
      */
     public static @NotNull CoreItem fromProduction(@NotNull ContextFreeProduction production, int dot_position) {
-        return new CoreItem(production.lhs, production.getRHS(),
-                dot_position, production.getProd_id());
+        return new CoreItem(production.lhs, production.rhs,
+                dot_position, production.prod_id);
     }
 
     @Override

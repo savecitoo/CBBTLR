@@ -7,13 +7,6 @@ import java.util.*;
 
 /**
  * Represents the complete set of production rules of a context-free grammar.
- *
- * <p>Productions are stored in the order they are added, and the first production
- * is assumed to belong to the start symbol of the grammar. Each left-hand side
- * symbol must appear in exactly one production rule.</p>
- *
- * <p>Note: using the constructor directly does not guarantee that the keys of the
- * internal map correspond to the left-hand side of the associated production.</p>
  */
 public class Productions implements Iterable<ContextFreeProduction> {
 
@@ -24,12 +17,15 @@ public class Productions implements Iterable<ContextFreeProduction> {
     private final @NotNull Map<@NotNull String, @NotNull List<ContextFreeProduction>> lhs_prods;
 
     /**
-     * Constructs a {@code Productions} instance from the given list of production rules.
+     * Constructs a {@code Productions} instance from the given map of production rules.
      *
-     * <p>Note: the order of the productions is preserved, and the first element
-     * is treated as the production of the start symbol.</p>
+     * <p>Note: the key of the string should be the production id to guarantee the
+     * correct functioning of the class.</p>
      *
-     * @param productions the list of production rules; must not be {@code null}
+     * <p>Note: the left-hand side of the production with prod_id equal to 0 will be
+     * considered the starting symbl.</p>
+     *
+     * @param productions the map of production rules; must not be {@code null}
      */
     public Productions(@NotNull Map<@NotNull Integer, @NotNull ContextFreeProduction> productions) {
         this.productions = Map.copyOf(productions);
@@ -56,11 +52,11 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
-     * Returns the production rule that contains the given production id.
+     * Returns the production rule that has the given production id.
      *
-     * @param prod_id the production id to look up
-     * @return the {@link ContextFreeProduction} whose id range includes {@code prod_id}
-     * @throws NoSuchElementException if no production rule owns {@code prod_id}
+     * @param prod_id the production id to look up.
+     * @return the {@link ContextFreeProduction} whose id corresponds to {@code prod_id}.
+     * @throws NoSuchElementException if no production rule owns {@code prod_id}.
      */
     public @NotNull ContextFreeProduction fromProdId(int prod_id) throws NoSuchElementException {
         if (!productions.containsKey(prod_id))
@@ -73,7 +69,8 @@ public class Productions implements Iterable<ContextFreeProduction> {
      *
      * @param lhs the left-hand side symbol to look up; must not be {@code null}
      * @return a list of all the {@link ContextFreeProduction} with left-hand side equal to {@code lhs}
-     * @throws IllegalArgumentException if no production rule has {@code lhs} as its left-hand side
+     * @throws IllegalArgumentException if no production rule has {@code lhs} as
+     * its left-hand side
      */
     public @NotNull List<@NotNull ContextFreeProduction> fromLHS(@NotNull String lhs) throws IllegalArgumentException {
         if (!lhs_prods.containsKey(lhs))
@@ -112,7 +109,7 @@ public class Productions implements Iterable<ContextFreeProduction> {
                 throw new IllegalArgumentException
                         ("The left-hand side of the productions must appear in only one line as starting symbol for the production rule");
             for (ContextFreeProduction p : prod) {
-                productions.put(p.getProd_id(),p);
+                productions.put(p.prod_id,p);
             }
             i += prod.size();
         }
@@ -130,18 +127,18 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
-     * Returns the production rule of the start symbol, i.e. the first production
-     * in the order they were added.
+     * Returns an unmodifiable list of production rules of the start symbol, i.e. the production rule with
+     * {@code id} equal to 0.
      *
-     * @return the production rule of the start symbol
+     * @return all the possible productions rule of the starting symbol.
      */
-    public @NotNull ContextFreeProduction getStarting() {
-        return productions.get(0);
+    public @NotNull List<ContextFreeProduction> getStarting() {
+        return List.copyOf(lhs_prods.get(productions.get(0).lhs));
     }
 
     @Override
     public @NotNull Iterator<ContextFreeProduction> iterator() {
-        return new Iterator<ContextFreeProduction>() {
+        return new Iterator<>() {
 
             private final Iterator<Map.Entry<Integer, ContextFreeProduction>> it = productions.entrySet().iterator();
 

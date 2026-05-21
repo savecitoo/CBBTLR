@@ -55,7 +55,7 @@ public class Parser {
         try {
             parseStrings(input);
             return true;
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ParseException e) {
             return false;
         } catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
@@ -74,7 +74,7 @@ public class Parser {
         try {
             parse(input);
             return true;
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ParseException e) {
             return false;
         } catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
@@ -361,7 +361,7 @@ public class Parser {
                             else
                                 throw new IllegalArgumentException("REDUCE/REDUCE CONFLICT");
                         }
-                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getFirst().getProd_id() && symbol.equals("#")) {
+                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getFirst().prod_id && symbol.equals("#")) {
                             row.put(symbol_encoding.getId("#"), new int[]{2});
                         } else {
                             row.put(id_symbol, new int[]{1, it.production_id()});
@@ -495,7 +495,7 @@ public class Parser {
         sb.append("    }\n\n");
 
         sb.append("    @Override\n");
-        sb.append("    public @NotNull String @NotNull [] getSymbols() { return SYMBOLS; }\n\n");
+        sb.append("    public @NotNull String @NotNull [] getSYMBOLS() { return SYMBOLS; }\n\n");
 
         sb.append("    @Override\n");
         sb.append("    public @NotNull String @NotNull [] getPROD_TAGS() {\n");

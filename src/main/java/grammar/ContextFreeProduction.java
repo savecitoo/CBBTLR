@@ -17,11 +17,11 @@ public class ContextFreeProduction implements Iterable<String> {
     /** The left-hand side non-terminal symbol of {@code this} production rule. */
     public final String lhs;
 
-    /** The right-hand side {@code this} production rule. */
-    private final @NotNull List <@NotNull String> rhs;
+    /** The right-hand side {@code this} production rule, it is immutable. */
+    public final @NotNull List <@NotNull String> rhs;
 
-    /** The production id of the first alternative of  */
-    private final int prod_id;
+    /** The production id of the rule.  */
+    public final int prod_id;
 
     /** The tag of the production, if it is empty then it is assumed that has no type. */
     public final @NotNull String prod_tag;
@@ -30,13 +30,11 @@ public class ContextFreeProduction implements Iterable<String> {
      * Constructs a context-free production rule.
      *
      * @param lhs     the left-hand side non-terminal symbol; must not be blank
-     * @param rhs     the list of right-hand side alternatives; must not be empty,
-     *                and each alternative must be a non-empty list of non-blank symbols
-     * @param prod_id the numeric identifier assigned to the first alternative of {@code this} production;
-     *                subsequent alternatives are assigned consecutive ids.
-     * @param prod_tag the tag that specifies the semantic mean of the rule.
+     * @param rhs     the right hand side of {@code this} production rule.
+     * @param prod_id the numeric identifier assigned to {@code this} production.
+     * @param prod_tag the tag that specifies the semantic mean of the rule, it can be the empty string.
      * @throws IllegalArgumentException if {@code lhs} is blank, if {@code rhs} is empty,
-     *                                  or if any alternative is empty or contains a blank symbol
+     *                                  or contains a blank symbol
      */
     public ContextFreeProduction(String lhs, @NotNull List<@NotNull String> rhs,
                                  int prod_id, @NotNull String prod_tag) throws IllegalArgumentException{
@@ -52,19 +50,8 @@ public class ContextFreeProduction implements Iterable<String> {
 
         this.lhs = lhs;
         this.prod_tag = prod_tag;
-        this.rhs = rhs;
+        this.rhs = List.copyOf(rhs);
         this.prod_id = prod_id;
-    }
-
-    /**
-     * Returns the production id of the given right-hand side alternative.
-     *
-     * @return the production id corresponding to {@code production}
-     * @throws NoSuchElementException if {@code production} does not match any alternative
-     *                                in {@code this} production rule
-     */
-    public int getProd_id() throws NoSuchElementException {
-        return prod_id;
     }
 
     /**
@@ -75,20 +62,11 @@ public class ContextFreeProduction implements Iterable<String> {
     public int rhsSize() { return rhs.size(); }
 
     /**
-     * Returns the right-hand side of {@code this} production rule.
-     *
-     * @return the right-hand side.
-     */
-    public @NotNull List<String> getRHS() {
-        return new ArrayList<>(rhs);
-    }
-
-    /**
-     * Returns whether the given symbol appears in any right-hand side alternative
+     * Returns whether the given symbol appears in the right-hand side
      * of {@code this} production rule.
      *
      * @param symbol the symbol to look up
-     * @return {@code true} if {@code symbol} appears in at least one alternative;
+     * @return {@code true} if {@code symbol} appears in the right-hand side;
      *         {@code false} otherwise
      */
     public boolean contains(@NotNull String symbol) {
@@ -100,7 +78,7 @@ public class ContextFreeProduction implements Iterable<String> {
 
     /**
      * Returns the set of all symbols that appear in {@code this} production rule,
-     * including the left-hand side and all right-hand side alternatives.
+     * the left-hand side and in the right-hand side.
      *
      * @return the set of symbols appearing in {@code this} production
      */
@@ -111,7 +89,7 @@ public class ContextFreeProduction implements Iterable<String> {
     }
 
     /**
-     * Parses a string representation of a production rule and returns the corresponding instance.
+     * Parses a string representation of a production rule and returns a list of the corresponding instances.
      *
      * <p>The expected format is:</p>
      * <pre>
@@ -127,7 +105,7 @@ public class ContextFreeProduction implements Iterable<String> {
      * @return a List of {@link ContextFreeProduction} instances corresponding to the given string
      *          in the order specified by the string.
      * @throws IllegalArgumentException if {@code production} is blank, malformed,
-     *                                  or the left-hand side contains spaces
+     *                                  or the left-hand side contains more than one symbol
      */
     public static @NotNull List<ContextFreeProduction> fromString(@NotNull String production, int prod_id) {
         String[] prod = production.trim().split(" -> ");
@@ -135,7 +113,7 @@ public class ContextFreeProduction implements Iterable<String> {
             throw new IllegalArgumentException("The productions must be separeted by just one  \"->\" and must to be not blank");
         String lhs = prod[0].trim();
         if (lhs.contains(" "))
-            throw new IllegalArgumentException("The left-hand side must have only one symbol and must not contain spaces.");
+            throw new IllegalArgumentException("The left-hand side must have only one symbol");
 
         List<ContextFreeProduction> productions = new LinkedList<>();
 
