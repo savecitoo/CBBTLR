@@ -127,6 +127,16 @@ public class Productions implements Iterable<ContextFreeProduction> {
     }
 
     /**
+     * This method given in input an integer representing a production rule
+     * tells if there is a corresponding rule in the grammar.
+     * @param productionId the production of the id you are searching for.
+     * @return true if there is a rule with that id, false otherwise.
+     */
+    public boolean contains(int productionId) {
+        return productions.containsKey(productionId);
+    }
+
+    /**
      * Returns an unmodifiable list of production rules of the start symbol, i.e. the production rule with
      * {@code id} equal to 0.
      *
@@ -180,5 +190,4 @@ public class Productions implements Iterable<ContextFreeProduction> {
     public int hashCode() {
         return Objects.hash(productions);
     }
-
 }

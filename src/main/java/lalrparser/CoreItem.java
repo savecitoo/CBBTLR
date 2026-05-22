@@ -1,5 +1,6 @@
 package lalrparser;
 
+import grammar.ContextFreeGrammar;
 import grammar.ContextFreeProduction;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,21 +15,15 @@ import java.util.List;
  * have already been recognised, and the parser is now expecting {@code B} followed
  * by {@code β}.
  *
- * @param lhs           the non-terminal on the left-hand side of the production rule.
- * @param rhs           the ordered list of grammar symbols (terminals and non-terminals)
- *                      on the right-hand side of the production rule.
+ * @param production the context-free production augmented in {@code this} CoreItem.
  * @param dot_position  the 0-based index indicating the position of the dot
  *                      <em>before</em> the symbol at that index.
  *                      A value of {@code 0} places the dot before the first symbol;
  *                      a value equal to {@code rhs.size()} places it at the end,
  *                      marking a <em>complete</em> item.
- * @param production_id the unique numeric identifier given by the grammar of
- *                      the underlying production rule.
  */
-public record CoreItem(@NotNull String lhs,
-                       @NotNull List<@NotNull String> rhs,
-                       int dot_position,
-                       int production_id) {
+public record CoreItem( @NotNull ContextFreeProduction production,
+                       int dot_position) {
 
     /**
      * Canonical constructor for an LR(0) core item.
@@ -44,22 +39,18 @@ public record CoreItem(@NotNull String lhs,
      *       right-hand side (the item is <em>complete</em>, i.e. a reduce item).</li>
      * </ul>
      *
-     * @param lhs           the non-terminal on the left-hand side; must not be {@code null}.
-     * @param rhs           the list of grammar symbols on the right-hand side;
-     *                      must not be {@code null} and must not contain {@code null} elements.
+     * @param production the production of {@code this} CoreItem.
      * @param dot_position  the position of the dot; must satisfy
      *                      {@code 0 <= dot_position <= rhs.size()}.
-     * @param production_id the unique identifier of the underlying production rule.
-     * @throws IllegalArgumentException if {@code dot_position} is negative or
+      @throws IllegalArgumentException if {@code dot_position} is negative or
      *                                  greater than {@code rhs.size()}.
      */
-    public CoreItem(@NotNull String lhs, @NotNull List<@NotNull String> rhs, int dot_position, int production_id) {
-        if (dot_position < 0 || dot_position > rhs.size())
+    public CoreItem(@NotNull ContextFreeProduction production, int dot_position) {
+        if (dot_position < 0 || dot_position > production.rhsSize())
             throw new IllegalArgumentException("The position of the dot must be between 0 and rhs.size()");
-        this.rhs = List.copyOf(rhs);
-        this.lhs = lhs;
         this.dot_position = dot_position;
-        this.production_id = production_id;
+        this.production = production;
+
     }
 
     /**
@@ -76,7 +67,7 @@ public record CoreItem(@NotNull String lhs,
     public @NotNull String afterDot() throws IllegalArgumentException {
         if (isComplete())
             throw new IllegalArgumentException("There is no symbol after the dot");
-        return rhs.get(dot_position);
+        return production.rhs.get(dot_position);
     }
 
     /**
@@ -89,7 +80,7 @@ public record CoreItem(@NotNull String lhs,
      * @return {@code true} if {@code dot_position == rhs.size()}, {@code false} otherwise.
      */
     public boolean isComplete() {
-        return dot_position == rhs.size();
+        return dot_position == production.rhsSize();
     }
 
     /**
@@ -111,7 +102,7 @@ public record CoreItem(@NotNull String lhs,
         if (isComplete())
             throw new IllegalArgumentException("The dot cannot be advanced since it's already at the end of it");
         return new CoreItem(
-                lhs, rhs, dot_position + 1, production_id
+                production, dot_position + 1
         );
     }
 
@@ -128,7 +119,7 @@ public record CoreItem(@NotNull String lhs,
      *         {@code false} otherwise.
      */
     public boolean hasFirstOfBeta() {
-        return (dot_position + 1) < rhs.size();
+        return (dot_position + 1) < production.rhsSize();
     }
 
     /**
@@ -149,7 +140,7 @@ public record CoreItem(@NotNull String lhs,
         if (!hasFirstOfBeta())
             throw new IllegalArgumentException(
                     "You can't have the symbol after beta because the dot is before one of the last two symbols");
-        return rhs.get(dot_position + 1);
+        return production.rhs.get(dot_position + 1);
     }
 
     /**
@@ -168,25 +159,25 @@ public record CoreItem(@NotNull String lhs,
      *                                  to the canonical constructor).
      */
     public static @NotNull CoreItem fromProduction(@NotNull ContextFreeProduction production, int dot_position) {
-        return new CoreItem(production.lhs, production.rhs,
-                dot_position, production.prod_id);
+        return new CoreItem(production,
+                dot_position);
     }
 
     @Override
     public @NotNull String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(lhs).append(" -> ");
+        sb.append(production.lhs).append(" -> ");
 
-        for (int i = 0; i < rhs.size(); i++) {
+        for (int i = 0; i < production.rhsSize(); i++) {
             if (i == dot_position) {
                 sb.append("· ");
             }
-            sb.append(rhs.get(i)).append(" ");
+            sb.append(production.rhs.get(i)).append(" ");
         }
 
         // caso: punto alla fine
-        if (dot_position == rhs.size()) {
+        if (dot_position == production.rhs.size()) {
             sb.append("·");
         }
 

@@ -118,10 +118,4 @@ public class GeneratedTest {
         LogicGrammarParser parser = new LogicGrammarParser();
         assertThat(parser.isRecognized(input)).isEqualTo(result);
     }
-
-    @Test
-    void testTag() {
-        ITEGrammarParser parser = new ITEGrammarParser();
-        System.out.println(parser.parse("while x do y = 3"));
-    }
 }

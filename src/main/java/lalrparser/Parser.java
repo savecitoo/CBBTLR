@@ -179,7 +179,6 @@ public class Parser {
      * @throws IllegalArgumentException if the code used in the action table has been modified.
      */
     public ParseTree parse(@NotNull List<Token> input) throws ParseException, IllegalArgumentException {
-        System.out.println(input);
         input = new ArrayList<>(input);
         Stack<Integer> states = new Stack<>();
         Stack<ParseTree> symbols = new Stack<>();
@@ -361,10 +360,10 @@ public class Parser {
                             else
                                 throw new IllegalArgumentException("REDUCE/REDUCE CONFLICT");
                         }
-                        if (it.production_id() == grammar.P.fromLHS(grammar.S).getFirst().prod_id && symbol.equals("#")) {
+                        if (it.production().prod_id == grammar.P.fromLHS(grammar.S).getFirst().prod_id && symbol.equals("#")) {
                             row.put(symbol_encoding.getId("#"), new int[]{2});
                         } else {
-                            row.put(id_symbol, new int[]{1, it.production_id()});
+                            row.put(id_symbol, new int[]{1, it.production().prod_id});
                         }
                     }
                 }
@@ -828,7 +827,7 @@ public class Parser {
                             *   2. Create a channel that goes from item to item1.
                             */
                             for (CoreItem item1 : state) {
-                                if (item1.lhs().equals(B)) {
+                                if (item1.production().lhs.equals(B)) {
                                     if (item.hasFirstOfBeta()) {
                                         Set<String> lookahead_spont = grammar.first(item.firstOfBeta());
                                         state.items().get(item1).addAllLookaheads(lookahead_spont);
