@@ -151,7 +151,7 @@ public class ContextFreeGrammar implements Iterable<String> {
             if (productive.contains(cfp.lhs))
                 continue;
             // else we search if a production rule is entirely contained in productive.
-            if (prod.containsAll(cfp.rhs)) {
+            if (prod.containsAll(cfp.rhs())) {
                     productive.add(cfp.lhs);
             }
         }
@@ -231,7 +231,7 @@ public class ContextFreeGrammar implements Iterable<String> {
                 }
 
                 if (ok) { // if there is at least one rule we add it.
-                    P.put(i, new ContextFreeProduction(p.lhs, p.rhs, i, p.prod_tag));
+                    P.put(i, new ContextFreeProduction(p.lhs, p.rhs(), i, p.prod_tag));
                     i++;
                 }
 
@@ -273,7 +273,7 @@ public class ContextFreeGrammar implements Iterable<String> {
         seen.add(symbol);
         Set<String> result = new HashSet<>();
         for (ContextFreeProduction prod : P.fromLHS(symbol)) {
-            result.addAll(first(prod.rhs.getFirst(), seen));
+            result.addAll(first(prod.rhsGet(0), seen));
         }
         return result;
     }

@@ -10,7 +10,7 @@ import java.util.*;
  *     A → α
  * </pre>
  * where {@code A} is a non-terminal symbol and α is a non-empty sequence
- * of grammar symbols. ε-productions are not supported.
+ * of grammar symbols.
  */
 public class ContextFreeProduction implements Iterable<String> {
 
@@ -18,7 +18,7 @@ public class ContextFreeProduction implements Iterable<String> {
     public final String lhs;
 
     /** The right-hand side {@code this} production rule, it is immutable. */
-    public final @NotNull List <@NotNull String> rhs;
+    private final @NotNull List <@NotNull String> rhs;
 
     /** The production id of the rule.  */
     public final int prod_id;
@@ -59,7 +59,40 @@ public class ContextFreeProduction implements Iterable<String> {
      *
      * @return the size of the rhs of {@code this} production rule.
      */
-    public int rhsSize() { return rhs.size(); }
+    public int rhsSize() {
+        return isEpsilon() ? 0 :  rhs.size();
+    }
+
+    /**
+     * Tells if the production is equal to A -> ε.
+     * @return if {@code this} production produces ε.
+     */
+    public boolean isEpsilon() {
+        return rhs.getFirst().equals("ε");
+    }
+
+    /**
+     * Returns the symbol at the given index in the right-hand side of this production.
+     *
+     * @param i the index of the symbol to retrieve
+     * @return the symbol at position {@code i}
+     * @throws IndexOutOfBoundsException if this is an epsilon production or {@code i} is out of bounds
+     */
+    public String rhsGet(int i) {
+        if (isEpsilon()) throw new IndexOutOfBoundsException("epsilon production has no symbols");
+        return rhs.get(i);
+    }
+
+    /**
+     * Returns an unmodifiable view of the right-hand side of this production.
+     * If this is an epsilon production, returns an empty list.
+     *
+     * @return an unmodifiable {@link List} of the right-hand side symbols,
+     *         or an empty list if this is an epsilon production
+     */
+    public List<String> rhs() {
+        return isEpsilon() ? List.of() : Collections.unmodifiableList(rhs);
+    }
 
     /**
      * Returns whether the given symbol appears in the right-hand side
@@ -93,17 +126,31 @@ public class ContextFreeProduction implements Iterable<String> {
      *
      * <p>The expected format is:</p>
      * <pre>
-     *     A -> α₁ | α₂ | ... | αₙ
+     *     A -> α₁ [#tag]? | α₂[#tag]? | ... | αₙ [#tag]?
      * </pre>
      * where {@code A} is the left-hand side non-terminal, and each αᵢ is a sequence
      * of space-separated symbols. The left-hand side must be a single symbol with no spaces.
+     * The optional {@code #tag} suffix can be applied to all the alternative.
+     *
+     * <p>Two productions are considered equal if and only if they share the same left-hand side
+     * and the same right-hand side sequence of symbols. The tag is purely semantic and is
+     * not part of the equality criterion.</p>
+     *
+     * <p>Occurrences of {@code ε} (epsilon) in a right-hand side are filtered out unless
+     * the entire alternative consists solely of epsilon symbols, in which case the right-hand
+     * side is normalized to a single {@code ε}. For example:</p>
+     * <ul>
+     *   <li>{@code ε B C} is parsed as {@code [B, C]}</li>
+     *   <li>{@code ε ε} is parsed as {@code [ε]}</li>
+     *   <li>{@code ε} is parsed as {@code [ε]}</li>
+     * </ul>
      *
      * @param production the string representation of the production rule; must not be blank
      *                   and must conform to the expected format
      * @param prod_id    the numeric identifier assigned to the first alternative;
      *                   subsequent alternatives are assigned consecutive ids
      * @return a List of {@link ContextFreeProduction} instances corresponding to the given string
-     *          in the order specified by the string.
+     *         in the order specified by the string
      * @throws IllegalArgumentException if {@code production} is blank, malformed,
      *                                  or the left-hand side contains more than one symbol
      */
@@ -119,14 +166,27 @@ public class ContextFreeProduction implements Iterable<String> {
 
         String[] rhs_s = prod[1].trim().split("\\|");
 
+        Set<ContextFreeProduction> seen = new HashSet<>();
+
         for (String s : rhs_s) {
             String[] rule = s.trim().split("#");
             String rule_tag = rule.length == 2 ? rule[1].trim() : "";
-            productions.add(
-                    new ContextFreeProduction(
-                            lhs, Arrays.asList(rule[0].split(" ")), prod_id, rule_tag
-                    )
+            List<String> rule_symb = new ArrayList<>();
+            for (String symb : rule[0].split(" ")) {
+                if (!symb.equals("ε")) {
+                    rule_symb.add(symb);
+                }
+            }
+
+            if (rule_symb.isEmpty()) {
+                rule_symb.add("ε");
+            }
+            ContextFreeProduction p =new ContextFreeProduction(
+                    lhs, rule_symb, prod_id, rule_tag
             );
+            if (seen.add(p)) {
+                productions.add(p);
+            }
             prod_id++;
         }
 

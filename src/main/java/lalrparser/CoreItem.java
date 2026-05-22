@@ -67,7 +67,7 @@ public record CoreItem( @NotNull ContextFreeProduction production,
     public @NotNull String afterDot() throws IllegalArgumentException {
         if (isComplete())
             throw new IllegalArgumentException("There is no symbol after the dot");
-        return production.rhs.get(dot_position);
+        return production.rhs().get(dot_position);
     }
 
     /**
@@ -140,7 +140,7 @@ public record CoreItem( @NotNull ContextFreeProduction production,
         if (!hasFirstOfBeta())
             throw new IllegalArgumentException(
                     "You can't have the symbol after beta because the dot is before one of the last two symbols");
-        return production.rhs.get(dot_position + 1);
+        return production.rhs().get(dot_position + 1);
     }
 
     /**
@@ -173,11 +173,11 @@ public record CoreItem( @NotNull ContextFreeProduction production,
             if (i == dot_position) {
                 sb.append("· ");
             }
-            sb.append(production.rhs.get(i)).append(" ");
+            sb.append(production.rhsGet(i)).append(" ");
         }
 
         // caso: punto alla fine
-        if (dot_position == production.rhs.size()) {
+        if (dot_position == production.rhs().size()) {
             sb.append("·");
         }
 

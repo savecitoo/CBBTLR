@@ -65,6 +65,15 @@ public class TestProduction {
         ).isEqualTo(Set.of("a" , "B", "D", "A", "C"));
     }
 
-
+    @Test
+    void testEpsilonProductions() {
+        assertThat(ContextFreeProduction.fromString("A -> ε | ε B | ε ε | ε ε B C #tag", 0)).isEqualTo(
+                List.of(
+                        new ContextFreeProduction("A", List.of("ε"), 0, ""),
+                        new ContextFreeProduction("A", List.of("B"), 1, ""),
+                        new ContextFreeProduction("A", List.of("B", "C"), 2, "tag")
+                )
+        );
+    }
 
 }
