@@ -118,7 +118,7 @@ public record CoreItem( @NotNull ContextFreeProduction production,
      * @return {@code true} if {@code dot_position + 1 < rhs.size()},
      *         {@code false} otherwise.
      */
-    public boolean hasFirstOfBeta() {
+    public boolean hasBeta() {
         return (dot_position + 1) < production.rhsSize();
     }
 
@@ -129,18 +129,18 @@ public record CoreItem( @NotNull ContextFreeProduction production,
      * <p>Concretely, this is the symbol at index {@code dot_position + 1} in the
      * right-hand side, i.e. the symbol immediately after the one following the dot.
      *
-     * @return the first symbol of {@code β}.
+     * @return A list containing the ordered symbols in {@code β}.
      * @throws IllegalArgumentException if {@code β} is empty — that is, when the
      *                                  dot is at, or one position before, the end of
      *                                  the right-hand side. Callers should check
-     *                                  {@link #hasFirstOfBeta()} before invoking
+     *                                  {@link #hasBeta()} before invoking
      *                                  this method.
      */
-    public @NotNull String firstOfBeta() throws IllegalArgumentException {
-        if (!hasFirstOfBeta())
+    public @NotNull List<String> beta() throws IllegalArgumentException {
+        if (!hasBeta())
             throw new IllegalArgumentException(
                     "You can't have the symbol after beta because the dot is before one of the last two symbols");
-        return production.rhs().get(dot_position + 1);
+        return production.rhs().subList(dot_position + 1, production.rhsSize());
     }
 
     /**

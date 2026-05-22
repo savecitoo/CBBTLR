@@ -828,9 +828,19 @@ public class Parser {
                             */
                             for (CoreItem item1 : state) {
                                 if (item1.production().lhs.equals(B)) {
-                                    if (item.hasFirstOfBeta()) {
-                                        Set<String> lookahead_spont = grammar.first(item.firstOfBeta());
+                                    if (item.hasBeta()) {
+                                        Set<String> lookahead_spont = new HashSet<>(grammar.firstOfSymbols(item.beta()));
+                                        boolean nullable = lookahead_spont.remove("ε");
+
                                         state.items().get(item1).addAllLookaheads(lookahead_spont);
+
+                                        // if β is nullable create the channel as if it was void.
+                                        if (nullable) {
+                                            propagate.computeIfAbsent(
+                                                    new StateItem(state, state.items().get(item)),
+                                                    k -> new HashSet<>()
+                                            ).add(new StateItem(state, state.items().get(item1)));
+                                        }
                                     } else {
                                         propagate.computeIfAbsent(
                                                 new StateItem(state, state.items().get(item)),

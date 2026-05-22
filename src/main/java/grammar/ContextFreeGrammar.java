@@ -1,8 +1,10 @@
 package grammar;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import utils.Finder;
 
+import javax.swing.*;
 import java.util.*;
 
 /**
@@ -28,6 +30,18 @@ public class ContextFreeGrammar implements Iterable<String> {
 
     /** This field contains the starting symbols of the grammar. */
     public final @NotNull String S;
+
+    // PRE-COMPUTED FIELDS due to efficiency reasons.
+
+
+    /** This field contains all the nullable symbols in the grammar */
+     private @Nullable Set<@NotNull String> nullable;
+
+     /** This field contains a map from a non-terminal to all the possible first of its. */
+    private @Nullable Map<@NotNull String, @NotNull Set<@NotNull String>> first;
+
+    /** This field contains the follow of every non-terminal of the grammar. */
+    private @Nullable Map<@NotNull String, @NotNull Set<@NotNull String>> follow;
 
     /**
      * Constructs a context-free grammar from its fundamental components.
@@ -59,6 +73,140 @@ public class ContextFreeGrammar implements Iterable<String> {
         this.T = Set.copyOf(T);
         this.P = P;
         this.S = S;
+    }
+
+    /**
+     * Computes all the follow set for the non-terminals in the grammar.
+     * @return a map with as key a non-terminal symbol, and as a value the follow set of the symbol.
+     */
+    private @NotNull Map<@NotNull String, @NotNull Set<@NotNull String>> computeFollow() {
+        Map<String, Set<String>> follow = new HashMap<>();
+        for (String symbol : N) {
+            follow.put(symbol, new HashSet<>());
+        }
+        follow.get(S).add("#");
+        boolean changed;
+        do {
+            changed = false;
+            for (ContextFreeProduction production : P) {
+                for (int i = 0; i < production.rhsSize(); i++) {
+                    String X = production.rhsGet(i);
+
+                    // if it is a non-terminal we start to compute
+
+                    if (N.contains(X)) {
+                        Set<String> fol = follow.get(X);
+
+                        boolean epsilonInAll = true;
+
+                        for (int j = i + 1; j < production.rhsSize(); j++) {
+                            Set<String> firstJ = new HashSet<>(first(production.rhsGet(j)));
+                            boolean hasEpsilon = firstJ.remove("ε");
+                            changed = fol.addAll(firstJ) || changed;
+
+                            if (!hasEpsilon) {
+                                epsilonInAll = false;
+                                break;
+                            }
+                        }
+
+                        if (epsilonInAll) {
+                            changed = fol.addAll(follow.get(production.lhs)) || changed;
+                        }
+                    }
+                }
+
+            }
+        } while (changed);
+        return follow;
+    }
+
+    /**
+     * Computes all the first set for the symbols in the grammar.
+     * @return a map with as key a grammar symbol, and as a value the first set of the symbol.
+     */
+    private @NotNull Map<@NotNull String, @NotNull Set<@NotNull String>> computeFirst() {
+        Map<String, Set<String>> first = new HashMap<>();
+
+        // initialization
+
+        for (String t : T) {
+            first.put(t, new HashSet<>(Set.of(t)));
+        }
+        first.put("ε", new HashSet<>(Set.of("ε")));
+        for (String n : N) {
+            first.put(n, new HashSet<>());
+        }
+        boolean changed;
+        do {
+            changed = false;
+            for (ContextFreeProduction production : P) {
+                Set<String> fst = first.get(production.lhs);
+                boolean epsilonInAll = true;
+
+                for (int i = 0; i < production.rhsSize(); i++) {
+                    Set<String> firstI = new HashSet<>(first.get(production.rhsGet(i)));
+                    boolean hasEpsilon = firstI.remove("ε");
+                    changed = fst.addAll(firstI) || changed;
+
+                    if (!hasEpsilon) {
+                        epsilonInAll = false;
+                        break;
+                    }
+                }
+
+                // Tutti i simboli della RHS possono derivare ε
+                if (epsilonInAll) {
+                    changed = fst.add("ε") || changed;
+                }
+            }
+        } while (changed);
+        return first;
+    }
+
+    /**
+     * This method computes all the nullable symbols in the grammar.
+     * @return a set containing all the nullable symbols in the grammar.
+     */
+    private @NotNull Set<String> computeNullable() {
+        Set<String> nullable = new HashSet<>();
+        for (String nt : N) {
+            if (P.containsProd(nt)) {
+                for (ContextFreeProduction p : P.fromLHS(nt)) {
+                    if (p.isEpsilon()) {
+                        nullable.add(p.lhs);
+                        break; // you cannot have a two nullable prod for the same LHS.
+                    }
+                }
+            }
+        }
+
+        boolean changed;
+
+        do {
+            changed = false;
+            for (ContextFreeProduction p : P) {
+                // if it is already nullable we delete it
+                if (nullable.contains(p.lhs))
+                    continue;
+
+                boolean allNullable = true;
+
+                for (String symb : p) {
+                    if (!nullable.contains(symb)) {
+                        allNullable = false;
+                        break;
+                    }
+                }
+
+                if (allNullable) {
+                    nullable.add(p.lhs);
+                    changed = true;
+                }
+            }
+        } while (changed);
+
+        return Set.copyOf(nullable);
     }
 
 
@@ -251,55 +399,43 @@ public class ContextFreeGrammar implements Iterable<String> {
         return g.restrictTo(g.reachable());
     }
 
-    /**
-     * Computes the FIRST set of the given symbol, guarding against left-recursion.
-     *
-     * <p>FIRST(X) is the set of terminals that can appear as the first symbol
-     * of some string derived from X. This implementation does not support
-     * nullable symbols (ε-productions).</p>
-     *
-     * @param symbol the terminal or non-terminal symbol whose FIRST set is to be computed
-     * @param seen   the set of symbols already visited during the current recursion;
-     *               prevents infinite loops caused by left-recursive productions
-     * @return an unmodifiable set of terminal symbols in FIRST({@code symbol})
-     */
-    private @NotNull Set<@NotNull String> first(@NotNull String symbol, @NotNull Set<@NotNull String> seen) {
-        if (T.contains(symbol)) {
-            return Set.of(symbol);
-        }
-        if (seen.contains(symbol)) {
-            return Set.of();
-        }
-        seen.add(symbol);
-        Set<String> result = new HashSet<>();
-        for (ContextFreeProduction prod : P.fromLHS(symbol)) {
-            result.addAll(first(prod.rhsGet(0), seen));
-        }
-        return result;
+
+    public boolean isNullable(@NotNull String symbol) {
+        if (nullable == null) nullable = computeNullable();
+        return nullable.contains(symbol);
     }
 
-    /**
-     * Computes the FIRST set of the given symbol.
-     *
-     * <p>FIRST(α) is the set of terminals that can appear as the first symbol
-     * of some string derived from α. ε-productions are not supported.</p>
-     *
-     * @param symbol the terminal or non-terminal symbol whose FIRST set is to be computed;
-     *               must belong to the grammar
-     * @return an unmodifiable set of terminal symbols in FIRST({@code symbol})
-     * @throws IllegalArgumentException if {@code symbol} is not part of the grammar
-     */
     public @NotNull Set<@NotNull String> first(@NotNull String symbol) throws IllegalArgumentException {
-        if (!T.contains(symbol) && !N.contains(symbol)) {
-            throw new IllegalArgumentException("The symbol is not in the grammar");
+        if (first == null) first = computeFirst();
+        if (!first.containsKey(symbol))
+            throw new IllegalArgumentException("The symbol does not belong to the grammar.");
+        return first.get(symbol);
+    }
+
+    public @NotNull Set<@NotNull String> follow(@NotNull String symbol) throws IllegalArgumentException {
+        if (follow == null) follow = computeFollow();
+        if (!follow.containsKey(symbol))
+            throw new IllegalArgumentException("The symbol is not a non-terminal symbol.");
+        return follow.get(symbol);
+    }
+
+
+    public Set<String> firstOfSymbols(@NotNull List<String> symbols) {
+        Set<String> result = new HashSet<>();
+        for (String sym : symbols) {
+            Set<String> firstSym = new HashSet<>(first(sym));
+            boolean hasEpsilon = firstSym.remove("ε");
+            result.addAll(firstSym);
+            if (!hasEpsilon) return result;
         }
-        return first(symbol, new HashSet<>());
+        result.add("ε");
+        return result;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder().append("N = ").append(N.toString()).append("\n");
-        sb.append("T = ").append(T.toString()).append("\n");
+        sb.append("T = ").append(T).append("\n");
         sb.append("P = {\n").append(P).append("\n\t}\n");
         return sb.append("S = ").append(S).toString();
     }

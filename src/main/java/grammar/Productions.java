@@ -126,6 +126,16 @@ public class Productions implements Iterable<ContextFreeProduction> {
         return productions.size();
     }
 
+
+    /**
+     * Returns if the productions contains a production with the given input as left-hand side.
+     * @param symbol the symbol to check if it has a production.
+     * @return true if the input is a left-hand side, false otherwise.
+     */
+    public boolean containsProd(String symbol) {
+        return lhs_prods.containsKey(symbol);
+    }
+
     /**
      * This method given in input an integer representing a production rule
      * tells if there is a corresponding rule in the grammar.
@@ -190,4 +200,5 @@ public class Productions implements Iterable<ContextFreeProduction> {
     public int hashCode() {
         return Objects.hash(productions);
     }
+
 }

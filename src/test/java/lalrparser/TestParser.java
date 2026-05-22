@@ -327,7 +327,6 @@ public class TestParser {
                         "U -> if E then S | if E then M else U\n" +
                         "L -> L ; S | S\n" +
                         "A -> id = E\n" +
-                        // E stratificata: * lega più forte di +, entrambi left-assoc
                         "E -> E + T | T\n" +
                         "T -> T * F | F\n" +
                         "F -> ( E ) | id | num"
@@ -344,4 +343,102 @@ public class TestParser {
             System.out.println(e.getMessage());
         }
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "ab, true",
+            "b, true",
+            "d, false",
+            "a, false"
+    })
+    void testEpsilonGrammar(String input, boolean result) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S' -> S\n" +
+        "S  -> A B\n" +
+        "A  -> a | ε\n" +
+        "B  -> b");
+        List<String> tokens = input.isBlank()
+                ? List.of()
+                : Arrays.asList(input.split(" "));
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test9", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "abc, true",
+            "bc, true",
+            "c, true",
+            "aac, true",
+            "aaabbc, true",
+            "abbc, true",
+            "ab, false",
+            "a, false",
+            "d, false",
+            "ac, false",
+            "bac, false",
+            "cab, false"
+    })
+    void testEpsilonGrammar2(String input, boolean result) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S' -> S\n" +
+                "S  -> A B\n" +
+                "A  -> a | ε\n" +
+                "B  -> b");
+        List<String> tokens = input.isBlank()
+                ? List.of()
+                : Arrays.asList(input.split(" "));
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test10", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "abcd, true",
+            "bcd, true",
+            "cd, true",
+            "d, true",
+            "acd, true",
+            "abd, true",
+            "ad, true",
+            "abd, true",
+            "abcd, true",
+            "bc, false",
+            "abc, false",
+            "abdc, false",
+            "a, false",
+            "ab, false",
+            "ac, false",
+            "dabc, false",
+            "dcba, false",
+            "dd, false",
+            "abcdd, false"
+    })
+    void testEpsilonGrammar3(String input, boolean result) {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString(
+                "S' -> S\nS -> A B C D\nA -> a | ε\nB -> b | ε\nC -> c | ε\nD -> d"
+        );
+        List<String> tokens = input.isBlank()
+                ? List.of()
+                : Arrays.asList(input.split(" "));
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test11", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables);
+            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
 }

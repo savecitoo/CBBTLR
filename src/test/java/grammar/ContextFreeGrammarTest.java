@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ContextFreeGrammarTest {
@@ -115,4 +116,50 @@ public class ContextFreeGrammarTest {
                 g.S
         ));
     }
+
+    @Test
+    void testNullable(){
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S -> A B | C \nA -> a A | ε \nB -> b \nC -> c");
+        assertThat(g.isNullable("A")).isTrue();
+        assertThat(g.isNullable("C")).isFalse();
+        assertThat(g.isNullable("S")).isFalse();
+        assertThat(g.isNullable("B")).isFalse();
+    }
+
+    @Test
+    void testFirst() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S -> A B | C \nA -> a A | ε \nB -> b \nC -> c");
+        assertThat(g.first("A")).isEqualTo(Set.of("a", "ε"));
+        assertThat(g.first("B")).isEqualTo(Set.of("b"));
+        assertThat(g.first("C")).isEqualTo(Set.of("c"));
+        assertThat(g.first("S")).isEqualTo(Set.of("a", "b", "c"));
+    }
+
+    @Test
+    void testFollow() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S -> A B | C \nA -> a A | ε \nB -> b \nC -> c");
+        assertThat(g.follow("A")).isEqualTo(Set.of("b"));
+        assertThat(g.follow("S")).isEqualTo(Set.of("#"));
+        assertThat(g.follow("B")).isEqualTo(Set.of("#"));
+        assertThat(g.follow("C")).isEqualTo(Set.of("#"));
+    }
+
+    @Test
+    void testFirstComplex() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S -> A B C\nA -> a A | ε\nB -> b B | ε\nC -> c");
+        assertThat(g.first("A")).isEqualTo(Set.of("a", "ε"));
+        assertThat(g.first("B")).isEqualTo(Set.of("b", "ε"));
+        assertThat(g.first("C")).isEqualTo(Set.of("c"));
+        assertThat(g.first("S")).isEqualTo(Set.of("a", "b", "c"));
+    }
+
+    @Test
+    void testFollowComplex() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("S -> A B C\nA -> a A | ε\nB -> b B | ε\nC -> c");
+        assertThat(g.follow("S")).isEqualTo(Set.of("#"));
+        assertThat(g.follow("A")).isEqualTo(Set.of("b", "c"));
+        assertThat(g.follow("B")).isEqualTo(Set.of("c"));
+        assertThat(g.follow("C")).isEqualTo(Set.of("#"));
+    }
+
 }
