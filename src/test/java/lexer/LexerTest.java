@@ -3,7 +3,7 @@ package lexer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import utils.SymbolTable;
+import utils.SymbolIdentifier;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,14 +32,14 @@ public class LexerTest {
         assertThat(
                 Lexer.fromString(
                         "NUMBER : \\d+(\\.\\d+)?\nWS : [ \\t\\n\\r]+ skip",
-                        new SymbolTable<>()
+                        new SymbolIdentifier<>()
                 )
         ).isEqualTo(
                 new Lexer(
                         List.of(
                                 TokenType.fromString("NUMBER : \\d+(\\.\\d+)?"),
                                 TokenType.fromString("WS : [ \\t\\n\\r]+ skip")
-                                ), new SymbolTable<>()
+                                ), new SymbolIdentifier<>()
                 )
         );
     }
@@ -49,7 +49,7 @@ public class LexerTest {
         assertThat(
                 Lexer.fromString(
                         "NUMBER : \\d+(\\.\\d+)?\nWS : [ \\t\\n\\r]+ skip\nCOMMENT : //.*\n  ID      :   [a-zA-Z_]+  \n",
-                        new SymbolTable<>()
+                        new SymbolIdentifier<>()
                 )
         ).isEqualTo(
                 new Lexer(
@@ -58,7 +58,7 @@ public class LexerTest {
                                 TokenType.fromString("WS : [ \\t\\n\\r]+ skip"),
                                 TokenType.fromString("COMMENT : //.*"),
                                 TokenType.fromString(  "ID      :   [a-zA-Z_]+  ")
-                        ), new SymbolTable<>()
+                        ), new SymbolIdentifier<>()
                 )
         );
     }
@@ -68,7 +68,7 @@ public class LexerTest {
         assertThat(
                 Lexer.fromString(
                         "NUMBER : \\d+(\\.\\d+)?\nWS : [ \\t\\n\\r]+ skip\nCOMMENT : //.*\n  ID      :   [a-zA-Z_]+  \n",
-                        new SymbolTable<>()
+                        new SymbolIdentifier<>()
                 )
         ).isNotEqualTo(
                 new Lexer(
@@ -77,7 +77,7 @@ public class LexerTest {
                                 TokenType.fromString("COMMENT : //.*"),
                                 TokenType.fromString("NUMBER : \\d+(\\.\\d+)?"),
                                 TokenType.fromString(  "ID      :   [a-zA-Z_]+  ")
-                        ), new SymbolTable<>()
+                        ), new SymbolIdentifier<>()
                 )
         );
     }
@@ -86,7 +86,7 @@ public class LexerTest {
     void testBaseTokenize() {
         Lexer lexer = Lexer.fromString(
                 "NUMBER : \\d+(\\.\\d+)?\nWS : [ \\t\\n\\r]+ skip\nCOMMENT : //.*\n  ID      :   [a-zA-Z_]+  \n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
         assertThat(lexer.tokenize("93   \n np_hard 9 //ciao"))
                 .isEqualTo(
@@ -103,7 +103,7 @@ public class LexerTest {
     void testWhitespaceSkip() {
         Lexer lexer = Lexer.fromString(
                 "ID : [a-z]+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize("abc   def\tghi"))
@@ -120,7 +120,7 @@ public class LexerTest {
     void testPriorityKeywordVsId() {
         Lexer lexer = Lexer.fromString(
                 "IF : if\nID : [a-z]+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize("if else"))
@@ -136,7 +136,7 @@ public class LexerTest {
     void testLongestMatch() {
         Lexer lexer = Lexer.fromString(
                 "EQ : ==\nASSIGN : =\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize("== ="))
@@ -152,7 +152,7 @@ public class LexerTest {
     void testNumberWithDecimal() {
         Lexer lexer = Lexer.fromString(
                 "NUMBER : \\d+(\\.\\d+)?\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize("10 3.14 42"))
@@ -169,7 +169,7 @@ public class LexerTest {
     void testComments() {
         Lexer lexer = Lexer.fromString(
                 "COMMENT : //.*\nID : [a-z]+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize("abc //hello\nxyz"))
@@ -186,7 +186,7 @@ public class LexerTest {
     void testInvalidToken() {
         Lexer lexer = Lexer.fromString(
                 "ID : [a-z]+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThrows(NoSuchElementException.class, () ->
@@ -198,7 +198,7 @@ public class LexerTest {
     void testEmptyInput() {
         Lexer lexer = Lexer.fromString(
                 "ID : [a-z]+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize(""))
@@ -209,7 +209,7 @@ public class LexerTest {
     void testAdjacentTokens() {
         Lexer lexer = Lexer.fromString(
                 "NUMBER : \\d+\nPLUS : \\+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         assertThat(lexer.tokenize("1+2+3"))
@@ -228,7 +228,7 @@ public class LexerTest {
     void testSerializable() throws Exception {
         Lexer lexer = Lexer.fromString(
                 "NUMBER : \\d+\nPLUS : \\+\nWS : [ \\t\\n]+ skip\n",
-                new SymbolTable<>()
+                new SymbolIdentifier<>()
         );
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

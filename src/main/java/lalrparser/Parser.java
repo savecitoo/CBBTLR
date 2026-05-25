@@ -5,7 +5,7 @@ import grammar.ContextFreeProduction;
 import lexer.Token;
 import org.jetbrains.annotations.NotNull;
 import tree.ParseTree;
-import utils.SymbolTable;
+import utils.SymbolIdentifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -293,7 +293,7 @@ public class Parser {
      * @throws IllegalArgumentException if the grammar is ambiguous or the output cannot be written.
      */
     public static void generateParser(@NotNull ContextFreeGrammar grammar,
-                                      @NotNull SymbolTable<@NotNull String> symbol_encoding,
+                                      @NotNull SymbolIdentifier<@NotNull String> symbol_encoding,
                                       @NotNull String packageName,
                                       @NotNull String className,
                                       @NotNull String outputDir) {
@@ -320,7 +320,7 @@ public class Parser {
      * @throws IllegalArgumentException if the grammar already uses the reserved symbol {@code "#"}.
      */
     private static void populateSymbolEncoding(@NotNull ContextFreeGrammar grammar,
-                                               @NotNull SymbolTable<@NotNull String> symbolEncoding) {
+                                               @NotNull SymbolIdentifier<@NotNull String> symbolEncoding) {
         for (String s : grammar.T) symbolEncoding.add(s);
         for (String s : grammar.N) symbolEncoding.add(s);
         if (!symbolEncoding.add("#"))
@@ -338,7 +338,7 @@ public class Parser {
      * @throws IllegalArgumentException if a shift/reduce or reduce/reduce conflict is detected.
      */
     private static void buildingTables(@NotNull ContextFreeGrammar grammar,
-                                       @NotNull SymbolTable<@NotNull String> symbol_encoding,
+                                       @NotNull SymbolIdentifier<@NotNull String> symbol_encoding,
                                        @NotNull Automaton automaton,
                                        @NotNull Map<@NotNull Integer,
                                                @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
@@ -411,7 +411,7 @@ public class Parser {
             @NotNull Path outputDir,
             @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
             @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull Integer, int[]>> ACTION,
-            @NotNull SymbolTable<@NotNull String> symbol_encoding,
+            @NotNull SymbolIdentifier<@NotNull String> symbol_encoding,
             @NotNull ContextFreeGrammar grammar
     ) throws IOException {
         StringBuilder sb = new StringBuilder();

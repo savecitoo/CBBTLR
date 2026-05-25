@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
  *
  * @param <T> The type of the objects that the symbol table has to encode in an Integer.
  */
-public class SymbolTable<T> implements Serializable {
+public class SymbolIdentifier<T> implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -32,7 +32,7 @@ public class SymbolTable<T> implements Serializable {
     /**
      * This is a constructor for a SymbolTable.
      */
-    public SymbolTable () {
+    public SymbolIdentifier() {
         table_id_o = new HashMap<>();
         table_o_id = new HashMap<>();
     }
@@ -97,7 +97,7 @@ public class SymbolTable<T> implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
-        if (o instanceof SymbolTable<?> table)
+        if (o instanceof SymbolIdentifier<?> table)
             return table_id_o.equals(table.table_id_o);
         return false;
     }
