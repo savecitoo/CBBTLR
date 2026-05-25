@@ -53,6 +53,8 @@ public class Lexer implements Serializable {
 
     /**
      * Symbol table used to intern token-type identifiers.
+     */
+     /*
      * Interning allows O(1) identity comparisons in downstream passes
      * instead of O(n) string equality checks.
      */

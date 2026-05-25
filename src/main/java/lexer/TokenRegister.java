@@ -10,9 +10,7 @@ import java.util.*;
  * Tracks the declaration-order priority of {@link TokenType} instances.
  *
  * <p>Each token type is assigned an integer priority equal to its insertion order,
- * starting from {@code 0}. Lower values mean higher priority: a token type added
- * first always beats one added later when two patterns match a string of equal length.
- *
+ * starting from {@code 0}.
  * <p>Priorities are keyed by {@link TokenType#identifier()}.
  */
 public class TokenRegister implements Serializable {
