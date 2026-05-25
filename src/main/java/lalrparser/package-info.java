@@ -9,8 +9,7 @@
  *   <li>{@link lalrparser.ParseException} — structured parse error with token and position info.</li>
  * </ul>
  *
- * <p>Typical usage: create the tables class from the static method from a grammar in {@link lalrparser.Parser},
- * then construct a {@code Parser}  with the generated classes,
- * then call {@code parse()} on a token stream.
+ * <p>Typical usage: create the tables class from the static method {@link lalrparser.Parser#generateParser(grammar.ContextFreeGrammar, utils.SymbolTable, java.lang.String, java.lang.String, java.lang.String)},
+ * then use the class "MyGrammar"Parser.java.
  */
 package lalrparser;

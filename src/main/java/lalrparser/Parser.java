@@ -83,12 +83,13 @@ public class Parser {
     }
 
     /**
-     * Parses a sequence of symbol names and returns the corresponding parse tree.
+     * Parses a sequence of non-terminal symbols and returns the corresponding parse tree.
      *
      * @param input the sequence of terminal symbols to parse.
      * @return the root of the parse tree for the input.
      * @throws ParseException if the sequence is not recognized by the grammar.
      * @throws IllegalArgumentException if the code used in the action table has been modified.
+     * @throws ParseException if the input is not recognized.
      * */
     public ParseTree parseStrings(@NotNull List<String> input) throws ParseException, IllegalArgumentException {
         input = new ArrayList<>(input);
@@ -157,8 +158,14 @@ public class Parser {
                     }
                     s = states.peek();
                     states.push(GOTO[s][lhs_id]);
-                    symbols.push(new ParseTree(SYMBOLS[lhs_id], false, children,
-                            children.getFirst().line, children.getFirst().col, TAG[action[1]]));
+                    if (!children.isEmpty()) {
+                        symbols.push(new ParseTree(SYMBOLS[lhs_id], false, children,
+                                children.getFirst().line, children.getFirst().col, TAG[action[1]]));
+                    } else {
+                        symbols.push(new ParseTree(SYMBOLS[lhs_id], false, List.of(new ParseTree("ε", true, List.of(),1,i,"")),
+                                1, i, TAG[action[1]]));
+
+                    }
                     break;
                 case 2: // accept
                     return symbols.peek();
@@ -244,8 +251,16 @@ public class Parser {
                     }
                     s = states.peek();
                     states.push(GOTO[s][lhs_id]);
-                    symbols.push(new ParseTree(SYMBOLS[lhs_id], false, children,
-                            children.getFirst().line, children.getFirst().col, TAG[action[1]]));
+                    if (!children.isEmpty()) {
+                        symbols.push(new ParseTree(SYMBOLS[lhs_id], false, children,
+                                children.getFirst().line, children.getFirst().col, TAG[action[1]]));
+                    } else {
+                        symbols.push(new ParseTree(SYMBOLS[lhs_id], false,
+                                List.of(new ParseTree("ε", true, List.of(),
+                                        input.get(i).line(),input.get(i).col(),"")),
+                                input.get(i).line(),input.get(i).col(), TAG[action[1]]));
+
+                    }
                     break;
                 case 2: // accept
                     return symbols.peek();
@@ -254,6 +269,12 @@ public class Parser {
             }
         }
     }
+
+    /*
+        ------------------------
+        PARSER GENERATOR METHODS
+        ------------------------
+     */
 
     /**
      * Generates an LALR(1) parser for the given grammar and writes the
@@ -282,7 +303,7 @@ public class Parser {
         buildingTables(grammar, symbol_encoding, automaton, GOTO, ACTION);
         try {
             Path dir = Path.of(outputDir);
-            writeTo(packageName, className, dir, GOTO, ACTION, symbol_encoding, grammar);
+            writeParserTableFile(packageName, className, dir, GOTO, ACTION, symbol_encoding, grammar);
             writeParserFile(packageName, className, dir);
         } catch (IOException e) {
             throw new IllegalArgumentException(
@@ -292,7 +313,7 @@ public class Parser {
 
     /**
      * Registers all terminal and non-terminal symbols of the grammar
-     * into the symbol table, appending the end-of-input marker {@code "#"}.
+     * into the symbol table, appending at the end-of-input marker {@code "#"}.
      *
      * @param grammar         the grammar whose symbols are to be registered.
      * @param symbolEncoding  the symbol table to populate.
@@ -384,7 +405,7 @@ public class Parser {
      * @param grammar          the grammar the tables were derived from.
      * @throws IOException if the file cannot be written.
      */
-    private static void writeTo(
+    private static void writeParserTableFile(
             @NotNull String packageName,
             @NotNull String className,
             @NotNull Path outputDir,
@@ -629,8 +650,7 @@ public class Parser {
      * An LALR(1) automaton derived from a context-free grammar.
      *
      * <p>The automaton is built once from the grammar and then used to
-     * populate the ACTION and GOTO tables. It can also be printed for
-     * debugging purposes.
+     * populate the ACTION and GOTO tables.
      */
     public static class Automaton implements Iterable<State> {
 
@@ -668,7 +688,7 @@ public class Parser {
          *
          * @param grammar    the context-free grammar.
          * @param start      the initial set of items.
-         * @param cache_item a shared cache ensuring item identity across the automaton.
+         * @param cache_item a shared cache that permits to not create duplicates.
          * @return the closure of {@code start}.
          */
         private static @NotNull Set<@NotNull CoreItem> closure(@NotNull ContextFreeGrammar grammar,
@@ -684,7 +704,7 @@ public class Parser {
                         if (grammar.N.contains(A)) {
                             List<ContextFreeProduction> production = grammar.P.fromLHS(A);
                             for (ContextFreeProduction p : production) {
-                                CoreItem new_item = CoreItem.fromProduction(p, 0);
+                                CoreItem new_item = new CoreItem(p,0);
                                 new_item = cache_item.computeIfAbsent(new_item, k -> k);
                                 if (!closure.contains(new_item))
                                     toAdd.add(new_item);
@@ -723,7 +743,7 @@ public class Parser {
 
             Map<StateItem, Set<StateItem>> propagate  = new HashMap<>();
 
-            CoreItem start = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S).getFirst(), 0);
+            CoreItem start = new CoreItem(grammar.P.fromLHS(grammar.S).getFirst(), 0);
             first.items().get(start).addLookahead("#");
 
             channelBuilding(grammar, states, propagate, transition);
@@ -755,7 +775,7 @@ public class Parser {
             Queue<State> queue = new ArrayDeque<>();
             Set<State> seen = new HashSet<>();
 
-            CoreItem curr = CoreItem.fromProduction(grammar.P.fromLHS(grammar.S).getFirst(), 0);
+            CoreItem curr = new CoreItem(grammar.P.fromLHS(grammar.S).getFirst(), 0);
             cache_item.put(curr, curr);
 
             State s = State.fromCore(closure(grammar, Set.of(curr), cache_item));

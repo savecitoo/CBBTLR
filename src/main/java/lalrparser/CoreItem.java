@@ -42,15 +42,44 @@ public record CoreItem( @NotNull ContextFreeProduction production,
      * @param production the production of {@code this} CoreItem.
      * @param dot_position  the position of the dot; must satisfy
      *                      {@code 0 <= dot_position <= rhs.size()}.
-      @throws IllegalArgumentException if {@code dot_position} is negative or
-     *                                  greater than {@code rhs.size()}.
+     @throws IllegalArgumentException if {@code dot_position} is negative or
+      *                                  greater than {@code rhs.size()}.
      */
-    public CoreItem(@NotNull ContextFreeProduction production, int dot_position) {
+    public CoreItem {
         if (dot_position < 0 || dot_position > production.rhsSize())
             throw new IllegalArgumentException("The position of the dot must be between 0 and rhs.size()");
-        this.dot_position = dot_position;
-        this.production = production;
+    }
 
+    /*
+        Instance methods:
+     */
+
+    /**
+     * Returns whether this item is a <em>complete</em> (or <em>reduce</em>) item.
+     *
+     * <p>An item is complete when the dot has reached the end of the right-hand side,
+     * i.e. when all symbols of the production have been consumed. Formally, this
+     * corresponds to an item of the form {@code A → α ·}.
+     *
+     * @return {@code true} if {@code dot_position == production.rhsSize()}, {@code false} otherwise.
+     */
+    public boolean isComplete() {
+        return dot_position == production.rhsSize();
+    }
+
+    /**
+     * Returns whether this item has a non-empty {@code β} suffix after the symbol
+     * following the dot.
+     *
+     * <p>Formally, returns {@code true} if and only if the item is of the form
+     * {@code [A → α · B β]} where {@code β} is non-empty, i.e. there exists at
+     * least one symbol beyond {@code B} in the right-hand side.
+     *
+     * @return {@code true} if {@code dot_position + 1 < production.rhsSize()},
+     *         {@code false} otherwise.
+     */
+    public boolean hasBeta() {
+        return (dot_position + 1) < production.rhsSize();
     }
 
     /**
@@ -71,16 +100,21 @@ public record CoreItem( @NotNull ContextFreeProduction production,
     }
 
     /**
-     * Returns whether this item is a <em>complete</em> (or <em>reduce</em>) item.
+     * Returns the symbols of the {@code β} suffix in an item of the form
+     * {@code [A → α · B β]}.
      *
-     * <p>An item is complete when the dot has reached the end of the right-hand side,
-     * i.e. when all symbols of the production have been consumed. Formally, this
-     * corresponds to an item of the form {@code A → α ·}.
-     *
-     * @return {@code true} if {@code dot_position == rhs.size()}, {@code false} otherwise.
+     * @return A list containing the ordered symbols in {@code β}.
+     * @throws IllegalArgumentException if {@code β} is empty — that is, when the
+     *                                  dot is at, or one position before, the end of
+     *                                  the right-hand side. Callers should check
+     *                                  {@link #hasBeta()} before invoking
+     *                                  this method.
      */
-    public boolean isComplete() {
-        return dot_position == production.rhsSize();
+    public @NotNull List<String> beta() throws IllegalArgumentException {
+        if (!hasBeta())
+            throw new IllegalArgumentException(
+                    "You can't have the symbol after beta because the dot is before one of the last two symbols");
+        return production.rhs().subList(dot_position + 1, production.rhsSize());
     }
 
     /**
@@ -106,63 +140,6 @@ public record CoreItem( @NotNull ContextFreeProduction production,
         );
     }
 
-    /**
-     * Returns whether this item has a non-empty {@code β} suffix after the symbol
-     * following the dot.
-     *
-     * <p>Formally, returns {@code true} if and only if the item is of the form
-     * {@code [A → α · B β]} where {@code β} is non-empty, i.e. there exists at
-     * least one symbol beyond {@code B} in the right-hand side. This predicate is
-     * useful when computing FIRST sets for LALR(1) lookahead propagation.
-     *
-     * @return {@code true} if {@code dot_position + 1 < rhs.size()},
-     *         {@code false} otherwise.
-     */
-    public boolean hasBeta() {
-        return (dot_position + 1) < production.rhsSize();
-    }
-
-    /**
-     * Returns the first symbol of the {@code β} suffix in an item of the form
-     * {@code [A → α · B β]}.
-     *
-     * <p>Concretely, this is the symbol at index {@code dot_position + 1} in the
-     * right-hand side, i.e. the symbol immediately after the one following the dot.
-     *
-     * @return A list containing the ordered symbols in {@code β}.
-     * @throws IllegalArgumentException if {@code β} is empty — that is, when the
-     *                                  dot is at, or one position before, the end of
-     *                                  the right-hand side. Callers should check
-     *                                  {@link #hasBeta()} before invoking
-     *                                  this method.
-     */
-    public @NotNull List<String> beta() throws IllegalArgumentException {
-        if (!hasBeta())
-            throw new IllegalArgumentException(
-                    "You can't have the symbol after beta because the dot is before one of the last two symbols");
-        return production.rhs().subList(dot_position + 1, production.rhsSize());
-    }
-
-    /**
-     * Factory method that builds an LR(0) core item from a {@link ContextFreeProduction}.
-     *
-     * <p>This is a convenience entry point that avoids extracting the left-hand side,
-     * the right-hand side at a given index, and the production identifier manually.
-     *
-     * @param production    the context-free production rule from which to derive the item.
-     *
-     * @param dot_position  the position of the dot in the new item;
-     *                      must satisfy {@code 0 <= dot_position <= rhs.size()}.
-     * @return a new {@code CoreItem} corresponding to the specified production alternative
-     *         with the dot placed at {@code dot_position}.
-     * @throws IllegalArgumentException if {@code dot_position} is out of range (delegated
-     *                                  to the canonical constructor).
-     */
-    public static @NotNull CoreItem fromProduction(@NotNull ContextFreeProduction production, int dot_position) {
-        return new CoreItem(production,
-                dot_position);
-    }
-
     @Override
     public @NotNull String toString() {
         StringBuilder sb = new StringBuilder();
@@ -176,7 +153,6 @@ public record CoreItem( @NotNull ContextFreeProduction production,
             sb.append(production.rhsGet(i)).append(" ");
         }
 
-        // caso: punto alla fine
         if (dot_position == production.rhs().size()) {
             sb.append("·");
         }

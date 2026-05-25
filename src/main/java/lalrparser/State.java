@@ -51,6 +51,10 @@ public record State(@NotNull Set<@NotNull CoreItem> cores, @NotNull Map<@NotNull
         return new State(cores, items);
     }
 
+    public @NotNull Iterator<CoreItem> iterator() {
+        return cores.iterator();
+    }
+
     @Override
     public @NotNull String toString() {
         StringBuilder sb = new StringBuilder();
@@ -65,9 +69,5 @@ public record State(@NotNull Set<@NotNull CoreItem> cores, @NotNull Map<@NotNull
         sb.append("}");
 
         return sb.toString();
-    }
-
-    public @NotNull Iterator<CoreItem> iterator() {
-        return cores.iterator();
     }
 }

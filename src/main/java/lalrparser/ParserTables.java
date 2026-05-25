@@ -42,10 +42,8 @@ public interface ParserTables {
      *
      * <p>{@code GOTO[state][symbol_id]} contains the next state to transition to
      * after reducing to the non-terminal identified by {@code symbol_id}.
-     * A value of {@code -1} indicates no transition (error).</p>
      *
-     * @return a 2D array indexed by [state][symbol_id],
-     *         where -1 entries represent missing (error) entries
+     * @return a 2D array indexed by [state][symbol_id].
      */
     int @NotNull [] @NotNull [] getGOTO();
 

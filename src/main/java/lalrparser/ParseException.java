@@ -33,8 +33,7 @@ public class ParseException extends RuntimeException {
 
     /**
      * The list of token types that would have been valid in the current
-     * parser state. Derived from the non-null entries in the ACTION table
-     * row corresponding to the current state.
+     * parser state.
      */
     private final List<String> expectedTokens;
 

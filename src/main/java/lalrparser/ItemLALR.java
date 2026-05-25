@@ -27,13 +27,12 @@ import java.util.Set;
 public class ItemLALR {
 
     /**
-     * The LR(0) core of this item. Immutable.
+     * The LR(0) core of this item.
      */
     private final @NotNull CoreItem core;
 
     /**
      * The set of lookahead terminals for this item.
-     * Mutated during the LALR(1) lookahead propagation fixpoint.
      */
     private final @NotNull Set<@NotNull String> lookaheads = new HashSet<>();
 
@@ -60,7 +59,7 @@ public class ItemLALR {
      *
      * @return the lookahead terminals.
      */
-    public @NotNull java.util.Set<@NotNull String> getLookaheads() {
+    public @NotNull Set<@NotNull String> getLookaheads() {
         return Set.copyOf(lookaheads);
     }
 
@@ -95,9 +94,6 @@ public class ItemLALR {
         return core.equals(other.core);
     }
 
-    /**
-     * Hash code based solely on the core, consistent with {@link #equals}.
-     */
     @Override
     public int hashCode() {
         return core.hashCode();
