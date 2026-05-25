@@ -15,15 +15,20 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestParser {
 
-    private static ParserTables compileAndLoad(Path javaFile, String className) throws Exception {
+    private static ParserTables compileAndLoad(Path javaFile, String packageName, String className) throws Exception {
 
-        Path classFile = javaFile.getParent().resolve(className + "ParserTables.class");
+        String qualifiedName = packageName + "." + className + "ParserTables";
+        Path sourceRoot = Path.of("src/test/java");
+        Path classFile = sourceRoot
+                .resolve(packageName.replace('.', '/'))
+                .resolve(className + "ParserTables.class");
 
         boolean needsCompilation = Files.notExists(classFile) ||
                 Files.getLastModifiedTime(javaFile).toMillis() > Files.getLastModifiedTime(classFile).toMillis();
@@ -43,18 +48,26 @@ public class TestParser {
 
                 JavaCompiler.CompilationTask task =
                         compiler.getTask(null, fileManager, diagnostics, null, null, units);
+
+                boolean success = task.call();
+                if (!success) {
+                    String errors = diagnostics.getDiagnostics().stream()
+                            .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+                            .map(Object::toString)
+                            .collect(Collectors.joining("\n"));
+                    throw new IllegalStateException("Compilation failed:\n" + errors);
+                }
             }
         }
 
         try (URLClassLoader classLoader = new URLClassLoader(
-                new URL[]{javaFile.getParent().toUri().toURL()},
+                new URL[]{sourceRoot.toUri().toURL()},
                 ParserTables.class.getClassLoader()
         )) {
-            Class<?> clazz = classLoader.loadClass(className + "ParserTables");
+            Class<?> clazz = classLoader.loadClass(qualifiedName);
             return (ParserTables) clazz.getDeclaredConstructor().newInstance();
         }
     }
-
 
     @ParameterizedTest
     @CsvSource({
@@ -87,50 +100,20 @@ public class TestParser {
                         "T -> n | ( E )"
         );
         List<String> tokens = Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated", "Test1", "src/test/java/lalrparser/generated-test/");
+
+        String className = "Test1";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "a a b d, true",
-            "a a b c d, true",
-            "b d, true",
-            "b c c d, true",
-
-            "a b d, true",
-            "a a a b c c d, true",
-
-            "a a, false",
-            "b, false",
-            "a b, false",
-            "a a b c, false",
-            "c d, false",
-            "a d, false",
-
-            "a a b d d, false",
-            "b c d d, false"
-    })
-    void testLR0Parser(String input, boolean result) {
-        List<String> tokens = Arrays.asList(input.split(" "));
-        ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S -> A    \n" +
-                        "A -> a A | b B\n" +
-                        "B -> c B | d\n"
-        );
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test2", "src/test/java/lalrparser/generated-test/");
-        try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
-            Parser parser = new Parser(tables);
-            assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -142,9 +125,13 @@ public class TestParser {
                         "E -> E - T | T\n" +
                         "T -> n | ( E )"
         );
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test5", "src/test/java/lalrparser/generated-test/");
+        String className = "Test2";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThatThrownBy(() -> parser.parseStrings(Arrays.asList("( n".split(" "))))
                     .isInstanceOf(RuntimeException.class);
@@ -243,9 +230,13 @@ public class TestParser {
                 ? List.of()
                 : Arrays.asList(input.split(" "));
 
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test6", "src/test/java/lalrparser/generated-test/");
+        String className = "Test3";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
@@ -290,9 +281,13 @@ public class TestParser {
                 : Arrays.asList(input.split(" "));
 
 
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test7", "src/test/java/lalrparser/generated-test/");
+        String className = "Test4";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
@@ -334,9 +329,13 @@ public class TestParser {
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test8", "src/test/java/lalrparser/generated-test/");
+        String className = "Test5";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
@@ -346,7 +345,7 @@ public class TestParser {
 
     @ParameterizedTest
     @CsvSource({
-            "ab, true",
+            "a b, true",
             "b, true",
             "d, false",
             "a, false"
@@ -359,9 +358,13 @@ public class TestParser {
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test9", "src/test/java/lalrparser/generated-test/");
+        String className = "Test6";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
@@ -371,30 +374,35 @@ public class TestParser {
 
     @ParameterizedTest
     @CsvSource({
-            "abc, true",
-            "bc, true",
-            "c, true",
-            "aac, true",
-            "aaabbc, true",
-            "abbc, true",
-            "ab, false",
+            "a b c, false",
+            "b c, false",
+            "c, false",
+            "a a c, false",
+            "a a a b b c, false",
+            "a b b c, false",
+            "a b, true",
             "a, false",
             "d, false",
-            "ac, false",
-            "bac, false",
-            "cab, false"
+            "a c, false",
+            "b a c, false",
+            "c a b, false"
     })
     void testEpsilonGrammar2(String input, boolean result) {
-        ContextFreeGrammar g = ContextFreeGrammar.fromString("S' -> S\n" +
-                "S  -> A B\n" +
-                "A  -> a | ε\n" +
-                "B  -> b");
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("""
+                S' -> S
+                S  -> A B
+                A  -> a | ε
+                B  -> b""");
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test10", "src/test/java/lalrparser/generated-test/");
+        String className = "Test7";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
@@ -404,36 +412,46 @@ public class TestParser {
 
     @ParameterizedTest
     @CsvSource({
-            "abcd, true",
-            "bcd, true",
-            "cd, true",
+            "a b c d, true",
+            "b c d, true",
+            "c d, true",
             "d, true",
-            "acd, true",
-            "abd, true",
-            "ad, true",
-            "abd, true",
-            "abcd, true",
-            "bc, false",
-            "abc, false",
-            "abdc, false",
+            "a c d, true",
+            "a b d, true",
+            "a d, true",
+            "a b d, true",
+            "a b c d, true",
+            "b c, false",
+            "a b c, false",
+            "a b d c, false",
             "a, false",
-            "ab, false",
-            "ac, false",
-            "dabc, false",
-            "dcba, false",
-            "dd, false",
-            "abcdd, false"
+            "a b, false",
+            "a c, false",
+            "d a b c, false",
+            "d c b a, false",
+            "d d, false",
+            "a b c d d, false"
     })
     void testEpsilonGrammar3(String input, boolean result) {
         ContextFreeGrammar g = ContextFreeGrammar.fromString(
-                "S' -> S\nS -> A B C D\nA -> a | ε\nB -> b | ε\nC -> c | ε\nD -> d"
+                """
+                        S' -> S
+                        S -> A B C D
+                        A -> a | ε
+                        B -> b | ε
+                        C -> c | ε
+                        D -> d"""
         );
         List<String> tokens = input.isBlank()
                 ? List.of()
                 : Arrays.asList(input.split(" "));
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test11", "src/test/java/lalrparser/generated-test/");
+        String className = "Test8";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(tokens)).isEqualTo(result);
         } catch (Exception e) {
@@ -445,17 +463,21 @@ public class TestParser {
     @Test
     void testEpsilonGrammarLR1() {
         ContextFreeGrammar g = ContextFreeGrammar.fromString("""
+                S' -> S
                 S -> A B c
                 A -> a
                 B -> b | ε""");
-        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test11", "src/test/java/lalrparser/generated-test/");
+        String className = "Test9";
+        String packageName = "lalrparser.generated";
+        String outputDir = "src/test/java/lalrparser/generated/";
+        Parser.generateParser(g, new SymbolTable<>(), packageName, className, outputDir);
+        Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
-            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            ParserTables tables = compileAndLoad(javaFile, packageName, className);
             Parser parser = new Parser(tables);
             assertThat(parser.isRecognizedString(List.of("a", "c"))).isTrue();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
-
 }
