@@ -441,4 +441,21 @@ public class TestParser {
         }
     }
 
+
+    @Test
+    void testEpsilonGrammarLR1() {
+        ContextFreeGrammar g = ContextFreeGrammar.fromString("""
+                S -> A B c
+                A -> a
+                B -> b | ε""");
+        Parser.generateParser(g, new SymbolTable<>(),"lalrparser.generated","Test11", "src/test/java/lalrparser/generated-test/");
+        try {
+            ParserTables tables = compileAndLoad(Path.of("src/test/java/lalrparser/generated-test/").resolve("MyLangParserTables.java"), "MyLang");
+            Parser parser = new Parser(tables);
+            assertThat(parser.isRecognizedString(List.of("a", "c"))).isTrue();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
 }
