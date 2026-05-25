@@ -11,6 +11,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
+javadoc {
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
 application {
     mainClass = 'basics.App'
 }

@@ -23,13 +23,17 @@ public class ContextFreeProduction implements Iterable<String> {
     /** The production id of the rule.  */
     public final int prod_id;
 
-    /** The tag of the production, if it is empty then it is assumed that has no type. */
+    /** The tag of the production, if it is empty then it is assumed that has no tag. */
     public final @NotNull String prod_tag;
+
+    /*
+        Constructors
+     */
 
     /**
      * Constructs a context-free production rule.
      *
-     * @param lhs     the left-hand side non-terminal symbol; must not be blank
+     * @param lhs     the left-hand side symbol; must not be blank
      * @param rhs     the right hand side of {@code this} production rule.
      * @param prod_id the numeric identifier assigned to {@code this} production.
      * @param prod_tag the tag that specifies the semantic mean of the rule, it can be the empty string.
@@ -54,72 +58,9 @@ public class ContextFreeProduction implements Iterable<String> {
         this.prod_id = prod_id;
     }
 
-    /**
-     * Returns the size of right-hand side of {@code this} production rule.
-     *
-     * @return the size of the rhs of {@code this} production rule.
+    /*
+        FACTORY METHODS
      */
-    public int rhsSize() {
-        return isEpsilon() ? 0 :  rhs.size();
-    }
-
-    /**
-     * Tells if the production is equal to A -> ε.
-     * @return if {@code this} production produces ε.
-     */
-    public boolean isEpsilon() {
-        return rhs.getFirst().equals("ε");
-    }
-
-    /**
-     * Returns the symbol at the given index in the right-hand side of this production.
-     *
-     * @param i the index of the symbol to retrieve
-     * @return the symbol at position {@code i}
-     * @throws IndexOutOfBoundsException if this is an epsilon production or {@code i} is out of bounds
-     */
-    public String rhsGet(int i) {
-        if (isEpsilon()) throw new IndexOutOfBoundsException("epsilon production has no symbols");
-        return rhs.get(i);
-    }
-
-    /**
-     * Returns an unmodifiable view of the right-hand side of this production.
-     * If this is an epsilon production, returns an empty list.
-     *
-     * @return an unmodifiable {@link List} of the right-hand side symbols,
-     *         or an empty list if this is an epsilon production
-     */
-    public List<String> rhs() {
-        return isEpsilon() ? List.of() : Collections.unmodifiableList(rhs);
-    }
-
-    /**
-     * Returns whether the given symbol appears in the right-hand side
-     * of {@code this} production rule.
-     *
-     * @param symbol the symbol to look up
-     * @return {@code true} if {@code symbol} appears in the right-hand side;
-     *         {@code false} otherwise
-     */
-    public boolean contains(@NotNull String symbol) {
-        for (String symb : rhs)
-            if (symbol.equals(symb))
-                return true;
-        return false;
-    }
-
-    /**
-     * Returns the set of all symbols that appear in {@code this} production rule,
-     * the left-hand side and in the right-hand side.
-     *
-     * @return the set of symbols appearing in {@code this} production
-     */
-    public @NotNull Set<String> symbols() {
-        Set<String> symbols = new HashSet<>(rhs);
-        symbols.add(lhs);
-        return symbols;
-    }
 
     /**
      * Parses a string representation of a production rule and returns a list of the corresponding instances.
@@ -193,21 +134,90 @@ public class ContextFreeProduction implements Iterable<String> {
         return productions;
     }
 
+    /*
+        Instance Methods
+     */
+
+    /**
+     * Tells if the production is equal to A -> ε.
+     * @return if {@code this} production produces ε.
+     */
+    public boolean isEpsilon() {
+        return rhs.getFirst().equals("ε");
+    }
+
+    /**
+     * Returns whether the given symbol appears in the right-hand side
+     * of {@code this} production rule.
+     *
+     * @param symbol the symbol to look up
+     * @return {@code true} if {@code symbol} appears in the right-hand side;
+     *         {@code false} otherwise
+     */
+    public boolean contains(@NotNull String symbol) {
+        for (String symb : rhs)
+            if (symbol.equals(symb))
+                return true;
+        return false;
+    }
+
+    /**
+     * Returns the size of right-hand side of {@code this} production rule.
+     *
+     * @return the size of the rhs of {@code this} production rule.
+     */
+    public int rhsSize() {
+        return isEpsilon() ? 0 :  rhs.size();
+    }
+
+    /**
+     * Returns the symbol at the given index in the right-hand side of this production.
+     *
+     * @param i the index of the symbol to retrieve
+     * @return the symbol at position {@code i}
+     * @throws IllegalArgumentException if this is an epsilon production or {@code i} is out of bounds
+     */
+    public String rhsGet(int i) {
+        if (isEpsilon())
+            throw new IllegalArgumentException("Epsilon production has no symbols");
+        else if (i < 0 || i >= rhsSize())
+            throw new IllegalArgumentException("The index should be between 0 and rhsSize().");
+        return rhs.get(i);
+    }
+
+    /**
+     * Returns an unmodifiable view of the right-hand side of this production.
+     * If this is an epsilon production, returns an empty list.
+     *
+     * @return an unmodifiable {@link List} of the right-hand side symbols,
+     *         or an empty list if this is an epsilon production
+     */
+    public List<String> rhs() {
+        return isEpsilon() ? List.of() : rhs;
+    }
+
+    /**
+     * Returns the set of all symbols that appear in {@code this} production rule,
+     * the left-hand side symbol and all the symbols in the right-hand side.
+     *
+     * @return the set of symbols appearing in {@code this} production
+     */
+    public @NotNull Set<String> symbols() {
+        Set<String> symbols = new HashSet<>(rhs);
+        symbols.add(lhs);
+        return symbols;
+    }
+
     @Override
     public @NotNull Iterator<String> iterator() {
         return rhs.iterator();
     }
 
-    private @NotNull String stringOfRHS() {
-        StringBuilder sb = new StringBuilder();
-        for (String s : rhs)
-            sb.append(s);
-        return sb.toString();
-    }
-
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder().append(lhs).append(" -> ").append(stringOfRHS());
+        StringBuilder sb = new StringBuilder().append(lhs).append(" -> ");
+        for (String s : rhs)
+            sb.append(s);
         if (!prod_tag.isBlank())
             sb.append(" [").append(prod_tag).append("]");
         return sb.toString();

@@ -10,11 +10,15 @@ import java.util.*;
  */
 public class Productions implements Iterable<ContextFreeProduction> {
 
-    /** A list of the production rules in the order they were passed in the initialization. */
+    /** A map that as key has the production_id and as value the corresponding production. */
     private final @NotNull Map<@NotNull Integer, @NotNull ContextFreeProduction> productions;
 
-    /** A map that goes from the lhs of the production to the corresponding {@code ContextFreeProduction}. */
+    /** A map that goes from the lhs of a production to the corresponding {@code ContextFreeProduction} with that left-hand side. */
     private final @NotNull Map<@NotNull String, @NotNull List<ContextFreeProduction>> lhs_prods;
+
+    /*
+        Constructors
+     */
 
     /**
      * Constructs a {@code Productions} instance from the given map of production rules.
@@ -38,45 +42,9 @@ public class Productions implements Iterable<ContextFreeProduction> {
         this.lhs_prods = lhs_prods;
     }
 
-    /**
-     * Returns the set of all symbols that appear in any production rule,
-     * including all left-hand side and right-hand side symbols.
-     *
-     * @return the set of all symbols appearing in this collection of productions
+    /*
+        Factory Methods
      */
-    public @NotNull Set<@NotNull String> symbols() {
-        Set<String> symbols = new HashSet<>();
-        for (int prod_id : productions.keySet())
-            symbols.addAll(productions.get(prod_id).symbols());
-        return symbols;
-    }
-
-    /**
-     * Returns the production rule that has the given production id.
-     *
-     * @param prod_id the production id to look up.
-     * @return the {@link ContextFreeProduction} whose id corresponds to {@code prod_id}.
-     * @throws NoSuchElementException if no production rule owns {@code prod_id}.
-     */
-    public @NotNull ContextFreeProduction fromProdId(int prod_id) throws NoSuchElementException {
-        if (!productions.containsKey(prod_id))
-            throw new NoSuchElementException("No production has that id.");
-        return productions.get(prod_id);
-    }
-
-    /**
-     * Returns the production rule whose left-hand side matches the given symbol.
-     *
-     * @param lhs the left-hand side symbol to look up; must not be {@code null}
-     * @return a list of all the {@link ContextFreeProduction} with left-hand side equal to {@code lhs}
-     * @throws IllegalArgumentException if no production rule has {@code lhs} as
-     * its left-hand side
-     */
-    public @NotNull List<@NotNull ContextFreeProduction> fromLHS(@NotNull String lhs) throws IllegalArgumentException {
-        if (!lhs_prods.containsKey(lhs))
-            throw new IllegalArgumentException("No left-hand side match the input");
-        return lhs_prods.get(lhs);
-    }
 
     /**
      * Parses a string representation of a set of production rules and returns
@@ -84,11 +52,10 @@ public class Productions implements Iterable<ContextFreeProduction> {
      *
      * <p>Each line must contain exactly one production rule in the form:</p>
      * <pre>
-     *     A → α₁ #rule_tag? | α₂ #rule_tag? | ... | αₙ #rule_tag?
+     *     A → α₁ [#rule_tag]? | α₂ [#rule_tag]? | ... | αₙ [#rule_tag]?
      * </pre>
-     * Each left-hand side symbol must appear on exactly one line. The order of
-     * the productions is preserved, and the first line is treated as the production
-     * of the start symbol.
+     * Each left-hand side symbol must appear on exactly one line. The first line is
+     * treated as the production of the start symbol.
      *
      * @param grammar the string representation of the production rules; must not be blank
      * @return a {@code Productions} instance corresponding to the given string
@@ -117,22 +84,16 @@ public class Productions implements Iterable<ContextFreeProduction> {
         return new Productions(productions);
     }
 
-    /**
-     * Returns the total number of right-hand side alternatives across all production rules.
-     *
-     * @return the sum of {@link ContextFreeProduction#rhsSize()} over all productions
+    /*
+        Instance Methods.
      */
-    public int size() {
-        return productions.size();
-    }
-
 
     /**
      * Returns if the productions contains a production with the given input as left-hand side.
      * @param symbol the symbol to check if it has a production.
      * @return true if the input is a left-hand side, false otherwise.
      */
-    public boolean containsProd(String symbol) {
+    public boolean containsProd(@NotNull String symbol) {
         return lhs_prods.containsKey(symbol);
     }
 
@@ -144,6 +105,55 @@ public class Productions implements Iterable<ContextFreeProduction> {
      */
     public boolean contains(int productionId) {
         return productions.containsKey(productionId);
+    }
+
+    /**
+     * Returns the total number of production rules.
+     *
+     * @return size of {@code this} Production.
+     */
+    public int size() {
+        return productions.size();
+    }
+
+    /**
+     * Returns the set of all symbols that appear in any production rule,
+     * including all left-hand side and right-hand side symbols.
+     *
+     * @return the set of all symbols appearing in this collection of productions
+     */
+    public @NotNull Set<@NotNull String> symbols() {
+        Set<String> symbols = new HashSet<>();
+        for (int prod_id : productions.keySet())
+            symbols.addAll(productions.get(prod_id).symbols());
+        return symbols;
+    }
+
+    /**
+     * Returns the production rules that has the given production id.
+     *
+     * @param prod_id the production id to look up.
+     * @return the {@link ContextFreeProduction} whose id corresponds to {@code prod_id}.
+     * @throws NoSuchElementException if no production rule owns {@code prod_id}.
+     */
+    public @NotNull ContextFreeProduction fromProdId(int prod_id) throws NoSuchElementException {
+        if (!productions.containsKey(prod_id))
+            throw new NoSuchElementException("No production has that id.");
+        return productions.get(prod_id);
+    }
+
+    /**
+     * Returns the production rule whose left-hand side matches the given symbol.
+     *
+     * @param lhs the left-hand side symbol to look up; must not be {@code null}
+     * @return a list of all the {@link ContextFreeProduction} with left-hand side equal to {@code lhs}
+     * @throws IllegalArgumentException if no production rule has {@code lhs} as
+     * its left-hand side
+     */
+    public @NotNull List<@NotNull ContextFreeProduction> fromLHS(@NotNull String lhs) throws IllegalArgumentException {
+        if (!lhs_prods.containsKey(lhs))
+            throw new IllegalArgumentException("No left-hand side match the input");
+        return lhs_prods.get(lhs);
     }
 
     /**

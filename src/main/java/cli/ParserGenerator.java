@@ -81,7 +81,7 @@ public class ParserGenerator {
      *   src/main/resources/&lt;packagePath&gt;/&lt;className&gt;Lexer.ser
      * </pre>
      * where {@code packagePath} is the {@code packageName} with dots replaced by the
-     * OS file separator.</p>
+     * OS file separator.
      *
      * <p>The generated {@code .java} parser sources are written to the directory
      * specified by {@code outputDir}, via
