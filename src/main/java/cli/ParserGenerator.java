@@ -99,6 +99,9 @@ public class ParserGenerator {
     private static void generate(String grammarFile, String packageName,
                                  String className, String outputDir) {
         try {
+            if (!grammarFile.endsWith(".cbg")) {
+                grammarFile += ".cbg";
+            }
             String content = Files.readString(Path.of(grammarFile));
             String[] file = content.split("Token:");
             if (file.length != 2)
