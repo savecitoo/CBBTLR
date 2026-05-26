@@ -1,7 +1,7 @@
 package lexer;
 
 import org.jetbrains.annotations.NotNull;
-import utils.SymbolIdentifier;
+import utils.ObjectIdentifier;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -24,7 +24,7 @@ import java.util.regex.Matcher;
  * <p>Token types marked as {@link TokenType#skip() skip} are consumed from the input
  * but not added to the output list (useful for whitespace or comments).
  *
- * <p>Token identifiers are interned into a {@link SymbolIdentifier} so that identity
+ * <p>Token identifiers are interned into a {@link ObjectIdentifier} so that identity
  * comparison can be used instead of string equality during subsequent processing.
  *
  *
@@ -58,7 +58,7 @@ public class Lexer implements Serializable {
      * Interning allows O(1) identity comparisons in downstream passes
      * instead of O(n) string equality checks.
      */
-    private final @NotNull SymbolIdentifier<@NotNull String> table;
+    private final @NotNull ObjectIdentifier<@NotNull String> table;
 
     /**
      * Maps each {@link TokenType} to its declaration-order priority.
@@ -81,7 +81,7 @@ public class Lexer implements Serializable {
      * @param table  the symbol table used to intern token-type identifiers.
      * @throws IllegalArgumentException if any identifier appears more than once in {@code tokens}.
      */
-    public Lexer(@NotNull List<@NotNull TokenType> tokens, @NotNull SymbolIdentifier<@NotNull String> table) {
+    public Lexer(@NotNull List<@NotNull TokenType> tokens, @NotNull ObjectIdentifier<@NotNull String> table) {
         Set<String> seen = new HashSet<>();
         for (TokenType tt : tokens) {
             if (!seen.add(tt.identifier()))
@@ -194,7 +194,7 @@ public class Lexer implements Serializable {
      */
     public static @NotNull Lexer fromString(
             @NotNull String lexer,
-            @NotNull SymbolIdentifier<@NotNull String> table) {
+            @NotNull ObjectIdentifier<@NotNull String> table) {
 
         List<TokenType> tokenList   = new LinkedList<>();
         Set<String>     identifiers = new HashSet<>();

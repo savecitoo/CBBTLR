@@ -9,12 +9,13 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * This class represent a table where each object of type T putted in has an identifier. <br>
- * If the class is meant to be serializable then the type T should implemens the interface Serializable.
+ * This class represent a table where each object of type T putted
+ * in has a numerical identifier. <br>
+ * If the class is meant to be serializable then the type T should implement the interface Serializable.
  *
  * @param <T> The type of the objects that the symbol table has to encode in an Integer.
  */
-public class SymbolIdentifier<T> implements Serializable {
+public class ObjectIdentifier<T> implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -32,7 +33,7 @@ public class SymbolIdentifier<T> implements Serializable {
     /**
      * This is a constructor for a SymbolTable.
      */
-    public SymbolIdentifier() {
+    public ObjectIdentifier() {
         table_id_o = new HashMap<>();
         table_o_id = new HashMap<>();
     }
@@ -97,7 +98,7 @@ public class SymbolIdentifier<T> implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
-        if (o instanceof SymbolIdentifier<?> table)
+        if (o instanceof ObjectIdentifier<?> table)
             return table_id_o.equals(table.table_id_o);
         return false;
     }

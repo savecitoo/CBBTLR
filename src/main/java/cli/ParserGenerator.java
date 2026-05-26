@@ -3,7 +3,7 @@ package cli;
 import grammar.ContextFreeGrammar;
 import lalrparser.Parser;
 import lexer.Lexer;
-import utils.SymbolIdentifier;
+import utils.ObjectIdentifier;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class ParserGenerator {
      *
      * <p>The generated {@code .java} parser sources are written to the directory
      * specified by {@code outputDir}, via
-     * {@link Parser#generateParser(ContextFreeGrammar, SymbolIdentifier, String, String, String)}.</p>
+     * {@link Parser#generateParser(ContextFreeGrammar, ObjectIdentifier, String, String, String)}.</p>
      *
      * @param grammarFile  path to the grammar file to read
      * @param packageName  Java package name (e.g. {@code "com.example.generated"}),
@@ -106,7 +106,7 @@ public class ParserGenerator {
                         "Grammar file must contain a 'Token:' section");
 
             ContextFreeGrammar grammar = ContextFreeGrammar.fromString(file[0]);
-            SymbolIdentifier<String> encoding = new SymbolIdentifier<>();
+            ObjectIdentifier<String> encoding = new ObjectIdentifier<>();
             Lexer lexer = Lexer.fromString(file[1], encoding);
 
             // deriva il path delle resources dal packageName

@@ -9,9 +9,9 @@
  *   <li>{@link lalrparser.ParseException} — structured parse error with token and position info.</li>
  * </ul>
  *
- * <p>Typical usage: create the tables class from the static method {@link lalrparser.Parser#generateParser(grammar.ContextFreeGrammar, SymbolIdentifier, java.lang.String, java.lang.String, java.lang.String)},
+ * <p>Typical usage: create the tables class from the static method {@link lalrparser.Parser#generateParser(grammar.ContextFreeGrammar, ObjectIdentifier, java.lang.String, java.lang.String, java.lang.String)},
  * then use the class "MyGrammar"Parser.java.
  */
 package lalrparser;
 
-import utils.SymbolIdentifier;
+import utils.ObjectIdentifier;

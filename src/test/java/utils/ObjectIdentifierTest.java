@@ -10,13 +10,13 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SymbolIdentifierTest {
+public class ObjectIdentifierTest {
 
 
 
     @Test
     void serializeTest() throws Exception{
-        SymbolIdentifier<String> table = new SymbolIdentifier<>();
+        ObjectIdentifier<String> table = new ObjectIdentifier<>();
         for (String s : Set.of("ciao", "java", "set", "immutabile"))
             table.add(s);
 
@@ -28,7 +28,7 @@ public class SymbolIdentifierTest {
         byte[] data = bos.toByteArray();
 
         ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(data));
-        SymbolIdentifier copy = (SymbolIdentifier) in.readObject();
+        ObjectIdentifier copy = (ObjectIdentifier) in.readObject();
         in.close();
 
         assertThat(table).isEqualTo(copy);

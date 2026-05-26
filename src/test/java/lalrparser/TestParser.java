@@ -4,7 +4,7 @@ import grammar.ContextFreeGrammar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import utils.SymbolIdentifier;
+import utils.ObjectIdentifier;
 
 import javax.tools.*;
 import java.net.URL;
@@ -103,7 +103,7 @@ public class TestParser {
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
 
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
 
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
@@ -126,7 +126,7 @@ public class TestParser {
         String className = "Test2";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -231,7 +231,7 @@ public class TestParser {
         String className = "Test3";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -282,7 +282,7 @@ public class TestParser {
         String className = "Test4";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -330,7 +330,7 @@ public class TestParser {
         String className = "Test5";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -359,7 +359,7 @@ public class TestParser {
         String className = "Test6";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -397,7 +397,7 @@ public class TestParser {
         String className = "Test7";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -446,7 +446,7 @@ public class TestParser {
         String className = "Test8";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);
@@ -468,7 +468,7 @@ public class TestParser {
         String className = "Test9";
         String packageName = "lalrparser.generated";
         String outputDir = "src/test/java/lalrparser/generated/";
-        Parser.generateParser(g, new SymbolIdentifier<>(), packageName, className, outputDir);
+        Parser.generateParser(g, new ObjectIdentifier<>(), packageName, className, outputDir);
         Path javaFile = Path.of(outputDir).resolve(className + "ParserTables.java");
         try {
             ParserTables tables = compileAndLoad(javaFile, packageName, className);

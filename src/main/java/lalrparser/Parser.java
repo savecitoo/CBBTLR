@@ -5,7 +5,7 @@ import grammar.ContextFreeProduction;
 import lexer.Token;
 import org.jetbrains.annotations.NotNull;
 import tree.ParseTree;
-import utils.SymbolIdentifier;
+import utils.ObjectIdentifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -293,7 +293,7 @@ public class Parser {
      * @throws IllegalArgumentException if the grammar is ambiguous or the output cannot be written.
      */
     public static void generateParser(@NotNull ContextFreeGrammar grammar,
-                                      @NotNull SymbolIdentifier<@NotNull String> symbol_encoding,
+                                      @NotNull ObjectIdentifier<@NotNull String> symbol_encoding,
                                       @NotNull String packageName,
                                       @NotNull String className,
                                       @NotNull String outputDir) {
@@ -320,7 +320,7 @@ public class Parser {
      * @throws IllegalArgumentException if the grammar already uses the reserved symbol {@code "#"}.
      */
     private static void populateSymbolEncoding(@NotNull ContextFreeGrammar grammar,
-                                               @NotNull SymbolIdentifier<@NotNull String> symbolEncoding) {
+                                               @NotNull ObjectIdentifier<@NotNull String> symbolEncoding) {
         for (String s : grammar.T) symbolEncoding.add(s);
         for (String s : grammar.N) symbolEncoding.add(s);
         if (!symbolEncoding.add("#"))
@@ -338,7 +338,7 @@ public class Parser {
      * @throws IllegalArgumentException if a shift/reduce or reduce/reduce conflict is detected.
      */
     private static void buildingTables(@NotNull ContextFreeGrammar grammar,
-                                       @NotNull SymbolIdentifier<@NotNull String> symbol_encoding,
+                                       @NotNull ObjectIdentifier<@NotNull String> symbol_encoding,
                                        @NotNull Automaton automaton,
                                        @NotNull Map<@NotNull Integer,
                                                @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
@@ -352,8 +352,8 @@ public class Parser {
                 for (String symbol : transitions.keySet()) {
                     int id_symbol = symbol_encoding.getId(symbol);
                     State next = transitions.get(symbol);
-                    int from = automaton.states_encoding.get(state);
-                    int to = automaton.states_encoding.get(next);
+                    int from = automaton.states_encoding.getId(state);
+                    int to = automaton.states_encoding.getId(next);
 
                     if (grammar.N.contains(symbol)) {
                         GOTO.computeIfAbsent(from, k -> new HashMap<>()).put(id_symbol, to);
@@ -368,7 +368,7 @@ public class Parser {
             }
 
             // REDUCE
-            int stateId = automaton.states_encoding.get(state);
+            int stateId = automaton.states_encoding.getId(state);
             for (CoreItem it : state) {
                 if (it.isComplete()) {
                     Set<String> lookaheads = state.items().get(it).getLookaheads();
@@ -411,7 +411,7 @@ public class Parser {
             @NotNull Path outputDir,
             @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull Integer, @NotNull Integer>> GOTO,
             @NotNull Map<@NotNull Integer, @NotNull Map<@NotNull Integer, int[]>> ACTION,
-            @NotNull SymbolIdentifier<@NotNull String> symbol_encoding,
+            @NotNull ObjectIdentifier<@NotNull String> symbol_encoding,
             @NotNull ContextFreeGrammar grammar
     ) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -657,8 +657,8 @@ public class Parser {
         /** The edges of the automaton. */
         private final @NotNull Map<@NotNull State, @NotNull Map<@NotNull String, @NotNull State>> transitions;
 
-        /** A map that encodes every state in an integer. */
-        private final @NotNull Map<@NotNull State, @NotNull Integer> states_encoding;
+        /** A table that encodes every state in an integer. */
+        private final @NotNull ObjectIdentifier<@NotNull State> states_encoding;
 
         /** The set of all the states created in the map. */
         private final @NotNull Set<@NotNull State> states;
@@ -672,9 +672,9 @@ public class Parser {
          * @throws IllegalArgumentException if the state set or transitions are empty.
          */
         private Automaton(@NotNull Map<@NotNull State, @NotNull Map<@NotNull String, @NotNull State>> transitions,
-                          @NotNull Map<@NotNull State, @NotNull Integer> statesEncoding,
+                          @NotNull ObjectIdentifier<@NotNull State> statesEncoding,
                           @NotNull Set<@NotNull State> states) {
-            if (states.isEmpty() || statesEncoding.isEmpty())
+            if (states.isEmpty() || statesEncoding.size() == 0)
                 throw new IllegalArgumentException("The states cannot be empty.");
             if (transitions.isEmpty())
                 throw new IllegalArgumentException("The transitions cannot be empty.");
@@ -737,7 +737,7 @@ public class Parser {
 
             Map<State, Map<String, State>> transition = new HashMap<>();
             Set<State> states = new HashSet<>();
-            Map<State, Integer> state_encoding = new HashMap<>();
+            ObjectIdentifier<State> state_encoding = new ObjectIdentifier<State>();
 
             State first = automatonBuilding(grammar, transition, states, state_encoding);
 
@@ -769,7 +769,7 @@ public class Parser {
         private static @NotNull State automatonBuilding(@NotNull ContextFreeGrammar grammar,
                                                         Map<State, Map<String, State>> transition,
                                                         Set<State> states,
-                                                        Map<State, Integer> state_encoding) {
+                                                        ObjectIdentifier<State> state_encoding) {
             Map<CoreItem, CoreItem> cache_item = new HashMap<>();
             Map<State, State> cache_state = new HashMap<>();
             Queue<State> queue = new ArrayDeque<>();
@@ -814,7 +814,7 @@ public class Parser {
                 }
 
                 states.add(s);
-                state_encoding.put(s, state_encoding.size());
+                state_encoding.add(s);
             }
             return first;
         }
@@ -916,16 +916,16 @@ public class Parser {
         }
 
         private static void printPropagationGraph(@NotNull Map<@NotNull StateItem, @NotNull Set<@NotNull StateItem>> propagate,
-                                                  @NotNull Map<@NotNull State, @NotNull Integer> states_encoding) {
+                                                  @NotNull ObjectIdentifier<State> states_encoding) {
             System.out.println("Propagation Graph");
             System.out.println("=================");
             for (Map.Entry<StateItem, Set<StateItem>> entry : propagate.entrySet()) {
                 StateItem src = entry.getKey();
                 for (StateItem dst : entry.getValue()) {
                     System.out.println(
-                            "I" + states_encoding.get(src.state()) + ": " + src.item() +
+                            "I" + states_encoding.getId(src.state()) + ": " + src.item() +
                                     " --> " +
-                                    "I" + states_encoding.get(dst.state()) + ": " + dst.item()
+                                    "I" + states_encoding.getId(dst.state()) + ": " + dst.item()
                     );
                 }
             }
@@ -945,7 +945,7 @@ public class Parser {
 
             sb.append("States:\n");
             for (State s : states) {
-                int id = states_encoding.getOrDefault(s, -1);
+                int id = states_encoding.getId(s);
                 sb.append("I").append(id).append(":\n");
 
                 for (CoreItem it : s) {
@@ -957,12 +957,12 @@ public class Parser {
             sb.append("Transitions:\n");
             for (Map.Entry<State, Map<String, State>> entry : transitions.entrySet()) {
                 State from = entry.getKey();
-                int fromId = states_encoding.getOrDefault(from, -1);
+                int fromId = states_encoding.getId(from);
 
                 for (Map.Entry<String, State> t : entry.getValue().entrySet()) {
                     String symb = t.getKey();
                     State to = t.getValue();
-                    int toId = states_encoding.getOrDefault(to, -1);
+                    int toId = states_encoding.getId(to);
 
                     sb.append("I")
                             .append(fromId)
