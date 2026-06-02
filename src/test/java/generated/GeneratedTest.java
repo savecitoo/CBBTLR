@@ -1,8 +1,11 @@
 package generated;
 
+import ast.CstToAstVisitor;
+import grammar.ContextFreeGrammar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import tree.ParseTree;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -118,4 +121,18 @@ public class GeneratedTest {
         LogicGrammarParser parser = new LogicGrammarParser();
         assertThat(parser.isRecognized(input)).isEqualTo(result);
     }
+
+
+    @Test
+    void testAst() {
+        MyGrammarParser parser = new MyGrammarParser();
+        ParseTree tree = parser.parse("(9+ 8^2)*3");
+
+        System.out.println("---------- PARSE TREE -----------");
+        System.out.println(tree);
+        System.out.println("---------- AST TREE -----------");
+        System.out.println(CstToAstVisitor.visit(tree).prettyPrint());
+    }
+
+
 }

@@ -493,7 +493,8 @@ public class Parser {
 
         // ── PROD_TAGS ────────────────────────────────────────────────────────
         sb.append("    public static final String[] PROD_TAGS = {\n");
-        for (ContextFreeProduction p : grammar.P) {
+        for (int i = 0; i < grammar.P.size(); i++) {
+            ContextFreeProduction p = grammar.P.fromProdId(i);
             sb.append("        \"").append(p.prod_tag).append("\",\n");
         }
         sb.append("    };\n\n");

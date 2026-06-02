@@ -91,7 +91,7 @@ public record TokenType(@NotNull String identifier, @NotNull String regex, boole
         // The regex group (.+?) is intentionally lazy so the optional trailing
         // "skip" keyword is not captured as part of the token regex.
         Matcher matcher = Pattern
-                .compile("\\s*([a-zA-Z0-9_]+)\\s*:\\s*(.+?)(?:\\s+(skip))?\\s*")
+                .compile("\\s*([a-zA-Z0-9_+\\-*/^()\\s]+?)\\s*:\\s*(.+?)(?:\\s+(skip))?\\s*")
                 .matcher(line);
         if (matcher.matches()) {
             return new TokenType(
