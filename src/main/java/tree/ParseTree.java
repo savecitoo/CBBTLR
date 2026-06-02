@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This is an implementation for a Parsing Tree.
@@ -18,7 +19,7 @@ public class ParseTree implements Iterable<ParseTree> {
     private final @NotNull List<@NotNull ParseTree> children;
 
     /** The information that tell if this node is terminal. */
-    public boolean isTerminal;
+    public final boolean isTerminal;
 
     /** The line where the first character of the token is found. */
     public final int line;
@@ -49,6 +50,10 @@ public class ParseTree implements Iterable<ParseTree> {
         this.children = children;
     }
 
+    public @NotNull List<@NotNull ParseTree> getChildren() {
+        return List.copyOf(children);
+    }
+
     @Override
     public @NotNull Iterator<ParseTree> iterator() {
         return children.iterator();
@@ -65,6 +70,11 @@ public class ParseTree implements Iterable<ParseTree> {
                     this.rule_tag.equals(tree.rule_tag);
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(symbol, isTerminal, children, line, col, rule_tag);
     }
 
     @Override
