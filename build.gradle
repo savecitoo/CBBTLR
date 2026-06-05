@@ -48,9 +48,9 @@ task generateParser(type: JavaExec, dependsOn: compileJava) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'cli.ParserGenerator'
     args = [
-            project.findProperty("grammarFile") ?: "src/main/grammars/MyGrammar.cbg",
+            project.findProperty("grammarFile") ?: "src/main/grammars/CoDiNEGrammar.cbg",
             project.findProperty("packageName") ?: "generated",
-            project.findProperty("className")   ?: "MyGrammar",
+            project.findProperty("className")   ?: "CoDiNE",
             project.findProperty("outputDir")   ?: "src/main/java/generated"
     ]
 }

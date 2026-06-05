@@ -108,7 +108,7 @@ public class ParserGenerator {
                 throw new IllegalArgumentException(
                         "Grammar file must contain a 'Token:' section");
 
-            ContextFreeGrammar grammar = ContextFreeGrammar.fromString(file[0]);
+            ContextFreeGrammar grammar = ContextFreeGrammar.fromString(file[0].trim());
             ObjectIdentifier<String> encoding = new ObjectIdentifier<>();
             Lexer lexer = Lexer.fromString(file[1], encoding);
 

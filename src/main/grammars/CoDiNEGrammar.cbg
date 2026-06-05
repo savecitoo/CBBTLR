@@ -1,0 +1,62 @@
+S -> program
+program -> dim_decl unit_decl fun_decl
+dim_decl -> ε #empty | dim_decl DIMENSION ID WITH UNIT ID
+unit_decl -> ε #empty | unit_decl UNIT ID = expression
+fun_decl -> ε #empty | fun_decl DEF ID ( parameter ) : expression { body }
+parameter -> ε #empty | parameter_list
+parameter_list -> ID : expression | parameter_list , ID : expression
+body ->  var_decl instruction
+var_decl ->  ε #empty | var_decl VAR ID = expression
+instruction ->  ε #empty | instruction statement
+statement -> RETURN expression | IF condition { instruction } maybe_else | WHILE condition { instruction } | ID = expression
+maybe_else -> ε #empty | ELSE { instruction }
+expression -> expression + factor | expression - factor | factor
+factor  -> factor * unary | factor / unary | unary
+unary -> - unary | pow
+pow -> ID ^ INT | f_call
+f_call -> ID ( args ) | term
+args -> ε | arg_list
+arg_list -> expression | arg_list , expression
+term -> ( expression ) | ID | INT | NUM
+condition -> condition OR and_condition | and_condition
+and_condition -> and_condition AND not_condition | not_condition
+not_condition -> NOT not_condition | comparison
+comparison -> expression > expression | expression >= expression | expression < expression | expression <= expression | atom
+atom -> TRUE | FALSE | ( condition )
+
+Token:
+DIMENSION : dimension
+WITH : with
+UNIT : unit
+DEF : def
+VAR : var
+RETURN : return
+IF : if
+ELSE : else
+WHILE : while
+NUM : Num
+TRUE : true
+FALSE : false
+AND : and
+OR : or
+NOT : not
+( : \(
+) : \)
+{ : \{
+} : \}
+= : =
+< : <
+> : >
+>= : >=
+<= : <=
+: : \:
+, : ,
+^ : \^
+* : \*
++ : \+
+/ : \/
+- : \-
+INT : [1-9][0-9]*|0
+ID : [a-zA-Z_][a-zA-Z0-9_]*
+COMMENT : #[^\n]* skip
+WS : [ \t\n]+ skip
