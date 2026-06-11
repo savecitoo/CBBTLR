@@ -26,7 +26,7 @@ public class TestCST {
     void testInputEnergy() {
         assertThat(parser.isRecognized(
                 """
-                        # Energia potenziale gravitazionale — esempio del testo
+                          # Energia potenziale gravitazionale — esempio del testo
                           # Dimostra: dichiarazioni di dimensioni e unità, funzioni, tipo di ritorno
                           dimension Lunghezza with unit m
                           dimension Tempo     with unit s
@@ -202,11 +202,11 @@ public class TestCST {
 
     @Test
     void emptyProgram() {
-        assertThat(parser.isRecognized("")).isTrue();
+        assertThat(parser.isRecognized("")).isFalse();
     }
 
     @Test
-    void testDimensioAfterUnit() {
+    void testDimensionAfterUnit() {
         assertThat(parser.isRecognized(
                 """
                 # Energia potenziale gravitazionale — esempio del testo
@@ -227,7 +227,58 @@ public class TestCST {
                     var e = f * altezza
                     return e
                 }
-        """)).isFalse();
+        """)).isTrue();
     }
 
+    @Test
+    void testDimensionAfterFunc() {
+        assertThat(parser.isRecognized(
+                """
+                # Energia potenziale gravitazionale — esempio del testo
+                # Dimostra: dichiarazioni di dimensioni e unità, funzioni, tipo di ritorno
+                unit km = 1000 * m
+                dimension Tempo     with unit s
+                dimension Massa     with unit kg
+                unit g  = 981 / 100 * m / s ^ 2
+
+                def forza_peso(m : kg) : N {
+                        var f = m * g
+                    return f
+                }
+                
+                dimension Lunghezza     with unit m
+
+                def main(massa : kg, altezza : m) : N * m {
+                    var f = forza_peso(massa)
+                    var e = f * altezza
+                    return e
+                }
+        """)).isTrue();
+    }
+
+    @Test
+    void testUnitAfterFunction() {
+        assertThat(parser.isRecognized(
+                """
+                # Energia potenziale gravitazionale — esempio del testo
+                # Dimostra: dichiarazioni di dimensioni e unità, funzioni, tipo di ritorno
+                unit km = 1000 * m
+                dimension Tempo     with unit s
+                dimension Massa     with unit kg
+                unit g  = 981 / 100 * m / s ^ 2
+
+                def forza_peso(m : kg) : N {
+                        var f = m * g
+                    return f
+                }
+                
+                unit km = 1000 * m
+
+                def main(massa : kg, altezza : m) : N * m {
+                    var f = forza_peso(massa)
+                    var e = f * altezza
+                    return e
+                }
+        """)).isTrue();
+    }
 }

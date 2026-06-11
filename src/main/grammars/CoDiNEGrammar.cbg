@@ -1,28 +1,32 @@
 S -> program
-program -> dim_decl unit_decl fun_decl
-dim_decl -> ε #empty | dim_decl DIMENSION ID WITH UNIT ID
-unit_decl -> ε #empty | unit_decl UNIT ID = expression
-fun_decl -> ε #empty | fun_decl DEF ID ( parameter ) : expression { body }
-parameter -> ε #empty | parameter_list
-parameter_list -> ID : expression | parameter_list , ID : expression
-body ->  var_decl instruction
-var_decl ->  ε #empty | var_decl VAR ID = expression
-instruction ->  ε #empty | instruction statement
-statement -> RETURN expression | IF condition { instruction } maybe_else | WHILE condition { instruction } | ID = expression
-maybe_else -> ε #empty | ELSE { instruction }
-expression -> expression + factor | expression - factor | factor
-factor  -> factor * unary | factor / unary | unary
-unary -> - unary | pow
-pow -> ID ^ INT | f_call
-f_call -> ID ( args ) | term
-args -> ε | arg_list
-arg_list -> expression | arg_list , expression
-term -> ( expression ) | ID | INT | NUM
-condition -> condition OR and_condition | and_condition
-and_condition -> and_condition AND not_condition | not_condition
-not_condition -> NOT not_condition | comparison
-comparison -> expression > expression | expression >= expression | expression < expression | expression <= expression | atom
-atom -> TRUE | FALSE | ( condition )
+program -> item #start | program item #item_list
+item -> dim_item | unit_item | fun_item
+dim_item  ->  DIMENSION ID WITH UNIT ID #dim_item
+unit_item -> UNIT ID = expression #unit_item
+fun_decl -> fun_item | fun_decl fun_item #fun_list
+fun_item -> DEF ID ( parameter ) : expression { body } #fun_item
+parameter -> ε #empty | parameter_list #start_parameter_list
+parameter_list -> parameter_item #parameter_list | parameter_list , parameter_item #parameter_list
+parameter_item -> ID : expression #parameter_item
+body ->  var_decl instruction #body
+var_decl ->  ε #empty | var_decl var_item #var_list
+var_item -> VAR ID = expression #var_item
+instruction ->  ε #empty | instruction statement #instruction_list
+statement -> RETURN expression #return | IF condition { instruction } maybe_else #if | WHILE condition { instruction } #while | ID = expression #assignment
+maybe_else -> ε #empty | ELSE { instruction } #else
+expression -> expression + factor #binary_expr| expression - factor #binary_expr | factor
+factor  -> factor * pow #binary_expr | factor / pow #binary_expr | pow
+pow -> ID ^ exp #binary_expr | f_call
+exp -> INT | - INT
+f_call -> ID ( args ) #func_call | term
+args -> ε #empty | arg_list #arg_list
+arg_list -> expression #arg_list_item | arg_list , expression #arg_list
+term -> ( expression ) #group | ID #identifier | INT #int | - INT #int | NUM #num
+condition -> condition OR and_condition #binary_expr | and_condition
+and_condition -> and_condition AND not_condition #binary_expr | not_condition
+not_condition -> NOT not_condition #unary_expr | comparison
+comparison -> expression > expression #binary_expr | expression >= expression #binary_expr | expression < expression #binary_expr | expression <= expression #binary_expr | atom
+atom -> TRUE #true | FALSE #false | ( condition ) #group
 
 Token:
 DIMENSION : dimension

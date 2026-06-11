@@ -1,62 +1,48 @@
 package ast;
 
-/**
- * Visitor over an AST.
- * Override only the node types your pass cares about;
- * all others fall through to visitDefault().
- */
+import ast.constant.*;
+import ast.operation.*;
+import ast.program.*;
+import ast.expression.*;
+
 public interface AstVisitor<T> {
 
-    // ─── Fallback ─────────────────────────────────────────────────────────────
+    // --- fallback ---
+    T visitDefault(AstNode node);
 
-    /**
-     * Called for any node whose specific visit method is not overridden.
-     * Default implementation visits all children and returns null.
-     */
-    default T visitDefault(AstNode node) {
-        T result = null;
-        for (AstNode child : node.children()) {
-            result = child.accept(this);
-        }
-        return result;
-    }
+    // === STRUTTURA PROGRAMMA ===
+    default T visitProgram(ProgramNode node)       { return visitDefault(node); }
+    default T visitFunction(FunctionNode node)     { return visitDefault(node); }
+    default T visitBody(BodyNode node)             { return visitDefault(node); }
+    default T visitParameter(ParameterNode node)   { return visitDefault(node); }
+    default T visitDeclaration(DeclarationNode node) { return visitDefault(node); }
 
-    // ─── Declarations ─────────────────────────────────────────────────────────
+    default T visitIf(IfNode node)                 { return visitDefault(node); }
+    default T visitWhile(WhileNode node)           { return visitDefault(node); }
+    default T visitReturn(ReturnNode node)         { return visitDefault(node); }
 
-    default T visitProgram(AstNode node)       { return visitDefault(node); }
-    default T visitFunDecl(AstNode node)       { return visitDefault(node); }
-    default T visitVarDecl(AstNode node)       { return visitDefault(node); }
-    default T visitParam(AstNode node)         { return visitDefault(node); }
-    default T visitClassDecl(AstNode node)     { return visitDefault(node); }
+    default T visitAssignment(AssignmentNode node) { return visitDefault(node); }
+    default T visitFuncCall(FuncCallNode node)     { return visitDefault(node); }
 
-    // ─── Statements ───────────────────────────────────────────────────────────
+    default T visitAdd(AddNode node)               { return visitDefault(node); }
+    default T visitSub(SubNode node)               { return visitDefault(node); }
+    default T visitMul(MulNode node)               { return visitDefault(node); }
+    default T visitDiv(DivNode node)               { return visitDefault(node); }
+    default T visitPow(PowNode node)               { return visitDefault(node); }
+    default T visitMinus(MinusNode node)           { return visitDefault(node); }  // unario
 
-    default T visitBlock(AstNode node)         { return visitDefault(node); }
-    default T visitIf(AstNode node)            { return visitDefault(node); }
-    default T visitWhile(AstNode node)         { return visitDefault(node); }
-    default T visitFor(AstNode node)           { return visitDefault(node); }
-    default T visitReturn(AstNode node)        { return visitDefault(node); }
-    default T visitBreak(AstNode node)         { return visitDefault(node); }
-    default T visitContinue(AstNode node)      { return visitDefault(node); }
-    default T visitExprStmt(AstNode node)      { return visitDefault(node); }
+    default T visitAnd(AndNode node)               { return visitDefault(node); }
+    default T visitOr(OrNode node)                 { return visitDefault(node); }
+    default T visitNot(NotNode node)               { return visitDefault(node); }
 
-    // ─── Expressions ──────────────────────────────────────────────────────────
+    default T visitGt(GtNode node)                 { return visitDefault(node); }
+    default T visitLt(LtNode node)                 { return visitDefault(node); }
+    default T visitGe(GeNode node)                 { return visitDefault(node); }
+    default T visitLe(LeNode node)                 { return visitDefault(node); }
 
-    default T visitBinExpr(AstNode node)       { return visitDefault(node); }
-    default T visitUnaryExpr(AstNode node)     { return visitDefault(node); }
-    default T visitAssign(AstNode node)        { return visitDefault(node); }
-    default T visitCall(AstNode node)          { return visitDefault(node); }
-    default T visitFieldAccess(AstNode node)   { return visitDefault(node); }
-    default T visitIndex(AstNode node)         { return visitDefault(node); }
-    default T visitCast(AstNode node)          { return visitDefault(node); }
-    default T visitTernary(AstNode node)       { return visitDefault(node); }
-
-    // ─── Literals & terminals ─────────────────────────────────────────────────
-
-    default T visitIntLiteral(AstNode node)    { return visitDefault(node); }
-    default T visitFloatLiteral(AstNode node)  { return visitDefault(node); }
-    default T visitBoolLiteral(AstNode node)   { return visitDefault(node); }
-    default T visitStringLiteral(AstNode node) { return visitDefault(node); }
-    default T visitNullLiteral(AstNode node)   { return visitDefault(node); }
-    default T visitIdentifier(AstNode node)    { return visitDefault(node); }
+    default T visitIdentifier(IdentifierNode node) { return visitDefault(node); }
+    default T visitInt(IntNode node)               { return visitDefault(node); }
+    default T visitNum(NumNode node)               { return visitDefault(node); }
+    default T visitTrue(TrueNode node)             { return visitDefault(node); }
+    default T visitFalse(FalseNode node)           { return visitDefault(node); }
 }

@@ -127,11 +127,6 @@ public class GeneratedTest {
     void testAst() {
         MyGrammarParser parser = new MyGrammarParser();
         ParseTree tree = parser.parse("(9+ 8^2)*3");
-
-        System.out.println("---------- PARSE TREE -----------");
-        System.out.println(tree);
-        System.out.println("---------- AST TREE -----------");
-        System.out.println(CstToAstVisitor.visit(tree).prettyPrint());
     }
 
 
