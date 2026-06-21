@@ -467,10 +467,9 @@ public class CstToAstVisitor {
             exp = new IntNode(Integer.parseInt(exp_children.getFirst().symbol), expNode.line, expNode.col);
         } else {
             ParseTree intTok = exp_children.getLast();
-            exp = new MinusNode(
-                    new IntNode(Integer.parseInt(intTok.symbol), intTok.line, intTok.col),
-                    expNode.line, expNode.col
-            );
+
+            exp = new IntNode(- Integer.parseInt(intTok.symbol), intTok.line, intTok.col);
+
         }
         return new PowNode(b, exp, node.line, node.col);
     }
@@ -484,10 +483,7 @@ public class CstToAstVisitor {
             return new IntNode(Integer.parseInt(intTok.symbol), intTok.line, intTok.col);
         } else {
             ParseTree intTok = children.getLast();
-            return new MinusNode(
-                    new IntNode(Integer.parseInt(intTok.symbol), intTok.line, intTok.col),
-                    node.line, node.col
-            );
+            return new IntNode(-Integer.parseInt(intTok.symbol), intTok.line, intTok.col);
         }
     }
 

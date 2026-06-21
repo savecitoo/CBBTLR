@@ -29,7 +29,6 @@ public interface AstVisitor<T> {
     default T visitMul(MulNode node)               { return visitDefault(node); }
     default T visitDiv(DivNode node)               { return visitDefault(node); }
     default T visitPow(PowNode node)               { return visitDefault(node); }
-    default T visitMinus(MinusNode node)           { return visitDefault(node); }  // unario
 
     default T visitAnd(AndNode node)               { return visitDefault(node); }
     default T visitOr(OrNode node)                 { return visitDefault(node); }
