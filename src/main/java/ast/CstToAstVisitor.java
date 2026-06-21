@@ -19,7 +19,6 @@ public class CstToAstVisitor {
             case "group"        -> visitGroup(node);
             case "identifier"   -> visitIdentifier(node);
             case "int"          -> visitIntLiteral(node);
-            case "body"         -> visitBody(node);
             case "true"         -> new TrueNode(node.line, node.col);
             case "false"        -> new FalseNode(node.line, node.col);
             case "func_call"    -> visitFuncCall(node);
@@ -166,26 +165,20 @@ public class CstToAstVisitor {
                     name, children.get(1).line, children.get(1).col));
         }
 
+        Set<String> valueIds = new HashSet<>(); // parametri + variabili: stesso namespace, locale alla funzione
         List<AstNode> par = new ArrayList<>();
-        visitParameterList(children.get(3), par, dimension, unit, name);
+        visitParameterList(children.get(3), par, dimension, unit, name, valueIds);
 
         ParseTree returnTypeNode = children.get(6);
-        // Il tipo di ritorno è una espressione dimensionale (classe D): niente letterali interi
-        // fuori dall'esponente di ^, e solo dimensioni/unit già dichiarate.
         checkTypeExpression(returnTypeNode, dimension, unit,
                 String.format("The return type of function %s", name),
                 returnTypeNode.line, returnTypeNode.col);
 
-        functions.put(
-                name,
-                new FunctionNode(
-                        new IdentifierNode(name, children.get(1).line, children.get(1).col),
-                        par,
-                        visit(returnTypeNode),
-                        visit(children.get(8)),
-                        node.line, node.col
-                )
-        );
+        AstNode body = visitBody(children.get(8), valueIds, name);
+
+        functions.put(name, new FunctionNode(
+                new IdentifierNode(name, children.get(1).line, children.get(1).col),
+                par, visit(returnTypeNode), body, node.line, node.col));
     }
 
     // ---------------------------------------------------------------
@@ -329,32 +322,37 @@ public class CstToAstVisitor {
 
     private static void visitParameterList(
             ParseTree node, List<AstNode> par,
-            Set<String> dimension, Map<String, AstNode> unit, String funcName) {
+            Set<String> dimension, Map<String, AstNode> unit, String funcName,
+            Set<String> valueIds) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "empty":
                 break;
             case "start_parameter_list":
-                visitParameterList(children.getFirst(), par, dimension, unit, funcName);
+                visitParameterList(children.getFirst(), par, dimension, unit, funcName, valueIds);
                 break;
             case "parameter_list":
                 if (children.size() == 1) {
-                    visitParameterList(children.getFirst(), par, dimension, unit, funcName);
+                    visitParameterList(children.getFirst(), par, dimension, unit, funcName, valueIds);
                 } else {
-                    visitParameterList(children.getFirst(), par, dimension, unit, funcName);
-                    visitParameterList(children.getLast(), par, dimension, unit, funcName);
+                    visitParameterList(children.getFirst(), par, dimension, unit, funcName, valueIds);
+                    visitParameterList(children.getLast(), par, dimension, unit, funcName, valueIds);
                 }
                 break;
             case "parameter_item": {
                 ParseTree idTok = children.getFirst();
+                if (!valueIds.add(idTok.symbol)) {
+                    throw new IllegalArgumentException(String.format(
+                            "The parameter %s of function %s at line %d and column %d was already declared.",
+                            idTok.symbol, funcName, idTok.line, idTok.col));
+                }
                 ParseTree typeNode = children.get(2);
                 checkTypeExpression(typeNode, dimension, unit,
                         String.format("The parameter %s of function %s", idTok.symbol, funcName),
                         idTok.line, idTok.col);
                 par.add(new ParameterNode(
                         new IdentifierNode(idTok.symbol, idTok.line, idTok.col),
-                        visit(typeNode),
-                        node.line, node.col));
+                        visit(typeNode), node.line, node.col));
                 break;
             }
             default:
@@ -362,31 +360,36 @@ public class CstToAstVisitor {
         }
     }
 
-    private static AstNode visitBody(ParseTree node) {
+    private static AstNode visitBody(ParseTree node, Set<String> valueIds, String funcName) {
         List<AstNode> decl = new ArrayList<>();
         List<AstNode> stat = new ArrayList<>();
-        visitDeclNode(node.getChildren().getFirst(), decl);
+        visitDeclNode(node.getChildren().getFirst(), decl, valueIds, funcName);
         visitStatNode(node.getChildren().getLast(), stat);
         return new BodyNode(decl, stat, node.line, node.col);
     }
 
-    private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl) {
+    private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl, Set<String> valueIds, String funcName) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "empty":
                 break;
             case "var_list":
-                visitDeclNode(children.getFirst(), decl);
-                visitDeclNode(children.getLast(), decl);
+                visitDeclNode(children.getFirst(), decl, valueIds, funcName);
+                visitDeclNode(children.getLast(), decl, valueIds, funcName);
                 break;
-            case "var_item":
-                decl.add(
-                        new DeclarationNode(
-                                new IdentifierNode(children.get(1).symbol, children.get(1).line, children.get(1).col),
-                                visit(children.getLast()),
-                                node.line, node.col)
-                );
+            case "var_item": {
+                ParseTree idTok = children.get(1);
+                if (!valueIds.add(idTok.symbol)) {
+                    throw new IllegalArgumentException(String.format(
+                            "The variable %s in function %s at line %d and column %d was already declared.",
+                            idTok.symbol, funcName, idTok.line, idTok.col));
+                }
+                decl.add(new DeclarationNode(
+                        new IdentifierNode(idTok.symbol, idTok.line, idTok.col),
+                        visit(children.getLast()),
+                        node.line, node.col));
                 break;
+            }
             default:
                 throw new IllegalArgumentException("Unexpected rule tag " + node.rule_tag + " for the variable declaration part.");
         }
