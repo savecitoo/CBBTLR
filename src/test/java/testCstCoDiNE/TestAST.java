@@ -311,11 +311,11 @@ public class TestAST {
 
     @Test
     void testTypeWithExponentIntegerLiteralIsAllowed() {
-        assertThatCode(() -> buildAst("""
+        assertThatThrownBy(() -> buildAst("""
                 dimension Lunghezza with unit m
 
                 def f(a : m ^ 2) : m ^ 2 { return a }
-                """)).doesNotThrowAnyException();
+                """));
     }
 
     @Test

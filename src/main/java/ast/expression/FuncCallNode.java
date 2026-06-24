@@ -3,12 +3,13 @@ package ast.expression;
 
 import ast.AstNode;
 import ast.AstVisitor;
+import ast.constant.IdentifierNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public record FuncCallNode(@NotNull AstNode func, List<AstNode> args, int line, int column) implements AstNode {
+public record FuncCallNode(@NotNull IdentifierNode func, List<AstNode> args, int line, int column) implements AstNode {
 
     @Override
     public List<AstNode> children() {

@@ -2,11 +2,12 @@ package ast.program;
 
 import ast.AstNode;
 import ast.AstVisitor;
+import ast.constant.IdentifierNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record ParameterNode(@NotNull AstNode symbol, @NotNull AstNode expression, int line, int col) implements AstNode {
+public record ParameterNode(@NotNull IdentifierNode symbol, @NotNull AstNode expression, int line, int col) implements AstNode {
 
     @Override
     public int column() {

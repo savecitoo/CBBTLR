@@ -11,7 +11,7 @@ import java.util.*;
 
 public class CstToAstVisitor {
 
-    public static AstNode visit(ParseTree node) {
+    public static AstNode visit(ParseTree node) throws IllegalArgumentException{
         return switch (node.rule_tag) {
             case "start", "item_list" -> visitStart(node);
             case "binary_expr"  -> visitBinExpr(node);
@@ -40,7 +40,8 @@ public class CstToAstVisitor {
         Map<String, AstNode> functions = new HashMap<>();
 
         visitProgramItems(node, dimension, dimension_name, unit, functions);
-
+        if (!functions.containsKey("main"))
+            throw new IllegalArgumentException("The program doesn't contain a \"main\" function.");
         return new ProgramNode(dimension, unit, functions, node.line, node.col);
     }
 
@@ -166,7 +167,7 @@ public class CstToAstVisitor {
         }
 
         Set<String> valueIds = new HashSet<>(); // parametri + variabili: stesso namespace, locale alla funzione
-        List<AstNode> par = new ArrayList<>();
+        List<ParameterNode> par = new ArrayList<>();
         visitParameterList(children.get(3), par, dimension, unit, name, valueIds);
 
         ParseTree returnTypeNode = children.get(6);
@@ -321,7 +322,7 @@ public class CstToAstVisitor {
     // ---------------------------------------------------------------
 
     private static void visitParameterList(
-            ParseTree node, List<AstNode> par,
+            ParseTree node, List<ParameterNode> par,
             Set<String> dimension, Map<String, AstNode> unit, String funcName,
             Set<String> valueIds) {
         List<ParseTree> children = node.getChildren();
@@ -427,7 +428,7 @@ public class CstToAstVisitor {
     private static AstNode visitAssignmentNode(@NotNull ParseTree node) {
         List<ParseTree> children = node.getChildren();
         return new AssignmentNode(
-                new IdentifierNode(children.get(1).symbol, children.get(1).line, children.get(1).col),
+                new IdentifierNode(children.get(0).symbol, children.get(1).line, children.get(1).col),
                 visit(children.get(2)), node.line, node.col
         );
     }
@@ -459,8 +460,8 @@ public class CstToAstVisitor {
 
     private static @NotNull PowNode getPowNode(ParseTree node) {
         List<ParseTree> children = node.getChildren();
-        AstNode b = new IdentifierNode(children.getFirst().symbol, node.line, node.col);
-        AstNode exp;
+        IdentifierNode b = new IdentifierNode(children.getFirst().symbol, node.line, node.col);
+        IntNode exp;
         ParseTree expNode = children.get(2);
         List<ParseTree> exp_children = expNode.getChildren();
         if (exp_children.size() == 1) {

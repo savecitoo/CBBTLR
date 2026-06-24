@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record FunctionNode(@NotNull IdentifierNode name,
-                           @NotNull List<AstNode> parameter,
+                           @NotNull List<ParameterNode> parameter,
                            @NotNull AstNode ret_expr,
                            @NotNull AstNode body,
                            int line, int column) implements AstNode {
