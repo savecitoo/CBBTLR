@@ -7,8 +7,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-public record ProgramNode(java.util.Set<String> dimension,
+public record ProgramNode(@NotNull Set<String> dimension,
                           @NotNull Map<@NotNull String, @NotNull AstNode> unit,
                           @NotNull Map<@NotNull String, @NotNull AstNode> functions,
                           int line, int column) implements AstNode {

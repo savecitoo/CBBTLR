@@ -39,10 +39,30 @@ public class CstToAstVisitor {
         Map<String, AstNode> unit  = new HashMap<>();
         Map<String, AstNode> functions = new HashMap<>();
 
-        visitProgramItems(node, dimension, dimension_name, unit, functions);
+        // Tabella unica degli identificatori globali: nome -> categoria
+        // ("dimension", "unit", "function"). È la fonte di verità per
+        // l'unicità dei nomi GLOBALI; parametri e variabili locali possono
+        // invece riusare questi nomi (shadowing lecito: nel corpo della
+        // funzione l'identificatore locale nasconde l'unità omonima).
+        Map<String, String> globalIds = new HashMap<>();
+
+        visitProgramItems(node, dimension, dimension_name, unit, functions, globalIds);
         if (!functions.containsKey("main"))
             throw new IllegalArgumentException("The program doesn't contain a \"main\" function.");
         return new ProgramNode(dimension, unit, functions, node.line, node.col);
+    }
+
+    /** Registra un nuovo nome globale, rifiutando qualunque collisione
+     *  con un nome globale già dichiarato (di qualsiasi categoria). */
+    private static void declareGlobal(
+            @NotNull Map<String, String> globalIds,
+            @NotNull String name, @NotNull String kind,
+            int line, int col) {
+        String previous = globalIds.putIfAbsent(name, kind);
+        if (previous != null)
+            throw new IllegalArgumentException(String.format(
+                    "The %s '%s' at line %d and column %d was already declared in the program as a %s.",
+                    kind, name, line, col, previous));
     }
 
     private static void visitProgramItems(
@@ -50,14 +70,15 @@ public class CstToAstVisitor {
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
             @NotNull Map<String, AstNode> unit,
-            @NotNull Map<String, AstNode> functions) {
+            @NotNull Map<String, AstNode> functions,
+            @NotNull Map<String, String> globalIds) {
         switch (node.rule_tag) {
             case "start":
-                visitItem(node.getChildren().getFirst(), dimension, dimension_name, unit, functions);
+                visitItem(node.getChildren().getFirst(), dimension, dimension_name, unit, functions, globalIds);
                 break;
             case "item_list":
-                visitProgramItems(node.getChildren().getFirst(), dimension, dimension_name, unit, functions);
-                visitItem(node.getChildren().getLast(), dimension, dimension_name, unit, functions);
+                visitProgramItems(node.getChildren().getFirst(), dimension, dimension_name, unit, functions, globalIds);
+                visitItem(node.getChildren().getLast(), dimension, dimension_name, unit, functions, globalIds);
                 break;
             default:
                 throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " for the program part.");
@@ -69,20 +90,21 @@ public class CstToAstVisitor {
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
             @NotNull Map<String, AstNode> unit,
-            @NotNull Map<String, AstNode> functions) {
+            @NotNull Map<String, AstNode> functions,
+            @NotNull Map<String, String> globalIds) {
         ParseTree node = itemNode;
         while (node.rule_tag.isEmpty() && node.getChildren().size() == 1) {
             node = node.getChildren().getFirst();
         }
         switch (node.rule_tag) {
             case "dim_item":
-                visitDimItem(node, dimension, dimension_name, unit);
+                visitDimItem(node, dimension, dimension_name, globalIds);
                 break;
             case "unit_item":
-                visitUnitItem(node, dimension, dimension_name, unit);
+                visitUnitItem(node, dimension, unit, globalIds);
                 break;
             case "fun_item":
-                visitFunItem(node, functions, dimension, unit);
+                visitFunItem(node, functions, dimension, unit, globalIds);
                 break;
             default:
                 throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " for a program item.");
@@ -93,62 +115,39 @@ public class CstToAstVisitor {
             @NotNull ParseTree node,
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
-            @NotNull Map<String, AstNode> unit) {
+            @NotNull Map<String, String> globalIds) {
         List<ParseTree> children = node.getChildren();
 
-        String name = children.get(1).symbol;
-        int nameLine = children.get(1).line;
-        int nameCol  = children.get(1).col;
-        if (!dimension_name.add(name) || dimension.contains(name) || unit.containsKey(name)) {
-            throw new IllegalArgumentException(String.format(
-                    "The dimension name %s at line %d and column %d was already defined",
-                    name, nameLine, nameCol));
-        }
+        // nome della dimensione (es. "Lunghezza")
+        ParseTree nameTok = children.get(1);
+        declareGlobal(globalIds, nameTok.symbol, "dimension", nameTok.line, nameTok.col);
+        dimension_name.add(nameTok.symbol);
 
-        String symb = children.get(4).symbol;
-        int line = children.get(4).line;
-        int col  = children.get(4).col;
-        if (unit.containsKey(symb))
-            throw new IllegalArgumentException(String.format(
-                    "The dimension unit %s at line %d and column %d was already defined in the program as a unit.",
-                    symb, line, col));
-        if (dimension_name.contains(symb))
-            throw new IllegalArgumentException(String.format(
-                    "The dimension unit %s at line %d and column %d was already defined in the program as a dimension name.",
-                    symb, line, col));
-        if (dimension.contains(symb))
-            throw new IllegalArgumentException(String.format(
-                    "The dimension unit %s at line %d and column %d was already defined in the program as a dimension.",
-                    symb, line, col));
-
-        dimension.add(symb);
+        // unità di base (es. "m"): anche lei è un nome globale
+        ParseTree unitTok = children.get(4);
+        declareGlobal(globalIds, unitTok.symbol, "unit", unitTok.line, unitTok.col);
+        dimension.add(unitTok.symbol);
     }
 
     private static void visitUnitItem(
             @NotNull ParseTree node,
             @NotNull Set<String> dimension,
-            @NotNull Set<String> dimension_name,
-            @NotNull Map<String, AstNode> unit) {
+            @NotNull Map<String, AstNode> unit,
+            @NotNull Map<String, String> globalIds) {
         List<ParseTree> children = node.getChildren();
 
-        String symb = children.get(1).symbol;
-        int line = children.get(1).line;
-        int col  = children.get(1).col;
-        if (unit.containsKey(symb))
-            throw new IllegalArgumentException(String.format(
-                    "The unit %s at line %d and column %d was already defined in the program.", symb, line, col));
-        if (dimension.contains(symb))
-            throw new IllegalArgumentException(String.format(
-                    "The unit %s at line %d and column %d was already defined in the program as a dimension.", symb, line, col));
-        if (dimension_name.contains(symb))
-            throw new IllegalArgumentException(String.format(
-                    "The unit %s at line %d and column %d was already defined in the program as a dimension name.", symb, line, col));
+        ParseTree symbTok = children.get(1);
+        String symb = symbTok.symbol;
+        declareGlobal(globalIds, symb, "unit", symbTok.line, symbTok.col);
 
         ParseTree exprNode = children.get(3);
 
         // Una 'unit' è una espressione di unità (classe U): può contenere letterali interi,
         // quindi qui controlliamo SOLO che le dimensioni/unit usate siano già state dichiarate.
-        checkExpressionDimensions(exprNode, dimension, unit, String.format("The unit %s", symb), line, col);
+        // Nota: poiché la unit corrente è già in globalIds ma NON ancora in dimension/unit,
+        // le definizioni auto-referenziali (unit a = 2 * a) e i cicli vengono rifiutati qui.
+        checkExpressionDimensions(exprNode, dimension, unit,
+                String.format("The unit %s", symb), symbTok.line, symbTok.col);
 
         unit.put(symb, visit(exprNode));
     }
@@ -157,14 +156,12 @@ public class CstToAstVisitor {
             @NotNull ParseTree node,
             @NotNull Map<String, AstNode> functions,
             @NotNull Set<String> dimension,
-            @NotNull Map<String, AstNode> unit) {
+            @NotNull Map<String, AstNode> unit,
+            @NotNull Map<String, String> globalIds) {
         List<ParseTree> children = node.getChildren();
-        String name = children.get(1).symbol;
-        if (functions.containsKey(name)) {
-            throw new IllegalArgumentException(String.format(
-                    "The function %s at line %d and column %d was already defined in the program.",
-                    name, children.get(1).line, children.get(1).col));
-        }
+        ParseTree nameTok = children.get(1);
+        String name = nameTok.symbol;
+        declareGlobal(globalIds, name, "function", nameTok.line, nameTok.col);
 
         Set<String> valueIds = new HashSet<>(); // parametri + variabili: stesso namespace, locale alla funzione
         List<ParameterNode> par = new ArrayList<>();
@@ -178,7 +175,7 @@ public class CstToAstVisitor {
         AstNode body = visitBody(children.get(8), valueIds, name);
 
         functions.put(name, new FunctionNode(
-                new IdentifierNode(name, children.get(1).line, children.get(1).col),
+                new IdentifierNode(name, nameTok.line, nameTok.col),
                 par, visit(returnTypeNode), body, node.line, node.col));
     }
 
@@ -369,7 +366,8 @@ public class CstToAstVisitor {
         return new BodyNode(decl, stat, node.line, node.col);
     }
 
-    private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl, Set<String> valueIds, String funcName) {
+    private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl, Set<String> valueIds,
+                                      String funcName) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "empty":
@@ -540,8 +538,8 @@ public class CstToAstVisitor {
             case "-"   -> new SubNode(left, right, node.line, node.col);
             case "*"   -> new MulNode(left, right, node.line, node.col);
             case "/"   -> new DivNode(left, right, node.line, node.col);
-            case "OR"  -> new OrNode(left, right, node.line, node.col);
-            case "AND" -> new AndNode(left, right, node.line, node.col);
+            case "or"  -> new OrNode(left, right, node.line, node.col);
+            case "and" -> new AndNode(left, right, node.line, node.col);
             case "<"   -> new LtNode(left, right, node.line, node.col);
             case "<="  -> new LeNode(left, right, node.line, node.col);
             case ">"   -> new GtNode(left, right, node.line, node.col);
