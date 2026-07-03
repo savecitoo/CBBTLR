@@ -1,4 +1,4 @@
-package testCstCoDiNE;
+package testSintaxTreeCoDiNE;
 
 import ast.AstNode;
 import ast.CstToAstVisitor;

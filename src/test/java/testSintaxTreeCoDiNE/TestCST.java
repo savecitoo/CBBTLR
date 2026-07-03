@@ -1,4 +1,4 @@
-package testCstCoDiNE;
+package testSintaxTreeCoDiNE;
 
 import generated.CoDiNEParser;
 import org.junit.jupiter.api.Test;

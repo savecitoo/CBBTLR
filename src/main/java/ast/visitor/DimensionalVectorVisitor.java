@@ -20,36 +20,36 @@ import java.util.Map;
 
 public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
-    private final Map<String, DimensionalVector> unitVectors = new HashMap<>();
-    private final Map<String, List<DimensionalVector>> functionParams = new HashMap<>();
-    private final Map<String, DimensionalVector> functionReturns = new HashMap<>();
-    private final Map<String, Integer> dimIndex = new HashMap<>();
+    private final Map<String, DimensionalVector> unit_vectors = new HashMap<>();
+    private final Map<String, List<DimensionalVector>> function_params = new HashMap<>();
+    private final Map<String, DimensionalVector> function_returns = new HashMap<>();
+    private final Map<String, Integer> dim_index = new HashMap<>();
     private Map<String, AstNode> unitDefs = new HashMap<>();
 
     private DimensionalVectorBuilder builder;
     private boolean isDenominator = false;
 
     // getter per il TypeCheckerVisitor
-    public Map<String, DimensionalVector> getUnitVectors() { return unitVectors; }
-    public Map<String, List<DimensionalVector>> getFunctionParams() { return functionParams; }
-    public Map<String, DimensionalVector> getFunctionReturns() { return functionReturns; }
-    public Map<String, Integer> getDimIndex() { return dimIndex; }
+    public Map<String, DimensionalVector> getUnitVectors() { return new HashMap<>(unit_vectors); }
+    public Map<String, List<DimensionalVector>> getFunctionParams() { return new HashMap<>(function_params); }
+    public Map<String, DimensionalVector> getFunctionReturns() { return new HashMap<>(function_returns); }
+    public Map<String, Integer> getDimIndex() { return new HashMap<>(dim_index); }
 
     @Override
     public DimensionalVector visitProgram(@NotNull ProgramNode node) {
         // 1. dimensioni fondamentali
         int i = 0;
         for (String dim : node.dimension())
-            dimIndex.put(dim, i++);
+            dim_index.put(dim, i++);
 
-        builder = new DimensionalVectorBuilder(dimIndex);
+        builder = new DimensionalVectorBuilder(dim_index);
 
         // 2. unità derivate
         unitDefs = node.unit();
         for (Map.Entry<String, AstNode> entry : unitDefs.entrySet()) {
             builder.reset();
             entry.getValue().accept(this);
-            unitVectors.put(entry.getKey(), builder.build());
+            unit_vectors.put(entry.getKey(), builder.build());
         }
 
         // 3. firme delle funzioni
@@ -68,14 +68,14 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
             param.accept(this);
             params.add(builder.build());
         }
-        //System.out.println(getFunctionParams());
-        functionParams.put(node.name().id(), params);
+        //System.out.println(getfunction_params());
+        function_params.put(node.name().id(), params);
 
         // tipo di ritorno
         builder.reset();
         node.ret_expr().accept(this);
         DimensionalVector retVec = builder.build();
-        functionReturns.put(node.name().id(), retVec);
+        function_returns.put(node.name().id(), retVec);
 
         // NON visita il corpo
         return retVec;
@@ -92,7 +92,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
         String name = node.id();
 
         // unità di base: contribuisce al builder
-        if (dimIndex.containsKey(name)) {
+        if (dim_index.containsKey(name)) {
             if (isDenominator)
                 builder.sub(name, 1);
             else
@@ -105,16 +105,16 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
             // salva lo stato corrente, calcola il vettore dell'unità derivata,
             // poi applica il suo contributo al builder corrente
             DimensionalVector derived;
-            if (unitVectors.containsKey(name)) {
-                derived = unitVectors.get(name);
+            if (unit_vectors.containsKey(name)) {
+                derived = unit_vectors.get(name);
             } else {
                 DimensionalVectorBuilder old = builder;
-                builder = new DimensionalVectorBuilder(dimIndex);
+                builder = new DimensionalVectorBuilder(dim_index);
                 // non ancora calcolata: calcola ricorsivamente
                 // builder.reset();
                 unitDefs.get(name).accept(this);
                 derived = builder.build();
-                unitVectors.put(name, derived);
+                unit_vectors.put(name, derived);
                 builder = old;
             }
             // applica il vettore dell'unità derivata al builder corrente
@@ -151,10 +151,10 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
         // l'id della base contribuisce direttamente
         String baseName = node.base().id();
-        if (dimIndex.containsKey(baseName)) {
+        if (dim_index.containsKey(baseName)) {
             builder.add(baseName, exp);
         } else if (unitDefs.containsKey(baseName)) {
-            DimensionalVector baseVec = unitVectors.getOrDefault(
+            DimensionalVector baseVec = unit_vectors.getOrDefault(
                     baseName,
                     computeUnit(baseName)
             );
@@ -178,7 +178,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     private void applyVectorScaled(DimensionalVector v, int scale) {
-        for (Map.Entry<String, Integer> entry : dimIndex.entrySet()) {
+        for (Map.Entry<String, Integer> entry : dim_index.entrySet()) {
             int contribution = v.get(entry.getValue()) * scale;
             if (isDenominator)
                 builder.sub(entry.getKey(), contribution);  // nota: sub già nega
@@ -188,7 +188,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     private DimensionalVector computeUnit(String name) {
-        DimensionalVectorBuilder temp = new DimensionalVectorBuilder(dimIndex);
+        DimensionalVectorBuilder temp = new DimensionalVectorBuilder(dim_index);
         // usa un builder temporaneo per non sporcare quello corrente
         DimensionalVectorBuilder saved = builder;
         boolean savedDenom = isDenominator;
@@ -198,7 +198,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector result = builder.build();
         builder = saved;
         isDenominator = savedDenom;
-        unitVectors.put(name, result);
+        unit_vectors.put(name, result);
         return result;
     }
 }
