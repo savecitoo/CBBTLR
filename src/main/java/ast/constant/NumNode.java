@@ -6,10 +6,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A record representing the type Num node.
+ * @param line the line where appear the Num identifier.
+ * @param column the column where appear the Num identifier.
+ */
 public record NumNode(int line, int column) implements AstNode {
 
     @Override
-    public List<AstNode> children() {
+    public @NotNull List<AstNode> children() {
         return List.of();
     }
 

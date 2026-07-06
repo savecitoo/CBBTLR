@@ -6,10 +6,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * This node represents the arithmetic division operation.
+ * @param left the left sub-type of the division.
+ * @param right the right sub-type of the division.
+ * @param line the line where appears the operation, it points to the start of the left operation.
+ * @param column the column where appears the operation, it points to the start of the left operation.
+ */
 public record DivNode(AstNode left, AstNode right, int line, int column) implements AstNode {
 
     @Override
-    public List<AstNode> children() {
+    public @NotNull List<AstNode> children() {
         return List.of(left, right);
     }
 

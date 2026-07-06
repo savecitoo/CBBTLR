@@ -36,7 +36,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     public Map<String, Integer> getDimIndex() { return new HashMap<>(dim_index); }
 
     @Override
-    public DimensionalVector visitProgram(@NotNull ProgramNode node) {
+    public @NotNull DimensionalVector visitProgram(@NotNull ProgramNode node) {
         // 1. dimensioni fondamentali
         int i = 0;
         for (String dim : node.dimension())
@@ -60,7 +60,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitFunction(@NotNull FunctionNode node) {
+    public @NotNull DimensionalVector visitFunction(@NotNull FunctionNode node) {
         // parametri
         List<DimensionalVector> params = new ArrayList<>();
         for (AstNode param : node.parameter()) {
@@ -73,7 +73,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
         // tipo di ritorno
         builder.reset();
-        node.ret_expr().accept(this);
+        node.ret_type().accept(this);
         DimensionalVector retVec = builder.build();
         function_returns.put(node.name().id(), retVec);
 
@@ -82,13 +82,13 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public @NotNull DimensionalVector visitParameter(ParameterNode node) {
-        node.expression().accept(this);
+    public @NotNull DimensionalVector visitParameter(@NotNull ParameterNode node) {
+        node.type().accept(this);
         return builder.zero();
     }
 
     @Override
-    public DimensionalVector visitIdentifier(@NotNull IdentifierNode node) {
+    public @NotNull DimensionalVector visitIdentifier(@NotNull IdentifierNode node) {
         String name = node.id();
 
         // unità di base: contribuisce al builder
@@ -126,7 +126,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitMul(@NotNull MulNode node) {
+    public @NotNull DimensionalVector visitMul(@NotNull MulNode node) {
         // entrambi i figli contribuiscono al builder con lo stesso segno
         node.left().accept(this);
         node.right().accept(this);
@@ -134,7 +134,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitDiv(@NotNull DivNode node) {
+    public @NotNull DimensionalVector visitDiv(@NotNull DivNode node) {
         node.left().accept(this);
         isDenominator = !isDenominator;   // entra al denominatore
         node.right().accept(this);
@@ -143,13 +143,13 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitPow(@NotNull PowNode node) {
+    public @NotNull DimensionalVector visitPow(@NotNull PowNode node) {
         // u ^ k: applica il contributo dell'unità base k volte
         // più semplice: calcola il vettore della base e scala
         int exp = node.exp().num();
         if (isDenominator) exp = -exp;
 
-        // l'id della base contribuisce direttamente
+        // l'var della base contribuisce direttamente
         String baseName = node.base().id();
         if (dim_index.containsKey(baseName)) {
             builder.add(baseName, exp);
@@ -164,7 +164,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitDefault(AstNode node) {
+    public @NotNull DimensionalVector visitDefault(@NotNull AstNode node) {
         return builder.zero();
     }
 

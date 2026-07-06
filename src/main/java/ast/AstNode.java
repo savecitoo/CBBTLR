@@ -1,18 +1,13 @@
 package ast;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Models an abstract syntax tree node.
- *
- * Core methods must be implemented by every node.
- * Default methods represent optional/decorator-added behaviour
- * and throw UnsupportedOperationException unless overridden.
  */
 public interface AstNode {
-
-    // ─── Core (must implement) ────────────────────────────────────────────────
 
     /** Source position: line where this node starts (1-based). */
     int line();
@@ -20,41 +15,24 @@ public interface AstNode {
     /** Source position: column where this node starts (0-based). */
     int column();
 
-    /** Ordered list of child nodes (leaves return an empty list). */
-    List<AstNode> children();
+    /** Ordered list of condition nodes (leaves return an empty list). */
+    @NotNull List< @NotNull AstNode> children();
 
-    // ─── Structural helpers ───────────────────────────────────────────────────
 
-    /** Returns true if this node has no children. */
-    default boolean isLeaf() {
-        return children().isEmpty();
-    }
-
-    /** Returns the parent node, if tracked by the implementation. */
-    default Optional<AstNode> parent() {
-        throw new UnsupportedOperationException("parent() not supported.");
-    }
-
-    // ─── Visitor / traversal ─────────────────────────────────────────────────
-
-    /** Accept a visitor (classic Visitor pattern). */
+    /**
+     * Accept a visitor.
+     * @param visitor the visitor {@code this} node must accept.
+     * @return the resulting object from the visit.
+     * @param <T> the type of the visitor.
+     */
     default <T> T accept(AstVisitor<T> visitor) {
         throw new UnsupportedOperationException("accept() not supported.");
     }
 
-    // ─── Decorator-added capabilities ────────────────────────────────────────
-
     /**
-     * Type: "typed"
-     * Resolved static type after semantic analysis (e.g. "int", "String").
+     * This method permits to have a good view of the Abrstact Sintax Tree rooted in {@code this} node.
+     * @return a string representing the AST.
      */
-    default String resolvedType() {
-        throw new UnsupportedOperationException("resolvedType() not supported — node is not typed");
-    }
-
-
-    // ─── Debugging ───────────────────────────────────────────────────────────
-
     default String prettyPrint() {
         StringBuilder sb = new StringBuilder();
         prettyPrint(sb, "", true);

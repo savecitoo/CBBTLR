@@ -21,7 +21,7 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
 
     @Override
-    public Boolean visitDefault(AstNode node) {
+    public @NotNull Boolean visitDefault(@NotNull AstNode node) {
         for (AstNode child : node.children())
             if (!child.accept(this))
                 return false;
@@ -40,7 +40,7 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
     @Override
     public @NotNull Boolean visitFunction(@NotNull FunctionNode node) {
         for (ParameterNode par : node.parameter()) {
-            loc_scope.add(par.symbol().id());
+            loc_scope.add(par.id().id());
         }
         return node.body().accept(this);
     }
@@ -50,7 +50,7 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
         for (AstNode child : stat)
             if (!child.accept(this))
                 throw new IllegalArgumentException(String.format(
-                        "The value expression at line %d and column %d does not contains an integer or a variable " +
+                        "The value type at line %d and column %d does not contains an integer or a variable " +
                                 "or a function call",
                         child.line(), child.column()
                 ));
@@ -173,7 +173,7 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitNot(@NotNull NotNode node) {
-        return node.child().accept(this); // adatta al nome del tuo accessor
+        return node.condition().accept(this); // adatta al nome del tuo accessor
     }
 
 // --- Foglie rimanenti ---

@@ -45,40 +45,40 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     // ---------------------------------------------------------------
 
     @Override
-    public DimensionalVector visitProgram(@NotNull ProgramNode node) {
+    public @NotNull DimensionalVector visitProgram(@NotNull ProgramNode node) {
         for (AstNode fn : node.functions().values())
             fn.accept(this);
         return zero();
     }
 
     @Override
-    public DimensionalVector visitFunction(@NotNull FunctionNode node) {
+    public @NotNull DimensionalVector visitFunction(@NotNull FunctionNode node) {
         localScope = new HashMap<>();
         expectedReturn = functionReturns.get(node.name().id());
 
         List<DimensionalVector> params = functionParams.get(node.name().id());
         List<ParameterNode> paramNodes = node.parameter();
         for (int i = 0; i < paramNodes.size(); i++)
-            localScope.put(paramNodes.get(i).symbol().id(), params.get(i));
+            localScope.put(paramNodes.get(i).id().id(), params.get(i));
 
         node.body().accept(this);
         return expectedReturn;
     }
 
     @Override
-    public DimensionalVector visitDeclaration(@NotNull DeclarationNode node) {
+    public @NotNull DimensionalVector visitDeclaration(@NotNull DeclarationNode node) {
         DimensionalVector vec = node.assignment().accept(this);
         localScope.put(node.var().id(), vec);
         return vec;
     }
 
     @Override
-    public DimensionalVector visitAssignment(@NotNull AssignmentNode node) {
-        if (!localScope.containsKey(node.id().id()))
+    public @NotNull DimensionalVector visitAssignment(@NotNull AssignmentNode node) {
+        if (!localScope.containsKey(node.var().id()))
             throw new IllegalArgumentException(String.format("Use of a not declared variable %s at line %d and column %d",
-                    node.id().id(), node.line(), node.column()));
+                    node.var().id(), node.line(), node.column()));
         DimensionalVector vec = node.expression().accept(this);
-        if (!vec.equals(localScope.get(node.id().id())))
+        if (!vec.equals(localScope.get(node.var().id())))
             throw new IllegalArgumentException(
                     String.format("The assignment at line %d and column %d has a different type with respect to the one declared.",
                             node.line(), node.column())
@@ -87,7 +87,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitReturn(@NotNull ReturnNode node) {
+    public @NotNull DimensionalVector visitReturn(@NotNull ReturnNode node) {
         DimensionalVector vec = node.ret_stat().accept(this);
         if (!vec.equals(expectedReturn))
             // TODO: Create TypeException
@@ -98,7 +98,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitFuncCall(@NotNull FuncCallNode node) {
+    public @NotNull DimensionalVector visitFuncCall(@NotNull FuncCallNode node) {
         String fnName = node.func().id();
         List<DimensionalVector> expected = functionParams.get(fnName);
         List<AstNode> args = node.args();
@@ -117,7 +117,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitAdd(@NotNull AddNode node) {
+    public @NotNull DimensionalVector visitAdd(@NotNull AddNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
@@ -128,7 +128,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitSub(@NotNull SubNode node) {
+    public @NotNull DimensionalVector visitSub(@NotNull SubNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
@@ -139,27 +139,27 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitMul(@NotNull MulNode node) {
+    public @NotNull DimensionalVector visitMul(@NotNull MulNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         return left.add(right);
     }
 
     @Override
-    public DimensionalVector visitDiv(@NotNull DivNode node) {
+    public @NotNull DimensionalVector visitDiv(@NotNull DivNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         return left.sub(right);
     }
 
     @Override
-    public DimensionalVector visitPow(@NotNull PowNode node) {
+    public @NotNull DimensionalVector visitPow(@NotNull PowNode node) {
         DimensionalVector base = node.base().accept(this);
         return base.scale(node.exp().num());
     }
 
     @Override
-    public DimensionalVector visitIdentifier(@NotNull IdentifierNode node) {
+    public @NotNull DimensionalVector visitIdentifier(@NotNull IdentifierNode node) {
         String name = node.id();
 
         if (localScope.containsKey(name))
@@ -178,27 +178,27 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitOr(@NotNull OrNode node) {
+    public @NotNull DimensionalVector visitOr(@NotNull OrNode node) {
         node.left().accept(this);
         node.right().accept(this);
         return zero();
     }
 
     @Override
-    public DimensionalVector visitAnd(@NotNull AndNode node) {
+    public @NotNull DimensionalVector visitAnd(@NotNull AndNode node) {
         node.left().accept(this);
         node.right().accept(this);
         return zero();
     }
 
     @Override
-    public DimensionalVector visitNot(@NotNull NotNode node) {
-        node.child().accept(this);
+    public @NotNull DimensionalVector visitNot(@NotNull NotNode node) {
+        node.condition().accept(this);
         return zero();
     }
 
     @Override
-    public DimensionalVector visitLt(@NotNull LtNode node) {
+    public @NotNull DimensionalVector visitLt(@NotNull LtNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
@@ -208,7 +208,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitLe(@NotNull LeNode node) {
+    public @NotNull DimensionalVector visitLe(@NotNull LeNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
@@ -218,7 +218,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitGt(@NotNull GtNode node) {
+    public @NotNull DimensionalVector visitGt(@NotNull GtNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
@@ -228,7 +228,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitGe(@NotNull GeNode node) {
+    public @NotNull DimensionalVector visitGe(@NotNull GeNode node) {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
@@ -238,17 +238,17 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitTrue(@NotNull TrueNode node) {
+    public @NotNull DimensionalVector visitTrue(@NotNull TrueNode node) {
         return zero();
     }
 
     @Override
-    public DimensionalVector visitFalse(@NotNull FalseNode node) {
+    public @NotNull DimensionalVector visitFalse(@NotNull FalseNode node) {
         return zero();
     }
 
     @Override
-    public DimensionalVector visitIf(@NotNull IfNode node) {
+    public @NotNull DimensionalVector visitIf(@NotNull IfNode node) {
         node.condition().accept(this);
         for (AstNode child : node.trueBranch())
             child.accept(this);
@@ -259,7 +259,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitWhile(@NotNull WhileNode node) {
+    public @NotNull DimensionalVector visitWhile(@NotNull WhileNode node) {
         node.condition().accept(this);
         for (AstNode child : node.instruction())
             child.accept(this);
@@ -267,7 +267,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     @Override
-    public DimensionalVector visitDefault(AstNode node) {
+    public @NotNull DimensionalVector visitDefault(@NotNull AstNode node) {
         for (AstNode child : node.children())
             child.accept(this);
         return zero();

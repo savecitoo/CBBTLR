@@ -33,11 +33,11 @@ public class CstToAstVisitor {
     // item    -> dim_item | unit_item | fun_item
     // ---------------------------------------------------------------
 
-    private static @NotNull AstNode visitStart(@NotNull ParseTree node) {
+    public static @NotNull ProgramNode visitStart(@NotNull ParseTree node) {
         Set<String> dimension      = new HashSet<>(); // simboli di unità di base (es. "m")
         Set<String> dimension_name = new HashSet<>(); // nomi di dimensione (es. "Lunghezza")
         Map<String, AstNode> unit  = new HashMap<>();
-        Map<String, AstNode> functions = new HashMap<>();
+        Map<String, FunctionNode> functions = new HashMap<>();
 
         // Tabella unica degli identificatori globali: nome -> categoria
         // ("dimension", "unit", "function"). È la fonte di verità per
@@ -70,7 +70,7 @@ public class CstToAstVisitor {
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
             @NotNull Map<String, AstNode> unit,
-            @NotNull Map<String, AstNode> functions,
+            @NotNull Map<String, FunctionNode> functions,
             @NotNull Map<String, String> globalIds) {
         switch (node.rule_tag) {
             case "start":
@@ -90,7 +90,7 @@ public class CstToAstVisitor {
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
             @NotNull Map<String, AstNode> unit,
-            @NotNull Map<String, AstNode> functions,
+            @NotNull Map<String, FunctionNode> functions,
             @NotNull Map<String, String> globalIds) {
         ParseTree node = itemNode;
         while (node.rule_tag.isEmpty() && node.getChildren().size() == 1) {
@@ -154,7 +154,7 @@ public class CstToAstVisitor {
 
     private static void visitFunItem(
             @NotNull ParseTree node,
-            @NotNull Map<String, AstNode> functions,
+            @NotNull Map<String, FunctionNode> functions,
             @NotNull Set<String> dimension,
             @NotNull Map<String, AstNode> unit,
             @NotNull Map<String, String> globalIds) {
@@ -254,7 +254,7 @@ public class CstToAstVisitor {
                 validateUnitOrTypeExpression(children.getFirst(), ids, context, line, col);
                 break;
             default:
-                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " inside a unit/type expression.");
+                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " inside a unit/type type.");
         }
     }
 
@@ -288,7 +288,7 @@ public class CstToAstVisitor {
                 checkNoIntegerLiterals(children.getFirst(), context, line, col);
                 break;
             default:
-                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " inside a type expression.");
+                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " inside a type type.");
         }
     }
 
@@ -309,7 +309,7 @@ public class CstToAstVisitor {
                 checkNoIntegerLiterals(children.getFirst(), context, line, col);
                 break;
             default:
-                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " in type expression function call arguments.");
+                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " in type type function call arguments.");
         }
     }
 
@@ -544,7 +544,7 @@ public class CstToAstVisitor {
             case "<="  -> new LeNode(left, right, node.line, node.col);
             case ">"   -> new GtNode(left, right, node.line, node.col);
             case ">="  -> new GeNode(left, right, node.line, node.col);
-            default    -> throw new IllegalArgumentException("Unknown operation symbol: " + op);
+            default    -> throw new IllegalArgumentException("Unknown operation id: " + op);
         };
     }
 

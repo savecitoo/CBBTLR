@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 public class ReturnVisitor implements AstVisitor<Boolean> {
 
     @Override
-    public Boolean visitDefault(@NotNull AstNode node) {
+    public @NotNull Boolean visitDefault(@NotNull AstNode node) {
         for (AstNode child : node.children()) {
             if (child.accept(this))
                 return true;
@@ -23,7 +23,7 @@ public class ReturnVisitor implements AstVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitProgram(@NotNull ProgramNode node) {
+    public @NotNull Boolean visitProgram(@NotNull ProgramNode node) {
         for (String name : node.functions().keySet()) {
             AstNode child = node.functions().get(name);
             if (!child.accept(this))
@@ -38,12 +38,12 @@ public class ReturnVisitor implements AstVisitor<Boolean> {
     }
 
     @Override
-    public Boolean visitFunction(@NotNull FunctionNode node) {
+    public @NotNull Boolean visitFunction(@NotNull FunctionNode node) {
         return node.body().accept(this);
     }
 
     @Override
-    public Boolean visitBody(@NotNull BodyNode node) {
+    public @NotNull Boolean visitBody(@NotNull BodyNode node) {
         for (AstNode child : node.children()) {
             if (child.accept(this))
                 return true;
@@ -53,12 +53,12 @@ public class ReturnVisitor implements AstVisitor<Boolean> {
 
     @Override
     // While C { S } -> False
-    public Boolean visitWhile(@NotNull WhileNode node) {
+    public @NotNull Boolean visitWhile(@NotNull WhileNode node) {
         return false;
     }
 
     @Override
-    public Boolean visitIf(@NotNull IfNode node) {
+    public @NotNull Boolean visitIf(@NotNull IfNode node) {
 
         // IF C { S } (no Else) -> False
         if (node.falseBranch().isEmpty())
@@ -85,13 +85,13 @@ public class ReturnVisitor implements AstVisitor<Boolean> {
 
     @Override
     // x = E -> False
-    public Boolean visitAssignment(@NotNull AssignmentNode node) {
+    public @NotNull Boolean visitAssignment(@NotNull AssignmentNode node) {
         return false;
     }
 
     @Override
     // Return -> True
-    public Boolean visitReturn(@NotNull ReturnNode node) {
+    public @NotNull Boolean visitReturn(@NotNull ReturnNode node) {
         return true;
     }
 

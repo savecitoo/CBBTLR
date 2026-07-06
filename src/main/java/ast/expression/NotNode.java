@@ -6,11 +6,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record NotNode(AstNode child, int line, int column) implements AstNode {
+/**
+ * This record represents the logical not connector.
+ * @param condition the condition to be negated.
+ * @param line the line where the not operation starts.
+ * @param column the column where the not operation starts.
+ */
+public record NotNode(@NotNull AstNode condition, int line, int column) implements AstNode {
 
     @Override
-    public List<AstNode> children() {
-        return List.of(child);
+    public @NotNull List<AstNode> children() {
+        return List.of(condition);
     }
 
     public @NotNull String toString() {

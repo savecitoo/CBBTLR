@@ -7,11 +7,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public record AssignmentNode(@NotNull IdentifierNode id, @NotNull AstNode expression, int line, int column) implements AstNode {
+/**
+ * Thie record represents an assignment node in the AST.
+ * @param var the variable assigned.
+ * @param expression the type that give to the variable its value.
+ * @param line the line of the assignment.
+ * @param column the column of the assignment.
+ */
+public record AssignmentNode(@NotNull IdentifierNode var, @NotNull AstNode expression, int line, int column) implements AstNode {
 
     @Override
-    public List<AstNode> children() {
-        return List.of(id, expression);
+    public @NotNull List<AstNode> children() {
+        return List.of(var, expression);
     }
 
     @Override

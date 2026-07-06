@@ -145,6 +145,32 @@ public class Fraction {
     }
 
     /**
+     * Raises this fraction to an integer power.
+     *
+     * @param n the exponent, may be negative, zero or positive
+     * @return a new fraction equal to {@code this^n}, reduced to lowest terms
+     * @throws IllegalArgumentException if this fraction is {@link #ZERO} and
+     *                                   {@code n} is negative (division by zero)
+     */
+    public @NotNull Fraction pow(int n) {
+        if (n == 0) return ONE;
+        if (num == 0) {
+            if (n < 0)
+                throw new IllegalArgumentException("Cannot raise zero to a negative power");
+            return ZERO;
+        }
+        if (n > 0) {
+            BigInteger newNum = BigInteger.valueOf(num).pow(n);
+            BigInteger newDen = BigInteger.valueOf(den).pow(n);
+            return minimumTerm(newNum, newDen);
+        }
+        // negative exponent: invert the fraction and raise to -n
+        BigInteger newNum = BigInteger.valueOf(den).pow(-n);
+        BigInteger newDen = BigInteger.valueOf(num).pow(-n);
+        return minimumTerm(newNum, newDen);
+    }
+
+    /**
      * Multiplies this fraction by an integer.
      *
      * @param n the integer factor to multiply by
@@ -154,6 +180,16 @@ public class Fraction {
         return minimumTerm(
                 BigInteger.valueOf(num).multiply(BigInteger.valueOf(n)),
                 BigInteger.valueOf(den));
+    }
+
+    /**
+     * Returns the sign of this fraction.
+     *
+     * @return a negative integer, zero, or a positive integer as this
+     *         fraction is negative, zero, or positive, respectively
+     */
+    public int signum() {
+        return Long.signum(num);
     }
 
     @Override

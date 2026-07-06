@@ -6,11 +6,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * This record represents the logic constant False in the AST.
+ * @param line the line where appear the false identifier.
+ * @param column the column where appear the false identifier.
+ */
 public record FalseNode(int line, int column)
         implements AstNode {
 
     @Override
-    public List<AstNode> children() {
+    public @NotNull List<AstNode> children() {
         return List.of();
     }
 
