@@ -22,6 +22,12 @@ public record ProgramNode(@NotNull Set<String> dimension,
                           @NotNull Map<@NotNull String, @NotNull FunctionNode> functions,
                           int line, int column) implements AstNode {
 
+    public ProgramNode {
+        dimension = Set.copyOf(dimension);
+        unit = Map.copyOf(unit);
+        functions = Map.copyOf(functions);
+    }
+
     @Override
     public @NotNull List<AstNode> children() {
         ArrayList<AstNode> f = new ArrayList<>();

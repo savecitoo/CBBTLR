@@ -18,6 +18,11 @@ import java.util.List;
 public record IfNode(@NotNull AstNode condition, @NotNull List<@NotNull AstNode> trueBranch,
                      @NotNull List<@NotNull AstNode> falseBranch, int line, int column) implements AstNode {
 
+    public IfNode {
+        trueBranch = List.copyOf(trueBranch);
+        falseBranch = List.copyOf(falseBranch);
+    }
+
     @Override
     public @NotNull List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();

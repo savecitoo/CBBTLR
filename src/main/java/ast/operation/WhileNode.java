@@ -17,6 +17,10 @@ import java.util.List;
 public record WhileNode(@NotNull AstNode condition, @NotNull List<@NotNull AstNode> instruction,
                         int line, int column) implements AstNode {
 
+    public WhileNode {
+        instruction = List.copyOf(instruction);
+    }
+
     @Override
     public @NotNull List<AstNode> children() {
         List<AstNode> children = new ArrayList<>();

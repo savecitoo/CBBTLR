@@ -18,6 +18,11 @@ import java.util.List;
 public record BodyNode(@NotNull List<@NotNull AstNode> decl, @NotNull List<@NotNull AstNode> stat,
                        int line, int column) implements AstNode {
 
+    public BodyNode {
+        decl = List.copyOf(decl);
+        stat = List.copyOf(stat);
+    }
+
     @Override
     public @NotNull List<AstNode> children() {
         List<AstNode> children = new ArrayList<>(decl);

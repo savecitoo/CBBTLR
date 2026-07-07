@@ -23,6 +23,10 @@ public record FunctionNode(@NotNull IdentifierNode name,
                            @NotNull AstNode body,
                            int line, int column) implements AstNode {
 
+    public FunctionNode {
+        parameter = List.copyOf(parameter);
+    }
+
     @Override
     public @NotNull List<AstNode> children() {
         List<AstNode> par = new ArrayList<>(parameter);
