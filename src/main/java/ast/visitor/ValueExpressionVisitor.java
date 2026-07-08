@@ -15,10 +15,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+
+/**
+ * This visitor checks if the value expression are correct.<br>
+ * A value expression is correct if appears in it a variable, an integer or a literal.
+ */
 public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
+    /**
+     * This set contains the variables declared in the function that is being analyzed.
+     */
     private Set<String> loc_scope;
-
 
     @Override
     public @NotNull Boolean visitDefault(@NotNull AstNode node) {
@@ -176,11 +183,8 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
         return node.condition().accept(this); // adatta al nome del tuo accessor
     }
 
-// --- Foglie rimanenti ---
-
     @Override
     public @NotNull Boolean visitNum(@NotNull NumNode node) {
-        // Num è l'unità adimensionale: da sola non rende l'espressione di valore
         return false;
     }
 
@@ -198,7 +202,11 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
     @Override
     public @NotNull Boolean visitFuncCall(@NotNull FuncCallNode node) {
         for (AstNode child : node.args())
-            child.accept(this);
+            if (!child.accept(this))
+                throw new IllegalArgumentException(
+                        String.format("The expression in the funciton call at line %d and column %d is not correct",
+                                child.line(), child.column())
+                );
         return true;
     }
 

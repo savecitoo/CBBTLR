@@ -9,8 +9,21 @@ import tree.ParseTree;
 
 import java.util.*;
 
+/**
+ * This is a utility class that help to go from a Concrete Sintax Tree of a CoDiNE program, returns the corresponding
+ * Abstract Sintax Tree.<br>
+ * In this transformation we check also that no global identifiers are renamend in functions and that the type expressions,
+ * the ones that we find in the function declaration are correct.<br>
+ * Here we check also if the main function is declared.
+ */
 public class CstToAstVisitor {
 
+    /**
+     * Given a ParseTree of a CoDine program it returns the corresponding Abstract Sintax Tree.
+     * @param node the parse tree.
+     * @return the corresponding AST.
+     * @throws IllegalArgumentException if the rule tag of the node is unknown.
+     */
     public static AstNode visit(ParseTree node) throws IllegalArgumentException{
         return switch (node.rule_tag) {
             case "start", "item_list" -> visitStart(node);
@@ -33,32 +46,37 @@ public class CstToAstVisitor {
     // item    -> dim_item | unit_item | fun_item
     // ---------------------------------------------------------------
 
-    public static @NotNull ProgramNode visitStart(@NotNull ParseTree node) {
+
+    /**
+     * Given a ParseTree of a CoDiNE well-formed program returns its corresponding Abstract Sintax Tree.
+     * @param node the ParseTree.
+     * @return the ProgramNode, root of the AST.
+     * @throws IllegalArgumentException if the node is not the starting node of the program.
+     */
+    public static @NotNull ProgramNode visitStart(@NotNull ParseTree node) throws IllegalArgumentException {
+        if (!node.rule_tag.equals("item_list") && !node.rule_tag.equals("start"))
+            throw new IllegalArgumentException("The given parse tree must have as a root a starting node.");
         Set<String> dimension      = new HashSet<>(); // simboli di unità di base (es. "m")
         Set<String> dimension_name = new HashSet<>(); // nomi di dimensione (es. "Lunghezza")
         Map<String, AstNode> unit  = new HashMap<>();
         Map<String, FunctionNode> functions = new HashMap<>();
 
-        // Tabella unica degli identificatori globali: nome -> categoria
-        // ("dimension", "unit", "function"). È la fonte di verità per
-        // l'unicità dei nomi GLOBALI; parametri e variabili locali possono
-        // invece riusare questi nomi (shadowing lecito: nel corpo della
-        // funzione l'identificatore locale nasconde l'unità omonima).
-        Map<String, String> globalIds = new HashMap<>();
+        // Map useful to avoid that global_id are overridden.
+        Map<String, String> global_id = new HashMap<>();
 
-        visitProgramItems(node, dimension, dimension_name, unit, functions, globalIds);
+        visitProgramItems(node, dimension, dimension_name, unit, functions, global_id);
         if (!functions.containsKey("main"))
             throw new IllegalArgumentException("The program doesn't contain a \"main\" function.");
         return new ProgramNode(dimension, unit, functions, node.line, node.col);
     }
 
-    /** Registra un nuovo nome globale, rifiutando qualunque collisione
-     *  con un nome globale già dichiarato (di qualsiasi categoria). */
+    // This method adds to the gloalIDs the string given
+    // and checks if there is no collisions.
     private static void declareGlobal(
-            @NotNull Map<String, String> globalIds,
+            @NotNull Map<String, String> global_id,
             @NotNull String name, @NotNull String kind,
             int line, int col) {
-        String previous = globalIds.putIfAbsent(name, kind);
+        String previous = global_id.putIfAbsent(name, kind);
         if (previous != null)
             throw new IllegalArgumentException(String.format(
                     "The %s '%s' at line %d and column %d was already declared in the program as a %s.",
@@ -71,14 +89,18 @@ public class CstToAstVisitor {
             @NotNull Set<String> dimension_name,
             @NotNull Map<String, AstNode> unit,
             @NotNull Map<String, FunctionNode> functions,
-            @NotNull Map<String, String> globalIds) {
+            @NotNull Map<String, String> global_id) {
+        List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "start":
-                visitItem(node.getChildren().getFirst(), dimension, dimension_name, unit, functions, globalIds);
+                // children.getFirst().getChildren().getFirst() -> every item has just one non-terminal in each
+                // production.
+                //item -> dim_item | unit_item | fun_item
+                visitItem(children.getFirst().getChildren().getFirst(), dimension, dimension_name, unit, functions, global_id);
                 break;
             case "item_list":
-                visitProgramItems(node.getChildren().getFirst(), dimension, dimension_name, unit, functions, globalIds);
-                visitItem(node.getChildren().getLast(), dimension, dimension_name, unit, functions, globalIds);
+                visitProgramItems(children.getFirst(), dimension, dimension_name, unit, functions, global_id);
+                visitItem(children.getLast().getChildren().getFirst(), dimension, dimension_name, unit, functions, global_id);
                 break;
             default:
                 throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " for the program part.");
@@ -86,25 +108,21 @@ public class CstToAstVisitor {
     }
 
     private static void visitItem(
-            @NotNull ParseTree itemNode,
+            @NotNull ParseTree node,
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
             @NotNull Map<String, AstNode> unit,
             @NotNull Map<String, FunctionNode> functions,
-            @NotNull Map<String, String> globalIds) {
-        ParseTree node = itemNode;
-        while (node.rule_tag.isEmpty() && node.getChildren().size() == 1) {
-            node = node.getChildren().getFirst();
-        }
+            @NotNull Map<String, String> global_id) {
         switch (node.rule_tag) {
             case "dim_item":
-                visitDimItem(node, dimension, dimension_name, globalIds);
+                visitDimItem(node, dimension, dimension_name, global_id);
                 break;
             case "unit_item":
-                visitUnitItem(node, dimension, unit, globalIds);
+                visitUnitItem(node, dimension, unit, global_id);
                 break;
             case "fun_item":
-                visitFunItem(node, functions, dimension, unit, globalIds);
+                visitFunItem(node, functions, dimension, unit, global_id);
                 break;
             default:
                 throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " for a program item.");
@@ -115,41 +133,38 @@ public class CstToAstVisitor {
             @NotNull ParseTree node,
             @NotNull Set<String> dimension,
             @NotNull Set<String> dimension_name,
-            @NotNull Map<String, String> globalIds) {
+            @NotNull Map<String, String> global_id) {
         List<ParseTree> children = node.getChildren();
 
-        // nome della dimensione (es. "Lunghezza")
-        ParseTree nameTok = children.get(1);
-        declareGlobal(globalIds, nameTok.symbol, "dimension", nameTok.line, nameTok.col);
-        dimension_name.add(nameTok.symbol);
+        // dimension name
+        ParseTree dim_name = children.get(1);
+        declareGlobal(global_id, dim_name.symbol, "dimension", dim_name.line, dim_name.col);
+        dimension_name.add(dim_name.symbol);
 
-        // unità di base (es. "m"): anche lei è un nome globale
-        ParseTree unitTok = children.get(4);
-        declareGlobal(globalIds, unitTok.symbol, "unit", unitTok.line, unitTok.col);
-        dimension.add(unitTok.symbol);
+        // unit of the dimension.
+        ParseTree dim_unit = children.get(4);
+        dimension.add(dim_unit.symbol);
     }
 
     private static void visitUnitItem(
             @NotNull ParseTree node,
             @NotNull Set<String> dimension,
             @NotNull Map<String, AstNode> unit,
-            @NotNull Map<String, String> globalIds) {
+            @NotNull Map<String, String> global_id) {
         List<ParseTree> children = node.getChildren();
 
-        ParseTree symbTok = children.get(1);
-        String symb = symbTok.symbol;
-        declareGlobal(globalIds, symb, "unit", symbTok.line, symbTok.col);
+        ParseTree symb_name = children.get(1);
+        String symb = symb_name.symbol;
+        declareGlobal(global_id, symb, "unit", symb_name.line, symb_name.col);
 
-        ParseTree exprNode = children.get(3);
+        ParseTree unit_expr = children.get(3);
 
-        // Una 'unit' è una espressione di unità (classe U): può contenere letterali interi,
-        // quindi qui controlliamo SOLO che le dimensioni/unit usate siano già state dichiarate.
-        // Nota: poiché la unit corrente è già in globalIds ma NON ancora in dimension/unit,
-        // le definizioni auto-referenziali (unit a = 2 * a) e i cicli vengono rifiutati qui.
-        checkExpressionDimensions(exprNode, dimension, unit,
-                String.format("The unit %s", symb), symbTok.line, symbTok.col);
+        // check if the unit expression is ok, cyclic call are also resolved here.
+        // implementation decision: each unit must contain an already defined unit, i.e. it must appear before in the file.
+        checkExpressionDimensions(unit_expr, dimension, unit,
+                String.format("The unit %s", symb), symb_name.line, symb_name.col);
 
-        unit.put(symb, visit(exprNode));
+        unit.put(symb, visit(unit_expr));
     }
 
     private static void visitFunItem(
@@ -157,25 +172,26 @@ public class CstToAstVisitor {
             @NotNull Map<String, FunctionNode> functions,
             @NotNull Set<String> dimension,
             @NotNull Map<String, AstNode> unit,
-            @NotNull Map<String, String> globalIds) {
+            @NotNull Map<String, String> global_id) {
         List<ParseTree> children = node.getChildren();
-        ParseTree nameTok = children.get(1);
-        String name = nameTok.symbol;
-        declareGlobal(globalIds, name, "function", nameTok.line, nameTok.col);
+        ParseTree func_name = children.get(1);
+        String name = func_name.symbol;
+        declareGlobal(global_id, name, "function", func_name.line, func_name.col);
 
-        Set<String> valueIds = new HashSet<>(); // parametri + variabili: stesso namespace, locale alla funzione
+        // with this set we check if the variable are already defined in the function.
+        Set<String> local_namespace = new HashSet<>();
         List<ParameterNode> par = new ArrayList<>();
-        visitParameterList(children.get(3), par, dimension, unit, name, valueIds);
+        visitParameterList(children.get(3), par, dimension, unit, name, local_namespace, global_id);
 
         ParseTree returnTypeNode = children.get(6);
         checkTypeExpression(returnTypeNode, dimension, unit,
                 String.format("The return type of function %s", name),
                 returnTypeNode.line, returnTypeNode.col);
 
-        AstNode body = visitBody(children.get(8), valueIds, name);
+        AstNode body = visitBody(children.get(8), local_namespace, name, global_id);
 
         functions.put(name, new FunctionNode(
-                new IdentifierNode(name, nameTok.line, nameTok.col),
+                new IdentifierNode(name, func_name.line, func_name.col),
                 par, visit(returnTypeNode), body, node.line, node.col));
     }
 
@@ -190,7 +206,7 @@ public class CstToAstVisitor {
             @NotNull Set<String> dimension,
             @NotNull Map<String, AstNode> unit,
             @NotNull String context, int line, int col) {
-        Set<String> used = new LinkedHashSet<>();
+        List<String> used = new LinkedList<>();
         validateUnitOrTypeExpression(exprNode, used, context, line, col);
         for (String id : used) {
             if (!dimension.contains(id) && !unit.containsKey(id)) {
@@ -215,7 +231,7 @@ public class CstToAstVisitor {
 
     private static void validateUnitOrTypeExpression(
             @NotNull ParseTree node,
-            @NotNull Set<String> ids,
+            @NotNull List<String> ids,
             @NotNull String context, int line, int col) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
@@ -226,7 +242,7 @@ public class CstToAstVisitor {
                 String op = children.get(1).symbol;
                 switch (op) {
                     case "^":
-                        ids.add(children.getFirst().symbol); // base ID di ID ^ exp
+                        ids.add(children.getFirst().symbol); // take just the base, the exp must be an int.
                         break;
                     case "*":
                     case "/":
@@ -268,8 +284,6 @@ public class CstToAstVisitor {
             case "binary_expr": {
                 String op = children.get(1).symbol;
                 if (!op.equals("^")) {
-                    // l'esponente di ^ (exp -> INT | - INT) non passa mai per il tag "int",
-                    // quindi qui non scendiamo affatto quando op è "^": è sempre ammesso.
                     checkNoIntegerLiterals(children.get(0), context, line, col);
                     checkNoIntegerLiterals(children.get(2), context, line, col);
                 }
@@ -320,36 +334,41 @@ public class CstToAstVisitor {
 
     private static void visitParameterList(
             ParseTree node, List<ParameterNode> par,
-            Set<String> dimension, Map<String, AstNode> unit, String funcName,
-            Set<String> valueIds) {
+            Set<String> dimension, Map<String, AstNode> unit, String func_name,
+            Set<String> local_namespace,
+            @NotNull Map<String, String> global_id) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "empty":
                 break;
             case "start_parameter_list":
-                visitParameterList(children.getFirst(), par, dimension, unit, funcName, valueIds);
+                visitParameterList(children.getFirst(), par, dimension, unit, func_name, local_namespace, global_id);
                 break;
             case "parameter_list":
                 if (children.size() == 1) {
-                    visitParameterList(children.getFirst(), par, dimension, unit, funcName, valueIds);
+                    visitParameterList(children.getFirst(), par, dimension, unit, func_name, local_namespace, global_id);
                 } else {
-                    visitParameterList(children.getFirst(), par, dimension, unit, funcName, valueIds);
-                    visitParameterList(children.getLast(), par, dimension, unit, funcName, valueIds);
+                    visitParameterList(children.getFirst(), par, dimension, unit, func_name, local_namespace, global_id);
+                    visitParameterList(children.getLast(), par, dimension, unit, func_name, local_namespace, global_id);
                 }
                 break;
             case "parameter_item": {
-                ParseTree idTok = children.getFirst();
-                if (!valueIds.add(idTok.symbol)) {
+                ParseTree var_name = children.getFirst();
+                if (!local_namespace.add(var_name.symbol)) {
                     throw new IllegalArgumentException(String.format(
                             "The parameter %s of function %s at line %d and column %d was already declared.",
-                            idTok.symbol, funcName, idTok.line, idTok.col));
+                            var_name.symbol, func_name, var_name.line, var_name.col));
+                } else if (global_id.containsKey(var_name.symbol)) {
+                    throw new IllegalArgumentException(String.format(
+                            "The parameter %s of function %s at line %d and column %d was already declared as " + global_id.get(var_name.symbol) +  ".",
+                            var_name.symbol, func_name, var_name.line, var_name.col));
                 }
                 ParseTree typeNode = children.get(2);
                 checkTypeExpression(typeNode, dimension, unit,
-                        String.format("The parameter %s of function %s", idTok.symbol, funcName),
-                        idTok.line, idTok.col);
+                        String.format("The parameter %s of function %s", var_name.symbol, func_name),
+                        var_name.line, var_name.col);
                 par.add(new ParameterNode(
-                        new IdentifierNode(idTok.symbol, idTok.line, idTok.col),
+                        new IdentifierNode(var_name.symbol, var_name.line, var_name.col),
                         visit(typeNode), node.line, node.col));
                 break;
             }
@@ -358,33 +377,38 @@ public class CstToAstVisitor {
         }
     }
 
-    private static AstNode visitBody(ParseTree node, Set<String> valueIds, String funcName) {
+    private static AstNode visitBody(ParseTree node, Set<String> local_namespace, String func_name, @NotNull Map<String, String> global_id) {
         List<AstNode> decl = new ArrayList<>();
         List<AstNode> stat = new ArrayList<>();
-        visitDeclNode(node.getChildren().getFirst(), decl, valueIds, funcName);
+        visitDeclNode(node.getChildren().getFirst(), decl, local_namespace, func_name, global_id);
         visitStatNode(node.getChildren().getLast(), stat);
         return new BodyNode(decl, stat, node.line, node.col);
     }
 
-    private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl, Set<String> valueIds,
-                                      String funcName) {
+    private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl, Set<String> local_namespace,
+                                      String func_name, @NotNull Map<String, String> global_id) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "empty":
                 break;
             case "var_list":
-                visitDeclNode(children.getFirst(), decl, valueIds, funcName);
-                visitDeclNode(children.getLast(), decl, valueIds, funcName);
+                visitDeclNode(children.getFirst(), decl, local_namespace, func_name, global_id);
+                visitDeclNode(children.getLast(), decl, local_namespace, func_name, global_id);
                 break;
             case "var_item": {
-                ParseTree idTok = children.get(1);
-                if (!valueIds.add(idTok.symbol)) {
+                ParseTree var_name = children.get(1);
+                if (!local_namespace.add(var_name.symbol)) {
                     throw new IllegalArgumentException(String.format(
                             "The variable %s in function %s at line %d and column %d was already declared.",
-                            idTok.symbol, funcName, idTok.line, idTok.col));
+                            var_name.symbol, func_name, var_name.line, var_name.col));
+                } else if (global_id.containsKey(var_name.symbol)) {
+                    throw new IllegalArgumentException(String.format(
+                            "The variable %s in function %s at line %d and column %d was already declared as " + global_id.get(var_name.symbol) +  ".",
+                            var_name.symbol, func_name, var_name.line, var_name.col));
                 }
+
                 decl.add(new DeclarationNode(
-                        new IdentifierNode(idTok.symbol, idTok.line, idTok.col),
+                        new IdentifierNode(var_name.symbol, var_name.line, var_name.col),
                         visit(children.getLast()),
                         node.line, node.col));
                 break;
@@ -463,26 +487,25 @@ public class CstToAstVisitor {
         ParseTree expNode = children.get(2);
         List<ParseTree> exp_children = expNode.getChildren();
         if (exp_children.size() == 1) {
-            exp = new IntNode(Integer.parseInt(exp_children.getFirst().symbol), expNode.line, expNode.col);
+            exp = new IntNode(Long.parseLong(exp_children.getFirst().symbol), expNode.line, expNode.col);
         } else {
-            ParseTree intTok = exp_children.getLast();
+            ParseTree int_name = exp_children.getLast();
 
-            exp = new IntNode(- Integer.parseInt(intTok.symbol), intTok.line, intTok.col);
+            exp = new IntNode(- Long.parseLong(int_name.symbol), int_name.line, int_name.col);
 
         }
         return new PowNode(b, exp, node.line, node.col);
     }
 
     private static AstNode visitIntLiteral(ParseTree node) {
-        // term -> INT #int | - INT #int : entrambe condividono il tag "int",
-        // distinguibili dal numero di figli.
+        // term -> INT #int | - INT #int
         List<ParseTree> children = node.getChildren();
         if (children.size() == 1) {
-            ParseTree intTok = children.getFirst();
-            return new IntNode(Integer.parseInt(intTok.symbol), intTok.line, intTok.col);
+            ParseTree int_name = children.getFirst();
+            return new IntNode(Long.parseLong(int_name.symbol), int_name.line, int_name.col);
         } else {
-            ParseTree intTok = children.getLast();
-            return new IntNode(-Integer.parseInt(intTok.symbol), intTok.line, intTok.col);
+            ParseTree int_name = children.getLast();
+            return new IntNode(-Long.parseLong(int_name.symbol), int_name.line, int_name.col);
         }
     }
 

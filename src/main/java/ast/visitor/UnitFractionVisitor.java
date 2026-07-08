@@ -62,7 +62,7 @@ public class UnitFractionVisitor implements AstVisitor<Fraction> {
 
     @Override
     public @NotNull Fraction visitPow(@NotNull PowNode node) {
-        int exponent = node.exp().num();
+        int exponent = Math.toIntExact(node.exp().num());
         return node.base().accept(this).pow(exponent);
     }
 

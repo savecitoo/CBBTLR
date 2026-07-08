@@ -16,26 +16,56 @@ import utils.DimensionalVectorBuilder;
 
 import java.util.*;
 
+/**
+ * This class ipmlements a Type Checker of a CoDiNE AST.
+ */
 public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
 
-    private final Map<String, DimensionalVector> unitVectors;
-    private final Map<String, List<DimensionalVector>> functionParams;
-    private final Map<String, DimensionalVector> functionReturns;
-    private final Map<String, Integer> dimIndex;
+    /**
+     * A map which key has a unit identifier and as a vector has the corresponding dimensional vector.
+     */
+    private final Map<String, DimensionalVector> unit_vectors;
 
-    private Map<String, DimensionalVector> localScope = new HashMap<>();
-    private DimensionalVector expectedReturn;
+    /**
+     *  A map that as a key has the function name and as value has a list of dimensional vectors of the parameters of a function,
+     *  the order of the list is the same of the parameters in the definition.
+     */
+    private final Map<String, List<DimensionalVector>> func_par;
 
+    /**
+     * A map that as a key has the function name and as value has the dimensional vector
+     * of the function's return type.
+     */
+    private final Map<String, DimensionalVector> func_ret;
+
+    /**
+     * A map that as a key has the name of a fundamental dimension and as value has the
+     * index of that dimension in the dimensional vector's array representation.
+     */
+    private final Map<String, Integer> dim_enc;
+
+    /**
+     * A map that has for each variable declared the id of the variable as a key and as a value its dimensional vector.
+     */
+    private Map<String, DimensionalVector> local_scope = new HashMap<>();
+
+    /**
+     * The dimensional vector expected in the return statement.
+     */
+    private DimensionalVector exp_return;
+
+    /**
+     * Constructor for a type checker visitor.
+     * @param dvv a dimensional vector visitor.
+     */
     public TypeCheckerVisitor(DimensionalVectorVisitor dvv) {
-        this.unitVectors     = dvv.getUnitVectors();
-        this.functionParams  = dvv.getFunctionParams();
-        this.functionReturns = dvv.getFunctionReturns();
-        this.dimIndex        = dvv.getDimIndex();
+        this.unit_vectors = dvv.getUnitVectors();
+        this.func_par = dvv.getFunctionParams();
+        this.func_ret = dvv.getFunctionReturns();
+        this.dim_enc = dvv.getDimIndex();
     }
 
-    // ---------------------------------------------------------------
-    // Helper: formatta la posizione di un nodo
-    // ---------------------------------------------------------------
+
     private String pos(AstNode node) {
         return "[riga " + node.line() + ", col " + node.column() + "]";
     }
@@ -53,32 +83,33 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
 
     @Override
     public @NotNull DimensionalVector visitFunction(@NotNull FunctionNode node) {
-        localScope = new HashMap<>();
-        expectedReturn = functionReturns.get(node.name().id());
+        local_scope = new HashMap<>();
+        exp_return = func_ret.get(node.name().id());
 
-        List<DimensionalVector> params = functionParams.get(node.name().id());
+        List<DimensionalVector> params = func_par.get(node.name().id());
         List<ParameterNode> paramNodes = node.parameter();
         for (int i = 0; i < paramNodes.size(); i++)
-            localScope.put(paramNodes.get(i).id().id(), params.get(i));
+            local_scope.put(paramNodes.get(i).id().id(), params.get(i));
 
         node.body().accept(this);
-        return expectedReturn;
+        return exp_return;
     }
 
     @Override
     public @NotNull DimensionalVector visitDeclaration(@NotNull DeclarationNode node) {
         DimensionalVector vec = node.assignment().accept(this);
-        localScope.put(node.var().id(), vec);
+        local_scope.put(node.var().id(), vec);
         return vec;
     }
 
     @Override
     public @NotNull DimensionalVector visitAssignment(@NotNull AssignmentNode node) {
-        if (!localScope.containsKey(node.var().id()))
+        if (!local_scope.containsKey(node.var().id()))
             throw new IllegalArgumentException(String.format("Use of a not declared variable %s at line %d and column %d",
                     node.var().id(), node.line(), node.column()));
         DimensionalVector vec = node.expression().accept(this);
-        if (!vec.equals(localScope.get(node.var().id())))
+        if (!vec.equals(local_scope.get(node.var().id())))
+            //TODO: TypeException
             throw new IllegalArgumentException(
                     String.format("The assignment at line %d and column %d has a different type with respect to the one declared.",
                             node.line(), node.column())
@@ -89,20 +120,24 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     @Override
     public @NotNull DimensionalVector visitReturn(@NotNull ReturnNode node) {
         DimensionalVector vec = node.ret_stat().accept(this);
-        if (!vec.equals(expectedReturn))
+        if (!vec.equals(exp_return))
             // TODO: Create TypeException
             throw new IllegalArgumentException(pos(node)
                     + " Tipo di ritorno incompatibile: atteso "
-                    + expectedReturn + ", trovato " + vec);
+                    + exp_return + ", trovato " + vec);
         return vec;
     }
 
     @Override
     public @NotNull DimensionalVector visitFuncCall(@NotNull FuncCallNode node) {
         String fnName = node.func().id();
-        List<DimensionalVector> expected = functionParams.get(fnName);
+        List<DimensionalVector> expected = func_par.get(fnName);
         List<AstNode> args = node.args();
-
+        if (args.size() != expected.size())
+            throw new IllegalArgumentException(
+                    String.format("Unexpected number of parameters in the call of function \"%s\" at line %d and column %d, expected %d arguments and found %d.",
+                            node.func().id(), node.line(), node.column(), expected.size(), args.size())
+            );
         for (int i = 0; i < args.size(); i++) {
             AstNode arg = args.get(i);
             DimensionalVector argVec = arg.accept(this);
@@ -113,7 +148,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
                         + "' incompatibile: atteso " + expected.get(i)
                         + ", trovato " + argVec);
         }
-        return functionReturns.get(fnName);
+        return func_ret.get(fnName);
     }
 
     @Override
@@ -155,21 +190,21 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     @Override
     public @NotNull DimensionalVector visitPow(@NotNull PowNode node) {
         DimensionalVector base = node.base().accept(this);
-        return base.scale(node.exp().num());
+        return base.scale(Math.toIntExact(node.exp().num()));
     }
 
     @Override
     public @NotNull DimensionalVector visitIdentifier(@NotNull IdentifierNode node) {
         String name = node.id();
 
-        if (localScope.containsKey(name))
-            return localScope.get(name);
+        if (local_scope.containsKey(name))
+            return local_scope.get(name);
 
-        if (unitVectors.containsKey(name))
-            return unitVectors.get(name);
+        if (unit_vectors.containsKey(name))
+            return unit_vectors.get(name);
 
-        if (dimIndex.containsKey(name)) {
-            DimensionalVectorBuilder builder = new DimensionalVectorBuilder(dimIndex);
+        if (dim_enc.containsKey(name)) {
+            DimensionalVectorBuilder builder = new DimensionalVectorBuilder(dim_enc);
             builder.add(name, 1);
             return builder.build();
         }
@@ -274,6 +309,6 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     }
 
     private DimensionalVector zero() {
-        return DimensionalVector.zero(dimIndex.size());
+        return DimensionalVector.zero(dim_enc.size());
     }
 }

@@ -11,6 +11,9 @@ import ast.program.ProgramNode;
 import ast.operation.WhileNode;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * This visitor checks in the AST if the Define Return condition is verified.
+ */
 public class ReturnVisitor implements AstVisitor<Boolean> {
 
     @Override
@@ -44,7 +47,7 @@ public class ReturnVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitBody(@NotNull BodyNode node) {
-        for (AstNode child : node.children()) {
+        for (AstNode child : node.stat()) {
             if (child.accept(this))
                 return true;
         }

@@ -12,7 +12,7 @@ import java.util.List;
  * @param line the line where appear the integer identifier.
  * @param column the column where appear the integer identifier.
  */
-public record IntNode(@NotNull int num, int line, int column) implements AstNode {
+public record IntNode(long num, int line, int column) implements AstNode {
 
     @Override
     public @NotNull List<AstNode> children() {
