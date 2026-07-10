@@ -1,0 +1,19 @@
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+dimension Massa     with unit kg
+
+unit km = 1000 * m
+unit h  = 3600 * s
+
+def velocita_da_kmh(v_kmh : Num) : m / s {
+    return v_kmh * km / h
+}
+
+def impulso(massa : kg, v_kmh : Num) : kg * m / s {
+    var v = velocita_da_kmh(v_kmh)
+    return massa * v
+}
+
+def main(massa : kg, v_kmh : Num) : kg * m / s {
+    return impulso(massa, v_kmh)
+}

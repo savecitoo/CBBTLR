@@ -1,0 +1,9 @@
+dimension Lunghezza with unit m
+
+def area_quadrato(lato : m) : m ^ 2 {
+    return lato ^ 2
+}
+
+def main(lato : m) : m ^ 2 {
+    return area_quadrato(lato)
+}
