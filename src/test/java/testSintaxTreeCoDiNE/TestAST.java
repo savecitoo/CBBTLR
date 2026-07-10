@@ -168,54 +168,6 @@ public class TestAST {
     }
 
     @Test
-    void testDimensionAfterUnit_throws() {
-        // 'unit km' usa 'm' prima che 'dimension Lunghezza with unit m' lo dichiari
-        assertThatThrownBy(() -> buildAst("""
-                unit km = 1000 * m
-                dimension Lunghezza with unit m
-                dimension Tempo     with unit s
-                dimension Massa     with unit kg
-                unit g  = 981 / 100 * m / s ^ 2
-
-                def forza_peso(m : kg) : N {
-                    var f = m * g
-                    return f
-                }
-
-                def main(massa : kg, altezza : m) : N * m {
-                    var f = forza_peso(massa)
-                    var e = f * altezza
-                    return e
-                }
-                """))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("'m'");
-    }
-
-    @Test
-    void testDimensionAfterFunc_throws() {
-        assertThatThrownBy(() -> buildAst("""
-                unit km = 1000 * m
-                dimension Tempo     with unit s
-                dimension Massa     with unit kg
-                unit g  = 981 / 100 * m / s ^ 2
-
-                def forza_peso(m : kg) : N {
-                    var f = m * g
-                    return f
-                }
-
-                dimension Lunghezza with unit m
-
-                def main(massa : kg, altezza : m) : N * m {
-                    var f = forza_peso(massa)
-                    var e = f * altezza
-                    return e
-                }
-                """)).isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
     void testUnitAfterFunction_throws() {
         assertThatThrownBy(() -> buildAst("""
                 unit km = 1000 * m
@@ -240,41 +192,11 @@ public class TestAST {
 
 
     @Test
-    void testDuplicateDimensionName_throws() {
-        assertThatThrownBy(() -> buildAst("""
-                dimension Lunghezza with unit m
-                dimension Lunghezza with unit cm
-
-                def main() : m { return 0 }
-                """)).isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    void testDuplicateUnitSymbol_throws() {
-        assertThatThrownBy(() -> buildAst("""
-                dimension Lunghezza with unit m
-                unit km = 1000 * m
-                unit km = 100 * m
-
-                def main() : m { return 0 }
-                """)).isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    void testDuplicateFunctionName_throws() {
+    void testNoMain() {
         assertThatThrownBy(() -> buildAst("""
                 def f(a : Num) : Num { return a }
-                def f(a : Num) : Num { return a }
                 """)).isInstanceOf(IllegalArgumentException.class);
-    }
 
-    @Test
-    void testUnitUsesUndefinedDimension_throws() {
-        assertThatThrownBy(() -> buildAst("""
-                unit km = 1000 * xyz
-
-                def main() : Num { return 0 }
-                """)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

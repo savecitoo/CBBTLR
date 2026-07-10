@@ -21,7 +21,7 @@ public class UnitFractionVisitor implements AstVisitor<Fraction> {
 
     private Map<String, AstNode> unit;
 
-    public @NotNull Map<@NotNull String, @NotNull Fraction> getUnitFract() { return unit_fract; }
+    public @NotNull Map<@NotNull String, @NotNull Fraction> getUnitFract() { return Map.copyOf(unit_fract); }
 
     @Override
     public @NotNull Fraction visitDefault(@NotNull AstNode node) {

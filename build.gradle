@@ -55,6 +55,22 @@ task generateParser(type: JavaExec, dependsOn: compileJava) {
     ]
 }
 
+task interpreter(type: JavaExec, dependsOn: classes) {
+    description = 'Runs a CoDiNE program: ./gradlew interpreter -Pfile=tests/energy/sorgente.codine'
+    group = 'application'
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'interpreter.facade.Interpreter'
+    standardInput = System.in
+
+    doFirst {
+        def file = project.findProperty('file')
+        if (file == null)
+            throw new GradleException("Missing source file: use -Pfile=<path/to/source.codine>")
+        args = [file]
+    }
+}
+
 test {
     useJUnitPlatform()
     doFirst {

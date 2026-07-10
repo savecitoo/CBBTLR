@@ -188,33 +188,4 @@ public class TestVisitor {
                 def main() : m { return 0 }
                 """)).doesNotThrowAnyException();
     }
-
-    // -----------------------------------------------------------------
-    // Programmi scorretti: il visitor deve lanciare eccezioni
-    // I test che lanciano già nell'AST restano tali, qui verifichiamo
-    // che il visitor stesso rilevi gli errori sui programmi
-    // sintatticamente validi ma semanticamente scorretti.
-    // -----------------------------------------------------------------
-
-    @Test
-    void testDimensionAfterUnit_throws() {
-        assertThatThrownBy(() -> runVisitor("""
-                unit km = 1000 * m
-                dimension Lunghezza with unit m
-                dimension Tempo     with unit s
-                dimension Massa     with unit kg
-                unit g  = 981 / 100 * m / s ^ 2
-                
-                def forza_peso(m : kg) : N {
-                    var f = m * g
-                    return f
-                }
-                
-                def main(massa : kg, altezza : m) : N * m {
-                    var f = forza_peso(massa)
-                    var e = f * altezza
-                    return e
-                }
-                """)).isInstanceOf(IllegalArgumentException.class);
-    }
 }

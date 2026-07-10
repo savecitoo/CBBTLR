@@ -17,7 +17,7 @@ import utils.DimensionalVectorBuilder;
 import java.util.*;
 
 /**
- * This class ipmlements a Type Checker of a CoDiNE AST.
+ * This class implements a Type Checker of a CoDiNE AST.
  */
 public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
 
@@ -54,6 +54,9 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
      */
     private DimensionalVector exp_return;
 
+    /** A set containing all the global identifiers of the program. */
+    private final Set<String> glob_id = new HashSet<>();
+
     /**
      * Constructor for a type checker visitor.
      * @param dvv a dimensional vector visitor.
@@ -76,6 +79,9 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
 
     @Override
     public @NotNull DimensionalVector visitProgram(@NotNull ProgramNode node) {
+        glob_id.addAll(node.dimension_name());
+        glob_id.addAll(node.unit().keySet());
+        glob_id.addAll(node.functions().keySet());
         for (AstNode fn : node.functions().values())
             fn.accept(this);
         return zero();
@@ -98,6 +104,11 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     @Override
     public @NotNull DimensionalVector visitDeclaration(@NotNull DeclarationNode node) {
         DimensionalVector vec = node.assignment().accept(this);
+        if (glob_id.contains(node.var().id()))
+            throw new IllegalArgumentException(
+                    String.format("The declared variable %s declared at line %d and column %d is defined as a global identifier.",
+                    node.var().id(), node.column(), node.line())
+            );
         local_scope.put(node.var().id(), vec);
         return vec;
     }

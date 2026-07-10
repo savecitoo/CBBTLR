@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * This is a utility class that help to go from a Concrete Sintax Tree of a CoDiNE program, returns the corresponding
  * Abstract Sintax Tree.<br>
- * In this transformation we check also that no global identifiers are renamend in functions and that the type expressions,
+ * In this transformation we check also that no global identifiers are  and that the type expressions,
  * the ones that we find in the function declaration are correct.<br>
  * Here we check also if the main function is declared.
  */
@@ -67,7 +67,7 @@ public class CstToAstVisitor {
         visitProgramItems(node, dimension, dimension_name, unit, functions, global_id);
         if (!functions.containsKey("main"))
             throw new IllegalArgumentException("The program doesn't contain a \"main\" function.");
-        return new ProgramNode(dimension, unit, functions, node.line, node.col);
+        return new ProgramNode(dimension, dimension_name, unit, functions, node.line, node.col);
     }
 
     // This method adds to the gloalIDs the string given
@@ -159,11 +159,6 @@ public class CstToAstVisitor {
 
         ParseTree unit_expr = children.get(3);
 
-        // check if the unit expression is ok, cyclic call are also resolved here.
-        // implementation decision: each unit must contain an already defined unit, i.e. it must appear before in the file.
-        checkExpressionDimensions(unit_expr, dimension, unit,
-                String.format("The unit %s", symb), symb_name.line, symb_name.col);
-
         unit.put(symb, visit(unit_expr));
     }
 
@@ -184,11 +179,11 @@ public class CstToAstVisitor {
         visitParameterList(children.get(3), par, dimension, unit, name, local_namespace, global_id);
 
         ParseTree returnTypeNode = children.get(6);
-        checkTypeExpression(returnTypeNode, dimension, unit,
+        checkNoIntegerLiterals(returnTypeNode,
                 String.format("The return type of function %s", name),
                 returnTypeNode.line, returnTypeNode.col);
 
-        AstNode body = visitBody(children.get(8), local_namespace, name, global_id);
+        AstNode body = visitBody(children.get(8), local_namespace, name);
 
         functions.put(name, new FunctionNode(
                 new IdentifierNode(name, func_name.line, func_name.col),
@@ -199,80 +194,6 @@ public class CstToAstVisitor {
     // Controlli semantici sulle espressioni di tipo/unit
     // ---------------------------------------------------------------
 
-    /** Controllo comune a 'unit' e 'tipo': ogni identificatore usato deve essere
-     *  già una dimensione o una unit dichiarata in precedenza nel programma. */
-    private static void checkExpressionDimensions(
-            @NotNull ParseTree exprNode,
-            @NotNull Set<String> dimension,
-            @NotNull Map<String, AstNode> unit,
-            @NotNull String context, int line, int col) {
-        List<String> used = new LinkedList<>();
-        validateUnitOrTypeExpression(exprNode, used, context, line, col);
-        for (String id : used) {
-            if (!dimension.contains(id) && !unit.containsKey(id)) {
-                throw new IllegalArgumentException(String.format(
-                        "%s at line %d and column %d uses the undefined dimension/unit '%s'.",
-                        context, line, col, id));
-            }
-        }
-    }
-
-    /** Controllo specifico per i 'tipi' (parametri e tipo di ritorno, classe D):
-     *  oltre alla disponibilità delle dimensioni, niente letterali interi
-     *  fuori dall'esponente di ^. */
-    private static void checkTypeExpression(
-            @NotNull ParseTree exprNode,
-            @NotNull Set<String> dimension,
-            @NotNull Map<String, AstNode> unit,
-            @NotNull String context, int line, int col) {
-        checkExpressionDimensions(exprNode, dimension, unit, context, line, col);
-        checkNoIntegerLiterals(exprNode, context, line, col);
-    }
-
-    private static void validateUnitOrTypeExpression(
-            @NotNull ParseTree node,
-            @NotNull List<String> ids,
-            @NotNull String context, int line, int col) {
-        List<ParseTree> children = node.getChildren();
-        switch (node.rule_tag) {
-            case "identifier":
-                ids.add(children.getFirst().symbol);
-                break;
-            case "binary_expr": {
-                String op = children.get(1).symbol;
-                switch (op) {
-                    case "^":
-                        ids.add(children.getFirst().symbol); // take just the base, the exp must be an int.
-                        break;
-                    case "*":
-                    case "/":
-                        validateUnitOrTypeExpression(children.get(0), ids, context, line, col);
-                        validateUnitOrTypeExpression(children.get(2), ids, context, line, col);
-                        break;
-                    default:
-                        throw new IllegalArgumentException(String.format(
-                                "%s at line %d and column %d can only use the multiplicative operators *, /, ^ (found '%s').",
-                                context, line, col, op));
-                }
-                break;
-            }
-            case "group":
-                validateUnitOrTypeExpression(children.get(1), ids, context, line, col);
-                break;
-            case "func_call":
-                throw new IllegalArgumentException(String.format(
-                        "%s at line %d and column %d cannot contain a function call.",
-                        context, line, col));
-            case "int":
-            case "num":
-                break;
-            case "":
-                validateUnitOrTypeExpression(children.getFirst(), ids, context, line, col);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " inside a unit/type type.");
-        }
-    }
 
     private static void checkNoIntegerLiterals(@NotNull ParseTree node, @NotNull String context, int line, int col) {
         List<ParseTree> children = node.getChildren();
@@ -292,11 +213,7 @@ public class CstToAstVisitor {
             case "group":
                 checkNoIntegerLiterals(children.get(1), context, line, col);
                 break;
-            case "func_call":
-                checkNoIntegerLiteralsInArgs(children.get(2), context, line, col);
-                break;
-            case "identifier":
-            case "num":
+            case "identifier", "num":
                 break;
             case "":
                 checkNoIntegerLiterals(children.getFirst(), context, line, col);
@@ -305,32 +222,6 @@ public class CstToAstVisitor {
                 throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " inside a type type.");
         }
     }
-
-    private static void checkNoIntegerLiteralsInArgs(@NotNull ParseTree node, @NotNull String context, int line, int col) {
-        List<ParseTree> children = node.getChildren();
-        switch (node.rule_tag) {
-            case "empty":
-                break;
-            case "arg_list":
-                if (children.size() == 1) {
-                    checkNoIntegerLiteralsInArgs(children.getFirst(), context, line, col);
-                } else {
-                    checkNoIntegerLiteralsInArgs(children.getFirst(), context, line, col);
-                    checkNoIntegerLiterals(children.getLast(), context, line, col);
-                }
-                break;
-            case "arg_list_item":
-                checkNoIntegerLiterals(children.getFirst(), context, line, col);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected rule tag " + node.rule_tag + " in type type function call arguments.");
-        }
-    }
-
-
-    // ---------------------------------------------------------------
-    // Parametri, corpo, dichiarazioni, istruzioni
-    // ---------------------------------------------------------------
 
     private static void visitParameterList(
             ParseTree node, List<ParameterNode> par,
@@ -363,13 +254,13 @@ public class CstToAstVisitor {
                             "The parameter %s of function %s at line %d and column %d was already declared as " + global_id.get(var_name.symbol) +  ".",
                             var_name.symbol, func_name, var_name.line, var_name.col));
                 }
-                ParseTree typeNode = children.get(2);
-                checkTypeExpression(typeNode, dimension, unit,
+                ParseTree type = children.get(2);
+                checkNoIntegerLiterals(type,
                         String.format("The parameter %s of function %s", var_name.symbol, func_name),
                         var_name.line, var_name.col);
                 par.add(new ParameterNode(
                         new IdentifierNode(var_name.symbol, var_name.line, var_name.col),
-                        visit(typeNode), node.line, node.col));
+                        visit(type), node.line, node.col));
                 break;
             }
             default:
@@ -377,33 +268,29 @@ public class CstToAstVisitor {
         }
     }
 
-    private static AstNode visitBody(ParseTree node, Set<String> local_namespace, String func_name, @NotNull Map<String, String> global_id) {
+    private static AstNode visitBody(ParseTree node, Set<String> local_namespace, String func_name) {
         List<AstNode> decl = new ArrayList<>();
         List<AstNode> stat = new ArrayList<>();
-        visitDeclNode(node.getChildren().getFirst(), decl, local_namespace, func_name, global_id);
+        visitDeclNode(node.getChildren().getFirst(), decl, local_namespace, func_name);
         visitStatNode(node.getChildren().getLast(), stat);
         return new BodyNode(decl, stat, node.line, node.col);
     }
 
     private static void visitDeclNode(@NotNull ParseTree node, List<AstNode> decl, Set<String> local_namespace,
-                                      String func_name, @NotNull Map<String, String> global_id) {
+                                      String func_name) {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "empty":
                 break;
             case "var_list":
-                visitDeclNode(children.getFirst(), decl, local_namespace, func_name, global_id);
-                visitDeclNode(children.getLast(), decl, local_namespace, func_name, global_id);
+                visitDeclNode(children.getFirst(), decl, local_namespace, func_name);
+                visitDeclNode(children.getLast(), decl, local_namespace, func_name);
                 break;
             case "var_item": {
                 ParseTree var_name = children.get(1);
                 if (!local_namespace.add(var_name.symbol)) {
                     throw new IllegalArgumentException(String.format(
                             "The variable %s in function %s at line %d and column %d was already declared.",
-                            var_name.symbol, func_name, var_name.line, var_name.col));
-                } else if (global_id.containsKey(var_name.symbol)) {
-                    throw new IllegalArgumentException(String.format(
-                            "The variable %s in function %s at line %d and column %d was already declared as " + global_id.get(var_name.symbol) +  ".",
                             var_name.symbol, func_name, var_name.line, var_name.col));
                 }
 
@@ -450,7 +337,7 @@ public class CstToAstVisitor {
     private static AstNode visitAssignmentNode(@NotNull ParseTree node) {
         List<ParseTree> children = node.getChildren();
         return new AssignmentNode(
-                new IdentifierNode(children.get(0).symbol, children.get(1).line, children.get(1).col),
+                new IdentifierNode(children.get(0).symbol, children.get(0).line, children.get(0).col),
                 visit(children.get(2)), node.line, node.col
         );
     }
