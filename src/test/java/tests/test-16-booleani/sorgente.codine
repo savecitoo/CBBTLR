@@ -1,0 +1,10 @@
+dimension Lunghezza with unit m
+
+unit km = 1000 * m
+
+def main(a : m, b : km) : Num {
+    if a < b and not (a <= 0 * m) or false {
+        return 1
+    }
+    return 0
+}

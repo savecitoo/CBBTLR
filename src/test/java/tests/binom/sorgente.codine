@@ -1,0 +1,13 @@
+def binom(n : Num, k : Num) : Num {
+    if k < 1 {
+        return 1
+    }
+    if k >= n {
+        return 1
+    }
+    return binom(n - 1, k - 1) + binom(n - 1, k)
+}
+
+def main(n : Num, k : Num) : Num {
+    return binom(n, k)
+}

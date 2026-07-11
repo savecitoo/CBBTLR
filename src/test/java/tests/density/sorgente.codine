@@ -1,0 +1,11 @@
+dimension Lunghezza with unit m
+dimension Massa     with unit kg
+
+unit t  = 1000 * kg
+unit cm = 1 / 100 * m
+
+def main(massa : t, lato : cm) : kg / m ^ 3 {
+    var vol = lato * lato * lato
+    var d = massa / vol
+    return d
+}

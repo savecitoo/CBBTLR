@@ -1,0 +1,16 @@
+dimension Lunghezza with unit m
+
+unit cm = 1 / 100 * m
+
+def main(soglia : m, passo : cm) : Num {
+    var pos = 0 * m
+    var k = 0
+    while k < 1000000 {
+        pos = pos + passo
+        k = k + 1
+        if soglia <= pos {
+            return k
+        }
+    }
+    return 0 - 1
+}

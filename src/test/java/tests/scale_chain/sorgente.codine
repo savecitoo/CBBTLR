@@ -1,0 +1,9 @@
+dimension Lunghezza with unit m
+
+unit mm = cm / 10
+unit cm = dm / 10
+unit dm = m / 10
+
+def main(l : mm) : m {
+    return l
+}

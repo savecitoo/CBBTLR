@@ -1,0 +1,12 @@
+dimension Lunghezza with unit m
+
+def fib(n : Num) : Num {
+    if n <= 1 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
+}
+
+def main(n : Num) : Num {
+    return fib(n)
+}

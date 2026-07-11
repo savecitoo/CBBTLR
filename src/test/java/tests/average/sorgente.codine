@@ -1,0 +1,6 @@
+dimension Lunghezza with unit m
+
+def main(a : m, b : m, c : m) : m {
+    var s = a + b + c
+    return s / 3
+}

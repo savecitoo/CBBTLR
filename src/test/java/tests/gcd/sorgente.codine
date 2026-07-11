@@ -1,0 +1,17 @@
+def gcd(a : Num, b : Num) : Num {
+    while a > 0 and b > 0 {
+        if a > b {
+            a = a - b
+        } else {
+            b = b - a
+        }
+    }
+    if a > 0 {
+        return a
+    }
+    return b
+}
+
+def main(a : Num, b : Num) : Num {
+    return gcd(a, b)
+}

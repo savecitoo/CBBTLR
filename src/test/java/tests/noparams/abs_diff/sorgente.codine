@@ -1,0 +1,6 @@
+def main(a : Num, b : Num) : Num {
+    if a >= b {
+        return a - b
+    }
+    return b - a
+}

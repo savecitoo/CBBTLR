@@ -1,0 +1,14 @@
+def main(n : Num, m : Num) : Num {
+    var s = 0
+    var i = 1
+    var j = 0
+    while i <= n {
+        j = 1
+        while j <= m {
+            s = s + i * j
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return s
+}

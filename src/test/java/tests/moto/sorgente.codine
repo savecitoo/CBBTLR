@@ -1,0 +1,7 @@
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+
+def main(v0 : m / s, a : m / s ^ 2, t : s) : m {
+    var d = v0 * t + a * t * t / 2
+    return d
+}

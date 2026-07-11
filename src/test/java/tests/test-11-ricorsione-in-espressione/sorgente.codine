@@ -1,0 +1,14 @@
+dimension Lunghezza with unit m
+
+unit cm = 1 / 100 * m
+
+def somma(n : Num) : cm {
+    if n <= 0 {
+        return 0 * cm
+    }
+    return somma(n - 1) + n * cm
+}
+
+def main(n : Num) : cm {
+    return somma(n)
+}

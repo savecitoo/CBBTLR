@@ -1,0 +1,8 @@
+dimension Massa with unit kg
+
+unit t = 1000 * kg
+unit g = 1 / 1000 * kg
+
+def main(a : t, b : kg, c : g) : kg {
+    return a + b + c
+}

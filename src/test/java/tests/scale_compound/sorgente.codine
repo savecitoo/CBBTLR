@@ -1,0 +1,9 @@
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+
+unit km = 1000 * m
+unit h  = 3600 * s
+
+def main(v : km / h) : m / s {
+    return v
+}

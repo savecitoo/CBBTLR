@@ -1,0 +1,8 @@
+dimension Lunghezza with unit m
+
+unit km = 1000 * m
+unit mezzokm = km / 2
+
+def main(d : mezzokm) : m {
+    return d
+}

@@ -1,0 +1,11 @@
+dimension Lunghezza with unit m
+
+unit cm = 1 / 100 * m
+
+def raddoppia(l : m) : m {
+    return 2 * l
+}
+
+def main(lato : cm) : cm {
+    return raddoppia(lato)
+}

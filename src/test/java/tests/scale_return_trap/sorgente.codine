@@ -1,0 +1,7 @@
+dimension Lunghezza with unit m
+
+unit km = 1000 * m
+
+def main(d : m) : km {
+    return d
+}

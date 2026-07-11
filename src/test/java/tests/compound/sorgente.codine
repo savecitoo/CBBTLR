@@ -1,0 +1,11 @@
+def inc(x : Num) : Num {
+    return x + 1
+}
+
+def double(x : Num) : Num {
+    return 2 * x
+}
+
+def main(x : Num) : Num {
+    return double(inc(double(x)))
+}

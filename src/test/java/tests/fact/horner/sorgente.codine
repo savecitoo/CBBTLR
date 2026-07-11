@@ -1,0 +1,7 @@
+def main(x : Num) : Num {
+    var r = 2
+    r = r * x + 0
+    r = r * x - 3
+    r = r * x + 5
+    return r
+}

@@ -1,0 +1,17 @@
+def is_even(n : Num) : Num {
+    if n < 1 {
+        return 1
+    }
+    return is_odd(n - 1)
+}
+
+def is_odd(n : Num) : Num {
+    if n < 1 {
+        return 0
+    }
+    return is_even(n - 1)
+}
+
+def main(n : Num) : Num {
+    return is_even(n)
+}

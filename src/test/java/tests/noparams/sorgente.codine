@@ -1,0 +1,9 @@
+dimension Tempo with unit s
+
+unit min = 60 * s
+unit h   = 60 * min
+
+def main() : s {
+    var giorno = 24 * h
+    return giorno
+}

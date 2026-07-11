@@ -1,0 +1,9 @@
+def main(a : Num, b : Num) : Num {
+    var r = 0
+    if a > 0 and b > 0 or not a >= b {
+        r = 1
+    } else {
+        r = 2
+    }
+    return r
+}

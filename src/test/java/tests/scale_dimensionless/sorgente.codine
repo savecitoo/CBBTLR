@@ -1,0 +1,5 @@
+unit dozzina = 12
+
+def main(n : dozzina) : Num {
+    return n
+}

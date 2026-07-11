@@ -1,0 +1,15 @@
+dimension Massa with unit kg
+dimension Lunghezza with unit m
+dimension Tempo with unit s
+
+unit N = kg * m / s ^ 2
+unit g = 981 / 100 * m / s ^ 2
+unit J = N * m
+
+def energia(massa : kg, altezza : m) : J {
+    return massa * g * altezza
+}
+
+def main(massa : kg, altezza : m) : J {
+    return energia(massa, altezza)
+}
