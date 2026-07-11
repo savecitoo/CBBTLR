@@ -17,37 +17,41 @@ import utils.DimensionalVectorBuilder;
 import java.util.*;
 
 /**
- * This class implements a Type Checker of a CoDiNE AST.
+ * This class implements a Type Checker of a CoDiNE AST.<br>
+ * In this visitor we check also that all te used variables are declared, that the variables id are not global
+ * identifiers and that every function call pays respect to the arity of the called function.<br>
+ * The return value of the visit method is used just to do a traversal of the tree, if an error occurs an exception
+ * will be raised.
  */
 public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
 
     /**
      * A map which key has a unit identifier and as a vector has the corresponding dimensional vector.
      */
-    private final Map<String, DimensionalVector> unit_vectors;
+    private final @NotNull Map<@NotNull String, @NotNull DimensionalVector> unit_vectors;
 
     /**
      *  A map that as a key has the function name and as value has a list of dimensional vectors of the parameters of a function,
      *  the order of the list is the same of the parameters in the definition.
      */
-    private final Map<String, List<DimensionalVector>> func_par;
+    private final @NotNull Map<@NotNull String,@NotNull List<@NotNull DimensionalVector>> func_par;
 
     /**
      * A map that as a key has the function name and as value has the dimensional vector
      * of the function's return type.
      */
-    private final Map<String, DimensionalVector> func_ret;
+    private final @NotNull Map<@NotNull String, @NotNull DimensionalVector> func_ret;
 
     /**
      * A map that as a key has the name of a fundamental dimension and as value has the
      * index of that dimension in the dimensional vector's array representation.
      */
-    private final Map<String, Integer> dim_enc;
+    private final @NotNull Map<@NotNull String, @NotNull Integer> dim_enc;
 
     /**
      * A map that has for each variable declared the id of the variable as a key and as a value its dimensional vector.
      */
-    private Map<String, DimensionalVector> local_scope = new HashMap<>();
+    private @NotNull Map<@NotNull String, @NotNull DimensionalVector> local_scope = new HashMap<>();
 
     /**
      * The dimensional vector expected in the return statement.
@@ -55,7 +59,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     private DimensionalVector exp_return;
 
     /** A set containing all the global identifiers of the program. */
-    private final Set<String> glob_id = new HashSet<>();
+    private final @NotNull Set<@NotNull String> glob_id = new HashSet<>();
 
     /**
      * Constructor for a type checker visitor.
@@ -94,7 +98,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
 
     @Override
     public @NotNull DimensionalVector visitDeclaration(@NotNull DeclarationNode node) {
-        DimensionalVector vec = node.assignment().accept(this);
+        DimensionalVector vec = node.expression().accept(this);
         if (glob_id.contains(node.var().id()))
             throw new TypeException(
                     String.format("The declared variable %s declared at line %d and column %d is defined as a global identifier.",
@@ -112,7 +116,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector vec = node.expression().accept(this);
         if (!vec.equals(local_scope.get(node.var().id())))
             throw new TypeException(
-                    String.format("The assignment at line %d and column %d has a different type with respect to the one declared.",
+                    String.format("The expression at line %d and column %d has a different type with respect to the one declared.",
                             node.line(), node.column())
             );
         return vec;

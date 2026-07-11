@@ -1,0 +1,15 @@
+dimension Massa       with unit kg
+dimension Lunghezza   with unit m
+dimension Tempo       with unit s
+dimension Temperatura with unit K
+
+unit J  = kg * m ^ 2 / s ^ 2
+unit cs = 4186 * J / (kg * K)
+
+def calore(m : kg, dt : K) : J {
+    return m * cs * dt
+}
+
+def main(m : kg, dt : K) : J {
+    return calore(m, dt)
+}

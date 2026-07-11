@@ -1,0 +1,4 @@
+def main(n : Num) : Num {
+    var x = n + 1
+    x = x * 2
+}

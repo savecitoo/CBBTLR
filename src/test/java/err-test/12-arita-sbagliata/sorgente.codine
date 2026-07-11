@@ -1,0 +1,7 @@
+def somma(a : Num, b : Num) : Num {
+    return a + b
+}
+
+def main(n : Num) : Num {
+    return somma(n)
+}

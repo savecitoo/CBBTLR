@@ -1,0 +1,3 @@
+def f(n : Num) : Num {
+    return n
+}

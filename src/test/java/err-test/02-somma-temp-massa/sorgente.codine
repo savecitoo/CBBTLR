@@ -1,0 +1,6 @@
+dimension Massa       with unit kg
+dimension Temperatura with unit K
+
+def main(m1 : kg, t1 : K) : K {
+    return t1 + m1
+}

@@ -97,9 +97,9 @@ public interface AstVisitor<T> {
     default @NotNull T visitReturn(@NotNull ReturnNode node)         { return visitDefault(node); }
 
     /**
-     * Visits an assignment node.
+     * Visits an expression node.
      *
-     * @param node the assignment node to visit
+     * @param node the expression node to visit
      * @return the result of visiting the node
      */
     default @NotNull T visitAssignment(@NotNull AssignmentNode node) { return visitDefault(node); }

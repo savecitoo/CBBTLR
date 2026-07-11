@@ -10,15 +10,15 @@ import java.util.List;
 /**
  * This record represents a declaration node in the AST.
  * @param var the variable declared.
- * @param assignment the type that gives value the declared variable.
+ * @param expression the type that gives value the declared variable.
  * @param line the line of the declaration.
  * @param column the column where the declaration starts.
  */
-public record DeclarationNode(@NotNull IdentifierNode var, @NotNull AstNode assignment, int line, int column) implements AstNode {
+public record DeclarationNode(@NotNull IdentifierNode var, @NotNull AstNode expression, int line, int column) implements AstNode {
 
     @Override
     public @NotNull List<AstNode> children() {
-        return List.of(var, assignment);
+        return List.of(var, expression);
     }
 
     @Override

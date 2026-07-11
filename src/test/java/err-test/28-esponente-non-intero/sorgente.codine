@@ -1,0 +1,6 @@
+dimension Lunghezza with unit m
+
+def main(d : m, n : Num) : m {
+    var x = m ^ n
+    return d
+}

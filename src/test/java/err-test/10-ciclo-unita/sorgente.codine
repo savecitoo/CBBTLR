@@ -1,0 +1,8 @@
+dimension Lunghezza with unit m
+
+unit a = 2 * b
+unit b = 3 * a
+
+def main(n : Num) : Num {
+    return n
+}

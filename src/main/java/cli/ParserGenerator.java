@@ -112,7 +112,6 @@ public class ParserGenerator {
             ObjectIdentifier<String> encoding = new ObjectIdentifier<>();
             Lexer lexer = Lexer.fromString(file[1], encoding);
 
-            // "generated" → "src/main/resources/generated/"
             String packagePath = packageName.replace(".", File.separator);
             Path serFile = Path.of("src/main/resources")
                     .resolve(packagePath)

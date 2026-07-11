@@ -1,0 +1,5 @@
+dimension Lunghezza with unit m
+
+def main(n : Num) : m {
+    return m
+}

@@ -1,0 +1,9 @@
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+
+def main(a : m, b : s) : Num {
+    if (a > b) {
+        return 1
+    }
+    return 0
+}

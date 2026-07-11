@@ -1,0 +1,10 @@
+dimension Massa     with unit kg
+dimension Lunghezza with unit m
+
+def doppia(x : kg) : kg {
+    return 2 * x
+}
+
+def main(d : m) : kg {
+    return doppia(d)
+}

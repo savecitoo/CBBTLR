@@ -1,8 +1,0 @@
-dimension Lunghezza with unit m
-
-unit km = 1000 * m
-unit cm = 1 / 100 * m
-
-def main(a : km, b : cm) : Num {
-    return a / b
-}

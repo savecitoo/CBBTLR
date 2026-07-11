@@ -1,0 +1,11 @@
+def f(n : Num) : Num {
+    return n
+}
+
+def f(n : Num) : Num {
+    return 2 * n
+}
+
+def main(n : Num) : Num {
+    return f(n)
+}

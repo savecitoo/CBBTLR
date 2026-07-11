@@ -10,17 +10,27 @@ import org.jetbrains.annotations.NotNull;
 import utils.Fraction;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * This visitor return the fraction that permits to pass the expressions containing the corresponding unit in canonical
+ * form, if it is applied the correct operation.<br>
+ * The return value of the visit method is used just to do a traversal of the tree, to get the result use the getter method.
+ */
 public class UnitFractionVisitor implements AstVisitor<Fraction> {
 
     private final @NotNull Map<@NotNull String, @NotNull Fraction> unit_fract = new HashMap<>();
 
-    private Set<String> dimension;
+    private final @NotNull Set<@NotNull String> dimension = new HashSet<>();
 
-    private Map<String, AstNode> unit;
+    private final @NotNull Map<@NotNull String, @NotNull AstNode> unit = new HashMap<>();
 
+    /**
+     * Returns the map containg the fraction to put variables containing the unit in canonical representation.
+     * @return the map which keys are unit and values are fraction.
+     */
     public @NotNull Map<@NotNull String, @NotNull Fraction> getUnitFract() { return Map.copyOf(unit_fract); }
 
     @Override
@@ -30,8 +40,8 @@ public class UnitFractionVisitor implements AstVisitor<Fraction> {
 
     @Override
     public @NotNull Fraction visitProgram(@NotNull ProgramNode node) {
-        dimension = node.dimension();
-        unit = node.unit();
+        dimension.addAll(node.dimension());
+        unit.putAll(node.unit());
         for (String name : dimension) unit_fract.put(name, Fraction.ONE);
         for (String name : unit.keySet()) {
             visitUnit(name);

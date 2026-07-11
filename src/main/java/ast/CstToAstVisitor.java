@@ -41,12 +41,6 @@ public class CstToAstVisitor {
         };
     }
 
-    // ---------------------------------------------------------------
-    // program -> item #start | program item #item_list
-    // item    -> dim_item | unit_item | fun_item
-    // ---------------------------------------------------------------
-
-
     /**
      * Given a ParseTree of a CoDiNE well-formed program returns its corresponding Abstract Sintax Tree.
      * @param node the ParseTree.
@@ -314,7 +308,7 @@ public class CstToAstVisitor {
             case "while":
                 stat.add(visitWhileNode(node));
                 break;
-            case "assignment":
+            case "expression":
                 stat.add(visitAssignmentNode(node));
                 break;
             default:

@@ -1,0 +1,5 @@
+def main(n : Num) : Num {
+    if (n > 0) {
+        return 1
+    }
+}

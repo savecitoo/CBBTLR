@@ -1,0 +1,16 @@
+dimension Massa       with unit kg
+dimension Lunghezza   with unit m
+dimension Tempo       with unit s
+dimension Temperatura with unit K
+
+unit J      = kg * m ^ 2 / s ^ 2
+unit W      = J / s
+unit k_rame = 385 * W / (m * K)
+
+def flusso(a : m ^ 2, dt : K, d : m) : W {
+    return k_rame * a * dt / d
+}
+
+def main(a : m ^ 2, dt : K, d : m) : W {
+    return flusso(a, dt, d)
+}

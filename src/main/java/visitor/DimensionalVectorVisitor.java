@@ -22,7 +22,8 @@ import java.util.Map;
 
 /**
  * This visitor builds the dimensional vector unit expressions and type expressions,
- * i.e. the parameter's type and return's type of each function.
+ * i.e. the parameter's type and return's type of each function.<br>
+ * The return value of the visit method is used just to do a traversal of the tree, to get the result use the getter methods.
  */
 public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
@@ -67,34 +68,34 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
      * division ({@link #visitDiv}), so that contributions to the current builder are
      * subtracted instead of added.
      */
-    private boolean isDenominator = false;
+    private boolean is_den = false;
 
     /**
      * Returns a map associating each unit id to its dimensional vector.
      * @return a copy of the unit-to-vector map.
      */
-    public Map<String, DimensionalVector> getUnitVectors() { return Map.copyOf(unit_vectors); }
+    public @NotNull Map<@NotNull String, @NotNull DimensionalVector> getUnitVectors() { return Map.copyOf(unit_vectors); }
 
     /**
      * Returns a map associating each function name to the list of
      * dimensional vectors of its parameters, in declaration order.
      * @return a copy of the function-to-parameter-vectors map.
      */
-    public Map<String, List<DimensionalVector>> getFunctionParams() { return Map.copyOf(func_par); }
+    public @NotNull Map< @NotNull String, @NotNull List< @NotNull DimensionalVector>> getFunctionParams() { return Map.copyOf(func_par); }
 
     /**
      * Returns a map associating each function name to the
      * dimensional vector of its return type.
      * @return a copy of the function-to-return-vector map.
      */
-    public Map<String, DimensionalVector> getFunctionReturns() { return Map.copyOf(func_ret); }
+    public @NotNull Map<@NotNull String, @NotNull DimensionalVector> getFunctionReturns() { return Map.copyOf(func_ret); }
 
     /**
      * Returns a map associating each fundamental dimension's name
      * to its index in the dimensional vector's array representation.
      * @return a copy of the dimension-to-index map.
      */
-    public Map<String, Integer> getDimIndex() { return Map.copyOf(dim_enc); }
+    public @NotNull Map< @NotNull String, @NotNull Integer> getDimIndex() { return Map.copyOf(dim_enc); }
 
     /**
      * Returns the builder currently on top of the stack, i.e. the one accumulating
@@ -122,13 +123,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
         builder_stack.pop();
     }
 
-    /**
-     * Visits the whole program: first indexes the fundamental dimensions, then computes
-     * the dimensional vector of every derived unit, and finally computes the signature
-     * (parameter and return types) of every function.
-     * @param node the program's root node.
-     * @return the zero vector, as this node has no dimensional value of its own.
-     */
+    
     @Override
     public @NotNull DimensionalVector visitProgram(@NotNull ProgramNode node) {
         // building the encoding map
@@ -186,7 +181,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
         String name = node.id();
 
         if (dim_enc.containsKey(name)) {
-            if (isDenominator)
+            if (is_den)
                 builder().sub(name, 1);
             else
                 builder().add(name, 1);
@@ -219,24 +214,24 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     @Override
     public @NotNull DimensionalVector visitDiv(@NotNull DivNode node) {
         node.left().accept(this);
-        isDenominator = !isDenominator;
+        is_den = !is_den;
         node.right().accept(this);
-        isDenominator = !isDenominator;
+        is_den = !is_den;
         return builder().zero();
     }
 
     @Override
     public @NotNull DimensionalVector visitPow(@NotNull PowNode node) {
         int exp = Math.toIntExact(node.exp().num());
-        if (isDenominator) exp = -exp;
+        if (is_den) exp = -exp;
 
-        String baseName = node.base().id();
-        if (dim_enc.containsKey(baseName)) {
-            builder().add(baseName, exp);
-        } else if (unit_defs.containsKey(baseName)) {
-            DimensionalVector baseVec = unit_vectors.containsKey(baseName)
-                    ? unit_vectors.get(baseName)
-                    : computeUnit(baseName);
+        String base_id = node.base().id();
+        if (dim_enc.containsKey(base_id)) {
+            builder().add(base_id, exp);
+        } else if (unit_defs.containsKey(base_id)) {
+            DimensionalVector baseVec = unit_vectors.containsKey(base_id)
+                    ? unit_vectors.get(base_id)
+                    : computeUnit(base_id);
             applyVectorScaled(baseVec, exp);
         }
         return builder().zero();
@@ -254,7 +249,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     private void applyVectorScaled(DimensionalVector v, int scale) {
         for (Map.Entry<String, Integer> entry : dim_enc.entrySet()) {
             int contribution = v.get(entry.getValue()) * scale;
-            if (isDenominator)
+            if (is_den)
                 builder().sub(entry.getKey(), contribution);
             else
                 builder().add(entry.getKey(), contribution);
@@ -263,14 +258,14 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
     private DimensionalVector computeUnit(String name) {
         pushBuilder();
-        // we have to cache the den because we could encounter a not dimensioned unit in the unit,
-        // since the represantation with a hashmap doesn't preserve the order specified in the file.
-        boolean savedDenom = isDenominator;
-        isDenominator = false;
+        // we have to cache the den because we could start a new computation derived from the current one,
+        // so it has to be saved.
+        boolean old_den = is_den;
+        is_den = false;
         unit_defs.get(name).accept(this);
         DimensionalVector result = builder().build();
         unit_vectors.put(name, result);
-        isDenominator = savedDenom;
+        is_den = old_den;
         popBuilder();
         return result;
     }

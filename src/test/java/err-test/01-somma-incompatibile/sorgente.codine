@@ -1,0 +1,6 @@
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+
+def main(a : m, b : s) : m {
+    return a + b
+}

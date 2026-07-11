@@ -1,0 +1,3 @@
+def main(n : Num) : Num {
+    return 1 / n
+}

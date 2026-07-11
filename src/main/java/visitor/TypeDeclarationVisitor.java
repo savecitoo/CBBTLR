@@ -16,17 +16,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * This class implements a visitor of the AST which checks that all type expressions are correct.
+ * This class implements a visitor of the AST which checks that all type expressions are correct
  */
 public class TypeDeclarationVisitor implements AstVisitor<Boolean> {
 
-    private @NotNull final Set<String> units = new HashSet<>();
+    private final @NotNull Set<@NotNull String> units = new HashSet<>();
 
     @Override
     public @NotNull Boolean visitDefault(@NotNull AstNode node) {
         throw new IllegalArgumentException(
                 String.format(
-                        "Unexpected operation at line %d and column %d, the type expressions must contains just the following operators: *,/ and ^",
+                        "Unexpected operation at line %d and column %d, the type expressions must contains just unit identifiers, dimension or the following operators: *,/ and ^",
                         node.line(), node.column()
                 )
         );

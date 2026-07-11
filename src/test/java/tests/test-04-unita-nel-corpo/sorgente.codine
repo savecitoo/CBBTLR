@@ -1,7 +1,0 @@
-dimension Lunghezza with unit m
-
-unit cm = 1 / 100 * m
-
-def main(l : cm) : cm {
-    return l + 1 * cm
-}

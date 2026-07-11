@@ -1,0 +1,9 @@
+dimension Lunghezza with unit m
+
+def f(x : 5 * m) : m {
+    return x
+}
+
+def main(d : m) : m {
+    return f(d)
+}

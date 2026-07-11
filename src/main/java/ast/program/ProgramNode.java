@@ -19,8 +19,8 @@ import java.util.Set;
  * @param line           the line where the program starts.
  * @param column         the column where the program starts.
  */
-public record ProgramNode(@NotNull Set<String> dimension,
-                          Set<String> dimension_name, @NotNull Map<@NotNull String, @NotNull AstNode> unit,
+public record ProgramNode(@NotNull Set<@NotNull String> dimension,
+                          @NotNull Set<@NotNull String> dimension_name, @NotNull Map<@NotNull String, @NotNull AstNode> unit,
                           @NotNull Map<@NotNull String, @NotNull FunctionNode> functions,
                           int line, int column) implements AstNode {
 

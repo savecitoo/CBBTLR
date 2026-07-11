@@ -1,0 +1,9 @@
+dimension Temperatura with unit K
+
+def rendimento(tc : K, th : K) : Num {
+    return 1 - tc / th
+}
+
+def main(tc : K, th : K) : Num {
+    return rendimento(tc, th)
+}

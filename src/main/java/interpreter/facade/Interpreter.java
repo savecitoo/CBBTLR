@@ -13,10 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Interpreter {
 
@@ -66,7 +63,7 @@ public class Interpreter {
             System.out.println(ast.accept(interpreter));
         } catch (NumberFormatException e) {
             System.out.println("RUNTIME ERROR: " + e.getMessage());
-        } catch (ParseException | IllegalArgumentException e) {
+        } catch (ParseException | NoSuchElementException | IllegalArgumentException e) {
             System.err.println("SYNTAX ERROR: " + e.getMessage());
         } catch (TypeException e) {
             System.err.println("TYPE ERROR: " + e.getMessage());

@@ -18,7 +18,8 @@ import java.util.Set;
 
 /**
  * This visitor checks if the value expression are correct.<br>
- * A value expression is correct if appears in it a variable, an integer or a literal.
+ * A value expression is correct if appears in it a variable, an integer or a literal.<br>
+ * This traversal also checks if the id that appear in function call is an existing function.
  */
 public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
@@ -26,6 +27,11 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
      * This set contains the variables declared in the function that is being analyzed.
      */
     private Set<String> loc_scope;
+
+    /**
+     * A set containing all the function identifiers of the program.
+     */
+    private final @NotNull Set<@NotNull String> functions = new HashSet<>();
 
     @Override
     public @NotNull Boolean visitDefault(@NotNull AstNode node) {
@@ -37,6 +43,7 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitProgram(@NotNull ProgramNode node) {
+        functions.addAll(node.functions().keySet());
         for (String name : node.functions().keySet()) {
             loc_scope = new HashSet<>();
             node.functions().get(name).accept(this);
@@ -102,7 +109,7 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitDeclaration(@NotNull DeclarationNode node) {
-        boolean ok = node.assignment().accept(this);
+        boolean ok = node.expression().accept(this);
         loc_scope.add(node.var().id());
         return ok;
     }
@@ -192,6 +199,9 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitFuncCall(@NotNull FuncCallNode node) {
+        if (!functions.contains(node.func().id()))
+            throw new IllegalArgumentException(String.format("Called an undeclared function %s at line %d and column %d",
+                    node.func().id(), node.line(), node.column()));
         for (AstNode child : node.args())
             if (!child.accept(this))
                 throw new IllegalArgumentException(

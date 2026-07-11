@@ -14,20 +14,34 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * Checks the unit declarations of a program:
- * each unit expression may contain only unit identifiers, Num, integer
- * literals and the operators *, /, ^; every identifier must refer to a base
- * unit (declared by a dimension) or to another declared unit, in any order of
- * declaration; unit definitions must not contain cycles, direct or indirect.
+ * This visitor checks if the unit declarations are correct.
  */
 public class UnitDeclarationVisitor implements AstVisitor<Boolean> {
 
-    private final @NotNull Set<String> dimensions = new HashSet<>();
+    /**
+     * A set containing all the base dimensions.
+     */
+    private final @NotNull Set<@NotNull String> dimensions = new HashSet<>();
 
-    private final @NotNull Map<String, AstNode> units = new HashMap<>();
+    /**
+     * A map which keys are the unit ids and values are the expression characterizing it.
+     */
+    private final @NotNull Map<@NotNull String, @NotNull AstNode> units = new HashMap<>();
 
+    // We use the two maps below to keep trace also if there are some cyclic unit, for example:
+    /*
+        unit a = b
+        unit b = a
+     */
+
+    /**
+     * A set of the done unit declaration.
+     */
     private final @NotNull Set<String> done = new HashSet<>();
 
+    /**
+     * A set of the units that are still being visited.
+     */
     private final @NotNull Set<String> in_progress = new HashSet<>();
 
     @Override
@@ -48,11 +62,6 @@ public class UnitDeclarationVisitor implements AstVisitor<Boolean> {
         return true;
     }
 
-    /**
-     * Verifies the definition of the given unit, recursively verifying the
-     * units it refers to. A unit found again while it is still being verified
-     * (i.e. still in {@code in_progress}) closes a cycle.
-     */
     private void checkUnit(@NotNull String name) {
         if (done.contains(name))
             return;
@@ -97,7 +106,6 @@ public class UnitDeclarationVisitor implements AstVisitor<Boolean> {
         return node.base().accept(this);
     }
 
-    /** Integer literals are allowed in unit expressions (class U). */
     @Override
     public @NotNull Boolean visitInt(@NotNull IntNode node) {
         return true;

@@ -64,6 +64,7 @@ public class ReturnVisitor implements AstVisitor<Boolean> {
     public @NotNull Boolean visitIf(@NotNull IfNode node) {
 
         // IF C { S } (no Else) -> False
+        // here we are avoiding programs with else defined but its statement are void.
         if (node.falseBranch().isEmpty())
             return false;
         boolean ok = false;
