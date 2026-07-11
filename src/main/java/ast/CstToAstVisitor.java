@@ -56,12 +56,12 @@ public class CstToAstVisitor {
     public static @NotNull ProgramNode visitStart(@NotNull ParseTree node) throws IllegalArgumentException {
         if (!node.rule_tag.equals("item_list") && !node.rule_tag.equals("start"))
             throw new IllegalArgumentException("The given parse tree must have as a root a starting node.");
-        Set<String> dimension      = new HashSet<>(); // simboli di unità di base (es. "m")
-        Set<String> dimension_name = new HashSet<>(); // nomi di dimensione (es. "Lunghezza")
+        Set<String> dimension      = new HashSet<>();
+        Set<String> dimension_name = new HashSet<>();
         Map<String, AstNode> unit  = new HashMap<>();
         Map<String, FunctionNode> functions = new HashMap<>();
 
-        // Map useful to avoid that global_id are overridden.
+        // Map useful to avoid that global_id are redefined.
         Map<String, String> global_id = new HashMap<>();
 
         visitProgramItems(node, dimension, dimension_name, unit, functions, global_id);
@@ -93,9 +93,6 @@ public class CstToAstVisitor {
         List<ParseTree> children = node.getChildren();
         switch (node.rule_tag) {
             case "start":
-                // children.getFirst().getChildren().getFirst() -> every item has just one non-terminal in each
-                // production.
-                //item -> dim_item | unit_item | fun_item
                 visitItem(children.getFirst().getChildren().getFirst(), dimension, dimension_name, unit, functions, global_id);
                 break;
             case "item_list":
@@ -189,11 +186,6 @@ public class CstToAstVisitor {
                 new IdentifierNode(name, func_name.line, func_name.col),
                 par, visit(returnTypeNode), body, node.line, node.col));
     }
-
-    // ---------------------------------------------------------------
-    // Controlli semantici sulle espressioni di tipo/unit
-    // ---------------------------------------------------------------
-
 
     private static void checkNoIntegerLiterals(@NotNull ParseTree node, @NotNull String context, int line, int col) {
         List<ParseTree> children = node.getChildren();
@@ -362,10 +354,6 @@ public class CstToAstVisitor {
         }
         return new IfNode(condition, true_branch, false_branch, node.line, node.col);
     }
-
-    // ---------------------------------------------------------------
-    // Espressioni
-    // ---------------------------------------------------------------
 
     private static @NotNull PowNode getPowNode(ParseTree node) {
         List<ParseTree> children = node.getChildren();

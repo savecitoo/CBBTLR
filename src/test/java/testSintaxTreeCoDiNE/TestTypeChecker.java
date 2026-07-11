@@ -2,8 +2,9 @@ package testSintaxTreeCoDiNE;
 
 import ast.AstNode;
 import ast.CstToAstVisitor;
-import ast.visitor.DimensionalVectorVisitor;
-import ast.visitor.TypeCheckerVisitor;
+import visitor.DimensionalVectorVisitor;
+import visitor.TypeCheckerVisitor;
+import visitor.TypeException;
 import generated.CoDiNEParser;
 import org.junit.jupiter.api.Test;
 import tree.ParseTree;
@@ -227,7 +228,7 @@ public class TestTypeChecker {
                 def main(d : m, t : s) : m {
                     return d / t
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 
     @Test
@@ -239,7 +240,7 @@ public class TestTypeChecker {
                 def main(d : m, t : s) : m {
                     return d + t
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 
     @Test
@@ -251,7 +252,7 @@ public class TestTypeChecker {
                 def main(d : m, t : s) : m {
                     return d - t
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 
     @Test
@@ -265,7 +266,7 @@ public class TestTypeChecker {
                 def main(t : s) : m {
                     return f(t)
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 
     @Test
@@ -277,7 +278,7 @@ public class TestTypeChecker {
                 def main(d : m, t : s) : Num {
                     if d < t { return 1 } else { return 0 }
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 
     @Test
@@ -293,7 +294,7 @@ public class TestTypeChecker {
                     }
                     return i
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 
     @Test
@@ -307,6 +308,6 @@ public class TestTypeChecker {
                     x = t
                     return x
                 }
-                """)).isInstanceOf(IllegalArgumentException.class);
+                """)).isInstanceOf(TypeException.class);
     }
 }

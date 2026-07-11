@@ -1,4 +1,4 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
@@ -28,7 +28,7 @@ public class ValueExpressionEvaluator implements AstVisitor<Fraction> {
 
     public ValueExpressionEvaluator(@NotNull Map<@NotNull String, @NotNull Fraction> unitFract,
                                     @NotNull FunctionCallHandler callHandler) {
-        this.unitFract = unitFract;
+        this.unitFract = Map.copyOf(unitFract);
         this.callHandler = callHandler;
     }
 
@@ -44,7 +44,9 @@ public class ValueExpressionEvaluator implements AstVisitor<Fraction> {
 
     @Override
     public @NotNull Fraction visitAdd(AddNode node) {
-        return node.left().accept(this).add(node.right().accept(this));
+        Fraction f = node.left().accept(this);
+        Fraction g = node.right().accept(this);
+        return f.add(g);
     }
 
     @Override
@@ -84,7 +86,7 @@ public class ValueExpressionEvaluator implements AstVisitor<Fraction> {
 
     @Override
     public @NotNull Fraction visitFuncCall(FuncCallNode node) {
-        List<Fraction> args = new ArrayList<>(node.args().size());
+        List<Fraction> args = new ArrayList<>();
         for (AstNode arg : node.args())
             args.add(arg.accept(this));
         return callHandler.call(node.func().id(), args);

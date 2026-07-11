@@ -1,4 +1,4 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;

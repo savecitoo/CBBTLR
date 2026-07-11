@@ -1,4 +1,4 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
@@ -61,21 +61,12 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
      * Constructor for a type checker visitor.
      * @param dvv a dimensional vector visitor.
      */
-    public TypeCheckerVisitor(DimensionalVectorVisitor dvv) {
+    public TypeCheckerVisitor(@NotNull DimensionalVectorVisitor dvv) {
         this.unit_vectors = dvv.getUnitVectors();
         this.func_par = dvv.getFunctionParams();
         this.func_ret = dvv.getFunctionReturns();
         this.dim_enc = dvv.getDimIndex();
     }
-
-
-    private String pos(AstNode node) {
-        return "[riga " + node.line() + ", col " + node.column() + "]";
-    }
-
-    // ---------------------------------------------------------------
-    // Visitors
-    // ---------------------------------------------------------------
 
     @Override
     public @NotNull DimensionalVector visitProgram(@NotNull ProgramNode node) {
@@ -105,7 +96,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     public @NotNull DimensionalVector visitDeclaration(@NotNull DeclarationNode node) {
         DimensionalVector vec = node.assignment().accept(this);
         if (glob_id.contains(node.var().id()))
-            throw new IllegalArgumentException(
+            throw new TypeException(
                     String.format("The declared variable %s declared at line %d and column %d is defined as a global identifier.",
                     node.var().id(), node.column(), node.line())
             );
@@ -120,8 +111,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
                     node.var().id(), node.line(), node.column()));
         DimensionalVector vec = node.expression().accept(this);
         if (!vec.equals(local_scope.get(node.var().id())))
-            //TODO: TypeException
-            throw new IllegalArgumentException(
+            throw new TypeException(
                     String.format("The assignment at line %d and column %d has a different type with respect to the one declared.",
                             node.line(), node.column())
             );
@@ -132,10 +122,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
     public @NotNull DimensionalVector visitReturn(@NotNull ReturnNode node) {
         DimensionalVector vec = node.ret_stat().accept(this);
         if (!vec.equals(exp_return))
-            // TODO: Create TypeException
-            throw new IllegalArgumentException(pos(node)
-                    + " Tipo di ritorno incompatibile: atteso "
-                    + exp_return + ", trovato " + vec);
+            throw new TypeException("The return expression at line %d and column %d differs from the declared one.");
         return vec;
     }
 
@@ -153,11 +140,10 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
             AstNode arg = args.get(i);
             DimensionalVector argVec = arg.accept(this);
             if (!argVec.equals(expected.get(i)))
-                // TODO: TypeException
-                throw new IllegalArgumentException(pos(arg)
-                        + " Argomento " + i + " di '" + fnName
-                        + "' incompatibile: atteso " + expected.get(i)
-                        + ", trovato " + argVec);
+                throw new TypeException(
+                        String.format("The argument number %d of the function %s at line %d and column %d has an incompatible type respect to the declared one.",
+                                i, fnName, node.line(), node.column() )
+                );
         }
         return func_ret.get(fnName);
     }
@@ -167,9 +153,10 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
-            // TODO: TypeException
-            throw new IllegalArgumentException(pos(node)
-                    + " Operandi di '+' incompatibili: " + left + " e " + right);
+            throw new TypeException(
+                    String.format("The sub-expressions of the \"+\" at line %d and column %d have incompatible dimensional vector",
+                            node.line(),node.column())
+            );
         return left;
     }
 
@@ -178,9 +165,8 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
-            // TODO: TypeException
-            throw new IllegalArgumentException(pos(node)
-                    + " Operandi di '-' incompatibili: " + left + " e " + right);
+            throw new TypeException(String.format("The sub-expressions of the \"-\" at line %d and column %d have incompatible dimensional vector",
+                    node.line(),node.column()));
         return left;
     }
 
@@ -219,8 +205,7 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
             builder.add(name, 1);
             return builder.build();
         }
-        throw new IllegalStateException(pos(node)
-                + " Identificatore sconosciuto: '" + name + "'");
+        throw new IllegalStateException(String.format("Non declared variable at line %d and column %d", node.line(), node.column()));
     }
 
     @Override
@@ -248,8 +233,8 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
-            throw new IllegalArgumentException(pos(node)
-                    + " Operandi di '<' incompatibili: " + left + " e " + right);
+            throw new TypeException(String.format("The sub-expressions of the \"<\" at line %d and column %d have incompatible dimensional vector",
+                    node.line(),node.column()));
         return zero();
     }
 
@@ -258,8 +243,8 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
-            throw new IllegalArgumentException(pos(node)
-                    + " Operandi di '<=' incompatibili: " + left + " e " + right);
+            throw new TypeException(String.format("The sub-expressions of the \"<=\" at line %d and column %d have incompatible dimensional vector",
+                    node.line(),node.column()));
         return zero();
     }
 
@@ -268,8 +253,8 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
-            throw new IllegalArgumentException(pos(node)
-                    + " Operandi di '>' incompatibili: " + left + " e " + right);
+            throw new TypeException(String.format("The sub-expressions of the \">\" at line %d and column %d have incompatible dimensional vector",
+                    node.line(),node.column()));
         return zero();
     }
 
@@ -278,8 +263,8 @@ public class TypeCheckerVisitor implements AstVisitor<DimensionalVector> {
         DimensionalVector left  = node.left().accept(this);
         DimensionalVector right = node.right().accept(this);
         if (!left.equals(right))
-            throw new IllegalArgumentException(pos(node)
-                    + " Operandi di '>=' incompatibili: " + left + " e " + right);
+            throw new TypeException(String.format("The sub-expressions of the \">=\" at line %d and column %d have incompatible dimensional vector",
+                    node.line(),node.column()));
         return zero();
     }
 

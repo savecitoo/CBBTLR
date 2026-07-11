@@ -2,7 +2,7 @@ package testSintaxTreeCoDiNE;
 
 import ast.AstNode;
 import ast.CstToAstVisitor;
-import ast.visitor.ValueExpressionVisitor;
+import visitor.ValueExpressionVisitor;
 import generated.CoDiNEParser;
 import org.junit.jupiter.api.Test;
 import tree.ParseTree;

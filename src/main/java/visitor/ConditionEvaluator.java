@@ -1,9 +1,8 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
 import ast.expression.*;
-import ast.operation.*;
 import org.jetbrains.annotations.NotNull;
 import utils.Fraction;
 
@@ -22,7 +21,7 @@ public class ConditionEvaluator implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitAnd(AndNode node) {
-        return node.left().accept(this) && node.right().accept(this); // && è già short-circuit
+        return node.left().accept(this) && node.right().accept(this);
     }
 
     @Override

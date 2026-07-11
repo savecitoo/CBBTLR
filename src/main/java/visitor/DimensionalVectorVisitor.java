@@ -1,4 +1,4 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
@@ -185,7 +185,6 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
     public @NotNull DimensionalVector visitIdentifier(@NotNull IdentifierNode node) {
         String name = node.id();
 
-        // unità di base: contribuisce al builder
         if (dim_enc.containsKey(name)) {
             if (isDenominator)
                 builder().sub(name, 1);
@@ -194,16 +193,13 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
             return builder().zero();
         }
 
-        // unità derivata: ricalcola il suo contributo sul builder corrente
         if (unit_defs.containsKey(name)) {
             DimensionalVector derived;
             if (unit_vectors.containsKey(name)) {
                 derived = unit_vectors.get(name);
             } else {
-                // non ancora calcolata: calcola ricorsivamente su un builder isolato
                 derived = computeUnit(name);
             }
-            // applica il vettore dell'unità derivata al builder corrente
             applyVector(derived);
             return builder().zero();
         }
@@ -215,7 +211,6 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
     @Override
     public @NotNull DimensionalVector visitMul(@NotNull MulNode node) {
-        // entrambi i figli contribuiscono al builder con lo stesso segno
         node.left().accept(this);
         node.right().accept(this);
         return builder().zero();
@@ -232,7 +227,6 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
 
     @Override
     public @NotNull DimensionalVector visitPow(@NotNull PowNode node) {
-        // u ^ k: applica il contributo dell'unità base k volte
         int exp = Math.toIntExact(node.exp().num());
         if (isDenominator) exp = -exp;
 
@@ -261,7 +255,7 @@ public class DimensionalVectorVisitor implements AstVisitor<DimensionalVector> {
         for (Map.Entry<String, Integer> entry : dim_enc.entrySet()) {
             int contribution = v.get(entry.getValue()) * scale;
             if (isDenominator)
-                builder().sub(entry.getKey(), contribution);  // nota: sub già nega
+                builder().sub(entry.getKey(), contribution);
             else
                 builder().add(entry.getKey(), contribution);
         }

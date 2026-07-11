@@ -1,4 +1,4 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
@@ -69,12 +69,12 @@ public class UnitDeclarationVisitor implements AstVisitor<Boolean> {
     public @NotNull Boolean visitIdentifier(@NotNull IdentifierNode node) {
         String id = node.id();
         if (dimensions.contains(id))
-            return true;                       // base unit: no further deps
+            return true;
         if (!units.containsKey(id))
             throw new IllegalArgumentException(String.format(
                     "At line %d and column %d: the unit expression uses the undeclared unit '%s'.",
                     node.line(), node.column(), id));
-        checkUnit(id);                         // derived unit: verify it (cycle detection)
+        checkUnit(id);
         return true;
     }
 
@@ -94,7 +94,7 @@ public class UnitDeclarationVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitPow(@NotNull PowNode node) {
-        return node.base().accept(this);       // the exponent is an IntNode by construction
+        return node.base().accept(this);
     }
 
     /** Integer literals are allowed in unit expressions (class U). */

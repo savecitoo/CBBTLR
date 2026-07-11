@@ -112,7 +112,6 @@ public class ParserGenerator {
             ObjectIdentifier<String> encoding = new ObjectIdentifier<>();
             Lexer lexer = Lexer.fromString(file[1], encoding);
 
-            // deriva il path delle resources dal packageName
             // "generated" → "src/main/resources/generated/"
             String packagePath = packageName.replace(".", File.separator);
             Path serFile = Path.of("src/main/resources")
@@ -124,7 +123,6 @@ public class ParserGenerator {
                 oos.writeObject(lexer);
             }
 
-            // i .java vanno in outputDir come prima
             Parser.generateParser(grammar, encoding, packageName, className, outputDir);
 
         } catch (IOException e) {

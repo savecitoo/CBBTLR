@@ -1,11 +1,11 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
 import ast.constant.IdentifierNode;
 import ast.constant.IntNode;
 import ast.program.ProgramNode;
-import ast.expression.*; // AddNode, SubNode, MulNode, DivNode, PowNode, IdentifierNode, IntNode
+import ast.expression.*;
 import org.jetbrains.annotations.NotNull;
 import utils.Fraction;
 
@@ -34,14 +34,11 @@ public class UnitFractionVisitor implements AstVisitor<Fraction> {
         unit = node.unit();
         for (String name : dimension) unit_fract.put(name, Fraction.ONE);
         for (String name : unit.keySet()) {
-            // ogni unità la calcoliamo (e mettiamo in cache) al più una volta,
-            // anche se referenziata più volte da altre unità
             visitUnit(name);
         }
         return Fraction.ONE;
     }
 
-    // helper: calcola (con memoizzazione) N(u) per l'unità di nome `name`
     private @NotNull Fraction visitUnit(String name) {
         Fraction cached = unit_fract.get(name);
         if (cached != null) return cached;
@@ -70,10 +67,8 @@ public class UnitFractionVisitor implements AstVisitor<Fraction> {
     public @NotNull Fraction visitIdentifier(@NotNull IdentifierNode node) {
         String name = node.id();
         if (dimension.contains(name)) {
-            // unità di base: N(u) = 1
             return Fraction.ONE;
         }
-        // altrimenti è un'altra unità derivata, già definita in `unit`
         return visitUnit(name);
     }
 

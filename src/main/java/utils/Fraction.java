@@ -39,7 +39,7 @@ public class Fraction {
         this.num = num;
         this.den = den;
     }
-
+    
     /**
      * Reduces the given numerator/denominator pair to lowest terms and
      * builds the corresponding {@code Fraction}, normalizing the sign so
@@ -156,7 +156,7 @@ public class Fraction {
         if (n == 0) return ONE;
         if (num == 0) {
             if (n < 0)
-                throw new IllegalArgumentException("Cannot raise zero to a negative power");
+                throw new NumberFormatException("Cannot raise zero to a negative power");
             return ZERO;
         }
         if (n > 0) {

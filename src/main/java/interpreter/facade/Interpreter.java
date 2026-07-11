@@ -2,10 +2,11 @@ package interpreter.facade;
 
 import ast.CstToAstVisitor;
 import ast.program.ProgramNode;
-import ast.visitor.*;
 import generated.CoDiNEParser;
+import lalrparser.ParseException;
 import tree.ParseTree;
 import utils.Fraction;
+import visitor.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -47,12 +48,15 @@ public class Interpreter {
             ast.accept(new TypeCheckerVisitor(dvv));
             UnitFractionVisitor ufv = new UnitFractionVisitor();
             ast.accept(ufv);
-
-            System.out.println(new RecursiveInterpreter(ufv.getUnitFract(), ast.functions()).run(arg));
-
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-            System.exit(1);
+            ScaleFracVisitor psfv = new ScaleFracVisitor(ufv.getUnitFract());
+            ast.accept(psfv);
+            System.out.println(new RecursiveInterpreter(ufv.getUnitFract(), psfv, ast.functions()).run(arg));
+        } catch (NumberFormatException e) {
+            System.out.println("RUNTIME ERROR: " + e.getMessage());
+        } catch (ParseException | IllegalArgumentException e) {
+            System.err.println("SYNTAX ERROR: " + e.getMessage());
+        } catch (TypeException e) {
+            System.err.println("TYPE ERROR: " + e.getMessage());
         }
     }
 
@@ -76,7 +80,7 @@ public class Interpreter {
                 }
             }
         } catch (NumberFormatException e) {
-            System.err.println("Input Exception, it must be integer or integer/integer.");
+            System.err.println("INPUT ERROR: it must be integer or integer/integer.");
             System.exit(2);
         }
         return args;

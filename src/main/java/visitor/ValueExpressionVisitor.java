@@ -1,4 +1,4 @@
-package ast.visitor;
+package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
@@ -112,8 +112,6 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
         return node.expression().accept(this);
     }
 
-    // --- Operatori aritmetici: basta che UNO dei due lati contenga
-    //     un intero, un identificatore di valore o una chiamata di funzione ---
 
     @Override
     public @NotNull Boolean visitAdd(@NotNull AddNode node) {
@@ -137,14 +135,8 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitPow(@NotNull PowNode node) {
-        // l'intero a destra di ^ NON rende l'espressione "di valore":
-        // si considera solo il lato sinistro (es. m ^ 2 resta dimensionale,
-        // x ^ 2 è di valore perché x è una variabile)
         return node.base().accept(this);
     }
-
-// --- Confronti: i due lati sono due espressioni di valore separate,
-//     quindi ENTRAMBI devono superare il controllo ---
 
     @Override
     public @NotNull Boolean visitGt(@NotNull GtNode node) {
@@ -166,8 +158,6 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
         return node.left().accept(this) && node.right().accept(this);
     }
 
-// --- Operatori logici: combinano condizioni, entrambe devono essere valide ---
-
     @Override
     public @NotNull Boolean visitAnd(@NotNull AndNode node) {
         return node.left().accept(this) && node.right().accept(this);
@@ -180,12 +170,13 @@ public class ValueExpressionVisitor implements AstVisitor<Boolean> {
 
     @Override
     public @NotNull Boolean visitNot(@NotNull NotNode node) {
-        return node.condition().accept(this); // adatta al nome del tuo accessor
+        return node.condition().accept(this);
     }
 
     @Override
     public @NotNull Boolean visitNum(@NotNull NumNode node) {
-        return false;
+        throw new IllegalArgumentException(String.format("Num keyword in a value expression at line %d and column %d",
+                node.line(), node.column()));
     }
 
     @Override
