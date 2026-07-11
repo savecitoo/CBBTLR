@@ -2,6 +2,11 @@ package visitor;
 
 import ast.AstNode;
 import ast.AstVisitor;
+import ast.constant.FalseNode;
+import ast.constant.IdentifierNode;
+import ast.constant.IntNode;
+import ast.constant.TrueNode;
+import ast.expression.*;
 import ast.operation.*;
 import ast.program.*;
 import org.jetbrains.annotations.NotNull;
@@ -12,156 +17,258 @@ import java.util.*;
 
 /**
  * Interprete ricorsivo per CoDiNE.
- * <p>
- * Esegue le istruzioni del programma (assumendo che l'AST sia già stato
- * validato dai controlli semantici) e restituisce il valore prodotto
- * dall'esecuzione di {@code main}. Non effettua alcuna stampa: è
- * responsabilità del chiamante (tipicamente una Facade o il {@code main}
- * dell'eseguibile) decidere cosa fare del risultato restituito.
- * <p>
- * Gli ambienti locali delle funzioni sono gestiti tramite uno stack di frame
- * di attivazione: ogni chiamata di funzione fa push di un nuovo frame, il
- * ritorno (che avviene sempre per {@link ReturnException}) fa pop. Il
- * valutatore di espressioni legge l'ambiente corrente direttamente dalla cima
- * dello stack, quindi è coerente per costruzione anche durante le chiamate di
- * funzione annidate nelle espressioni.
  */
-public class RecursiveInterpreter implements AstVisitor<Void> {
+public class RecursiveInterpreter implements AstVisitor<Fraction> {
 
-    private final @NotNull Map<@NotNull String, @NotNull FunctionNode> functions;
-    private final @NotNull ValueExpressionEvaluator exprEvaluator;
-    private final @NotNull ConditionEvaluator condEvaluator;
-    private final @NotNull Map<@NotNull String, @NotNull List<@NotNull Fraction>> par_scale;
-    private final @NotNull Map<@NotNull String, @NotNull Fraction> ret_scale;
+    private final @NotNull Map<@NotNull String, @NotNull FunctionNode> functions = new HashMap<>();
+
+    private final @NotNull Map<@NotNull String, @NotNull Fraction> unit_fract;
+
+    private final @NotNull List<@NotNull Fraction> args;
 
     private boolean ret = false;
+
     /**
      * Stack dei frame di attivazione: in cima c'è l'ambiente locale
      * (variabili e parametri) della funzione attualmente in esecuzione.
      */
-    private final @NotNull Deque<Map<String, Fraction>> callStack = new ArrayDeque<>();
+    private final @NotNull Deque<Map<String, Fraction>> record_stack = new ArrayDeque<>();
 
-    private @Nullable Fraction returnValue;
-
+    // TODO: RICORDA NELLA SPECIFICA DI DIRE CHE GLI ARGS VA IN FORMA CANONICA
     public RecursiveInterpreter(@NotNull Map<@NotNull String, @NotNull Fraction> unit_fract,
-                                @NotNull ScaleFracVisitor sfv,
-                                @NotNull Map<@NotNull String, @NotNull FunctionNode> functions) {
-        this.functions = functions;
-        this.exprEvaluator = new ValueExpressionEvaluator(unit_fract, this::callFunction);
-        this.par_scale =  sfv.getParameterScaleFrac();
-        this.ret_scale = sfv.getReturnScaleFrac();
-        this.condEvaluator = new ConditionEvaluator(exprEvaluator);
+                                @NotNull List<@NotNull Fraction> args) {
+        this.unit_fract = unit_fract;
+        this.args = args;
     }
-
-    /**
-     * Esegue il programma a partire da {@code main}, con gli argomenti dati,
-     * e restituisce il valore prodotto dal {@code return} che ha terminato
-     * l'esecuzione.
-     *
-     * @param args i valori da passare ai parametri formali di {@code main}, nell'ordine
-     * @return il risultato restituito da {@code main}
-     */
-    public @NotNull Fraction run(@NotNull List<@NotNull Fraction> args) {
-        args = new ArrayList<>(args);
-        List<Fraction> scal_fract = new ArrayList<>();
-        if (functions.get("main").parameter().size() != args.size())
-            throw new IllegalArgumentException(
-                    "The number of arguments given in input must be the same number of parameters of the main.");
-        List<Fraction> scale = par_scale.get("main");
-        for (int i = 0; i < args.size(); i++) {
-            scal_fract.add(args.get(i).mul(scale.get(i)));
-        }
-        return callFunction("main", scal_fract);
-    }
-
 
     private @NotNull Map<String, Fraction> env() {
-        if (callStack.isEmpty())
-            throw  new IllegalStateException("Empty record stack");
-        return callStack.peek();
+        Map<String, Fraction> top = record_stack.peek();
+        if (top == null)
+            throw new IllegalStateException("Stack dei record di attivazione vuoto.");
+        return top;
     }
 
-    private @NotNull Fraction callFunction(@NotNull String name, @NotNull List<@NotNull Fraction> args) {
-        FunctionNode function = functions.get(name);
-        if (function == null)
-            throw new IllegalStateException("Funzione non trovata: " + name);
+    @Override
+    public @NotNull Fraction visitProgram(@NotNull ProgramNode node) {
+        functions.putAll(node.functions());
         Map<String, Fraction> frame = new HashMap<>();
-        for (int i = 0; i < args.size(); i++) {
-            frame.put(function.parameter().get(i).id().id(), args.get(i));
+        List<ParameterNode> par = functions.get("main").parameter();
+        for (int i = 0; i < par.size(); i++) {
+            frame.put(par.get(i).id().id(), args.get(i));
         }
-        callStack.push(frame);
-        exprEvaluator.setEnv(frame);
-        function.body().accept(this);
-
-        Fraction result = returnValue;
-
-        returnValue = null;
-        callStack.pop();
-        if (!callStack.isEmpty()) exprEvaluator.setEnv(env());
-        // it gives a flag, but since we have the Define Return
-        // visitor returnValue cannot be null after a function call
-        return result;
+        record_stack.push(frame);
+        return functions.get("main").accept(this);
     }
 
     @Override
-    public @NotNull Void visitDefault(@NotNull AstNode node) {
-        throw new IllegalStateException("Nodo non gestito da RecursiveInterpreter: " + node.getClass());
+    public @NotNull Fraction visitFunction(@NotNull FunctionNode node) {
+        return node.body().accept(this);
     }
 
     @Override
-    public @NotNull Void visitBody(@NotNull BodyNode node) {
-        for (AstNode decl : node.decl()) {
+    public @NotNull Fraction visitBody(@NotNull BodyNode node) {
+        for (AstNode decl : node.decl())
             decl.accept(this);
+        for (AstNode stat : node.stat()) {
+            Fraction f = stat.accept(this);
+            if (ret) {
+                ret = false;
+                return f;
+            }
         }
-        for (AstNode stmt : node.stat()) {
-            stmt.accept(this);
-            if (ret) break;
-        }
-        ret = false;
-        return null;
+        // Non-reachable from the define return clause.
+        throw new IllegalStateException(String.format(
+                "Not reached the return statement in function at line %d and column %d",
+                node.line(), node.column()));
     }
 
     @Override
-    public @NotNull Void visitDeclaration(@NotNull DeclarationNode node) {
-        env().put(node.var().id(), node.assignment().accept(exprEvaluator));
-        return null;
+    public @NotNull Fraction visitDeclaration(@NotNull DeclarationNode node) {
+        Fraction f = node.assignment().accept(this);
+        env().put(
+                node.var().id(),
+                f
+        );
+        return f;
     }
 
     @Override
-    public @NotNull Void visitAssignment(@NotNull AssignmentNode node) {
-        env().put(node.var().id(), node.expression().accept(exprEvaluator));
-        return null;
+    public @NotNull Fraction visitAssignment(@NotNull AssignmentNode node) {
+        Fraction f = node.expression().accept(this);
+        env().put(node.var().id(), f);
+        return f;
     }
 
     @Override
-    public @NotNull Void visitIf(@NotNull IfNode node) {
-        if (node.condition().accept(condEvaluator)) {
+    public @NotNull Fraction visitReturn(@NotNull ReturnNode node) {
+        Fraction f = node.ret_stat().accept(this);
+        ret = true;
+        record_stack.pop();
+        return f;
+    }
+
+    @Override
+    public @NotNull Fraction visitIf(@NotNull IfNode node) {
+        Fraction f;
+        if (node.condition().accept(this).equals(Fraction.ONE)) {
             for (AstNode child : node.trueBranch()) {
-                child.accept(this);
-                if (ret) return null;
+                f = child.accept(this);
+                if (ret) {
+                    return f;
+                }
             }
         } else {
-            for (AstNode child : node.falseBranch())
-                child.accept(this);
-            if (ret) return null;
+            for (AstNode child : node.falseBranch()) {
+                f = child.accept(this);
+                if (ret) {
+                    return f;
+                }
+            }
         }
-        return null;
+        return Fraction.ONE;
     }
 
     @Override
-    public @NotNull Void visitWhile(@NotNull WhileNode node) {
-        while (node.condition().accept(condEvaluator)) {
-            for (AstNode child : node.instruction())
-                child.accept(this);
-            if (ret) return null;
+    public @NotNull Fraction visitWhile(@NotNull WhileNode node) {
+        while (node.condition().accept(this).equals(Fraction.ONE)) {
+            for (AstNode child : node.instruction()) {
+                Fraction f = child.accept(this);
+                if (ret) {
+                    return f;
+                }
+
+            }
         }
-        return null;
+        return Fraction.ONE;
     }
 
     @Override
-    public @NotNull Void visitReturn(@NotNull ReturnNode node) {
-        returnValue = node.ret_stat().accept(exprEvaluator);
-        ret = true;
-        return null;
+    public @NotNull Fraction visitAdd(@NotNull AddNode node) {
+        return node.left().accept(this).add(node.right().accept(this));
     }
+
+    @Override
+    public @NotNull Fraction visitSub(@NotNull SubNode node) {
+        return node.left().accept(this).sub(node.right().accept(this));
+    }
+
+    @Override
+    public @NotNull Fraction visitMul(@NotNull MulNode node) {
+        return node.left().accept(this).mul(node.right().accept(this));
+    }
+
+    @Override
+    public @NotNull Fraction visitDiv(@NotNull DivNode node) {
+        return node.left().accept(this).div(node.right().accept(this));
+    }
+
+    @Override
+    public @NotNull Fraction visitPow(PowNode node) {
+        return node.base().accept(this).pow(Math.toIntExact(node.exp().num()));
+    }
+
+    @Override
+    public @NotNull Fraction visitInt(IntNode node) {
+        return Fraction.fromNumDen(node.num(), 1);
+    }
+
+    @Override
+    public @NotNull Fraction visitIdentifier(IdentifierNode node) {
+        String name = node.id();
+        Fraction value = env().get(name);
+        if (value != null)
+            return value;
+        value = unit_fract.get(name);
+        if (value != null)
+            return value;
+        throw new IllegalStateException("Identificatore non risolto a runtime: " + name);
+    }
+
+    @Override
+    public @NotNull Fraction visitFuncCall(@NotNull FuncCallNode node) {
+        Map<String, Fraction> scope = new HashMap<>();
+        List<ParameterNode> par =  functions.get(node.func().id()).parameter();
+        for (int i = 0; i < par.size(); i++) {
+            scope.put(
+                    par.get(i).id().id(),
+                    node.args().get(i).accept(this)
+            );
+        }
+        record_stack.push(scope);
+        return functions.get(node.func().id()).accept(this);
+    }
+
+    @Override
+    public @NotNull Fraction visitAnd(@NotNull AndNode node) {
+        if (node.left().accept(this).equals(Fraction.ONE) &&
+                node.right().accept(this).equals(Fraction.ONE)) {
+            return Fraction.ONE;
+        }
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitOr(@NotNull OrNode node) {
+        if (node.left().accept(this).equals(Fraction.ONE) ||
+                node.right().accept(this).equals(Fraction.ONE)) {
+            return Fraction.ONE;
+        }
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitNot(@NotNull NotNode node) {
+        if (node.condition().accept(this).equals(Fraction.ONE)) {
+            return Fraction.ZERO;
+        }
+        return Fraction.ONE;
+    }
+
+    @Override
+    public @NotNull Fraction visitGe(@NotNull GeNode node) {
+        if (node.left().accept(this).sub(node.right().accept(this)).signum() >= 0) {
+            return Fraction.ONE;
+        }
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitGt(@NotNull GtNode node) {
+        if (node.left().accept(this).sub(node.right().accept(this)).signum() > 0) {
+            return Fraction.ONE;
+        }
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitLe(@NotNull LeNode node) {
+        if (node.left().accept(this).sub(node.right().accept(this)).signum() <= 0) {
+            return Fraction.ONE;
+        }
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitLt(@NotNull LtNode node) {
+        if (node.left().accept(this).sub(node.right().accept(this)).signum() < 0) {
+            return Fraction.ONE;
+        }
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitTrue(@NotNull TrueNode node) {
+        return Fraction.ONE;
+    }
+
+    @Override
+    public @NotNull Fraction visitFalse(@NotNull FalseNode node) {
+        return Fraction.ZERO;
+    }
+
+    @Override
+    public @NotNull Fraction visitDefault(@NotNull AstNode node) {
+        throw new IllegalStateException("Unexpected node to visit in the interpreter.");
+    }
+
 }

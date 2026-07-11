@@ -1,6 +1,7 @@
 package interpreter.facade;
 
 import ast.CstToAstVisitor;
+import ast.program.ParameterNode;
 import ast.program.ProgramNode;
 import generated.CoDiNEParser;
 import lalrparser.ParseException;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -48,9 +50,20 @@ public class Interpreter {
             ast.accept(new TypeCheckerVisitor(dvv));
             UnitFractionVisitor ufv = new UnitFractionVisitor();
             ast.accept(ufv);
-            ScaleFracVisitor psfv = new ScaleFracVisitor(ufv.getUnitFract());
-            ast.accept(psfv);
-            System.out.println(new RecursiveInterpreter(ufv.getUnitFract(), psfv, ast.functions()).run(arg));
+            List<ParameterNode> main_arg = ast.functions().get("main").parameter();
+            if (arg.size() != main_arg.size())
+                throw new IllegalStateException("The number of input parameters differs from the number of parameters in the main");
+            List<Fraction> can_arg = new ArrayList<>();
+            for (int i = 0; i < arg.size(); i++) {
+                CanonicalRepresentationTransformer crt = new CanonicalRepresentationTransformer(
+                  ufv.getUnitFract(),
+                  arg.get(i),
+                  main_arg.get(i).type()
+                );
+                can_arg.add(crt.getCanonical());
+            }
+            RecursiveInterpreter interpreter = new RecursiveInterpreter(ufv.getUnitFract(), can_arg);
+            System.out.println(ast.accept(interpreter));
         } catch (NumberFormatException e) {
             System.out.println("RUNTIME ERROR: " + e.getMessage());
         } catch (ParseException | IllegalArgumentException e) {

@@ -5,8 +5,7 @@ def main(n : Num) : Num {
     var tot = 0
     var j = 0
     while i < n {
-
-
+        j = 0
         while j < n {
             tot = tot + 1
             j = j + 1
