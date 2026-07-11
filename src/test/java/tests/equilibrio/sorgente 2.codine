@@ -1,0 +1,10 @@
+dimension Massa       with unit kg
+dimension Temperatura with unit K
+
+def equilibrio(m1 : kg, t1 : K, m2 : kg, t2 : K) : K {
+    return (m1 * t1 + m2 * t2) / (m1 + m2)
+}
+
+def main(m1 : kg, t1 : K, m2 : kg, t2 : K) : K {
+    return equilibrio(m1, t1, m2, t2)
+}

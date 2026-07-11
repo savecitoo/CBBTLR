@@ -1,0 +1,10 @@
+dimension Massa     with unit kg
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+
+unit J   = kg * m ^ 2 / s ^ 2
+unit cal = 4184 / 1000 * J
+
+def main(q1 : cal, q2 : J) : J {
+    return q1 + q2
+}

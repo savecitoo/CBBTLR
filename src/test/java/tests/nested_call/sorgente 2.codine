@@ -1,0 +1,21 @@
+dimension Massa     with unit kg
+dimension Lunghezza with unit m
+dimension Tempo     with unit s
+
+unit J = kg * m ^ 2 / s ^ 2
+
+def velocita(d : m, t : s) : m / s {
+    return d / t
+}
+
+def quadrato(v : m / s) : m ^ 2 / s ^ 2 {
+    return v * v
+}
+
+def energia(m1 : kg, q : m ^ 2 / s ^ 2) : J {
+    return m1 * q / 2
+}
+
+def main(m1 : kg, d : m, t : s) : J {
+    return energia(m1, quadrato(velocita(d, t)))
+}
