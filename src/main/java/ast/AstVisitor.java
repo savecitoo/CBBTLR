@@ -9,12 +9,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Visitor interface implementing the Visitor design pattern for traversing
  * and processing an Abstract Syntax Tree (AST).
- * <p>
- * Each {@code visitX} method corresponds to a specific concrete node type
- * in the AST. All methods provide a default implementation that delegates
- * to {@link #visitDefault(AstNode)}, allowing implementing classes to
- * override only the methods relevant to their specific traversal logic.
- *
  * @param <T> the type of the result produced by visiting a node
  */
 public interface AstVisitor<T> {
@@ -22,10 +16,6 @@ public interface AstVisitor<T> {
     /**
      * Default fallback visit method, invoked by all other {@code visitX}
      * methods unless explicitly overridden.
-     * <p>
-     * Implementing classes must provide a concrete implementation of this
-     * method, which is typically used to handle unsupported node types,
-     * throw an exception, or provide generic behavior shared across nodes.
      *
      * @param node the AST node being visited
      * @return the result of visiting the node
