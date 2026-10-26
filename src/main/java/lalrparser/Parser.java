@@ -848,7 +848,7 @@ public class Parser {
                             *   2. Create a channel that goes from item to item1.
                             */
                             for (CoreItem item1 : state) {
-                                if (item1.production().lhs.equals(B)) {
+                                if (item1.production().lhs.equals(B) && item1.dot_position()==0) {
                                     if (item.hasBeta()) {
                                         Set<String> lookahead_spont = new HashSet<>(grammar.firstOfSymbols(item.beta()));
                                         boolean nullable = lookahead_spont.remove("ε");
